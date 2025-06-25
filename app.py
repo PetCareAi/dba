@@ -953,6 +953,217 @@ class DatabaseManager:
             'message': f'Tabela {table_name} otimizada (simulado)'
         }
 
+# Adicionar após a classe DatabaseManager
+
+class ProjectManager:
+    """Gerenciador de projetos e scripts no Supabase"""
+    
+    def __init__(self, db_manager):
+        self.db_manager = db_manager
+        self.supabase = db_manager.supabase_admin if hasattr(db_manager, 'supabase_admin') else db_manager.supabase_client
+    
+    def get_projects(self):
+        """Busca todos os projetos do usuário"""
+        try:
+            if not self.db_manager.connected:
+                return self._get_demo_projects()
+            
+            result = self.supabase.table('projetos_analytics').select('*').order('created_at', desc=True).execute()
+            return result.data if result.data else []
+        except Exception as e:
+            st.error(f"Erro ao buscar projetos: {e}")
+            return self._get_demo_projects()
+    
+    def create_project(self, project_data):
+        """Cria um novo projeto"""
+        try:
+            if not self.db_manager.connected:
+                return {'success': False, 'message': 'Banco não conectado'}
+            
+            project_data['created_by'] = st.session_state.get('username', 'admin')
+            project_data['created_at'] = datetime.now().isoformat()
+            
+            result = self.supabase.table('projetos_analytics').insert(project_data).execute()
+            return {'success': True, 'data': result.data[0] if result.data else None}
+        except Exception as e:
+            return {'success': False, 'message': str(e)}
+    
+    def update_project(self, project_id, updates):
+        """Atualiza um projeto"""
+        try:
+            updates['updated_at'] = datetime.now().isoformat()
+            result = self.supabase.table('projetos_analytics').update(updates).eq('id', project_id).execute()
+            return {'success': True, 'data': result.data[0] if result.data else None}
+        except Exception as e:
+            return {'success': False, 'message': str(e)}
+    
+    def delete_project(self, project_id):
+        """Deleta um projeto"""
+        try:
+            result = self.supabase.table('projetos_analytics').delete().eq('id', project_id).execute()
+            return {'success': True}
+        except Exception as e:
+            return {'success': False, 'message': str(e)}
+    
+    def get_project_scripts(self, project_id):
+        """Busca scripts de um projeto"""
+        try:
+            if not self.db_manager.connected:
+                return self._get_demo_scripts(project_id)
+            
+            result = self.supabase.table('scripts_projetos').select('*').eq('projeto_id', project_id).order('created_at', desc=True).execute()
+            return result.data if result.data else []
+        except Exception as e:
+            st.error(f"Erro ao buscar scripts: {e}")
+            return []
+    
+    def create_script(self, script_data):
+        """Cria um novo script"""
+        try:
+            script_data['created_by'] = st.session_state.get('username', 'admin')
+            script_data['created_at'] = datetime.now().isoformat()
+            
+            result = self.supabase.table('scripts_projetos').insert(script_data).execute()
+            return {'success': True, 'data': result.data[0] if result.data else None}
+        except Exception as e:
+            return {'success': False, 'message': str(e)}
+    
+    def update_script(self, script_id, updates):
+        """Atualiza um script"""
+        try:
+            updates['updated_at'] = datetime.now().isoformat()
+            updates['versao'] = updates.get('versao', 1) + 1
+            
+            result = self.supabase.table('scripts_projetos').update(updates).eq('id', script_id).execute()
+            return {'success': True, 'data': result.data[0] if result.data else None}
+        except Exception as e:
+            return {'success': False, 'message': str(e)}
+    
+    def delete_script(self, script_id):
+        """Deleta um script"""
+        try:
+            result = self.supabase.table('scripts_projetos').delete().eq('id', script_id).execute()
+            return {'success': True}
+        except Exception as e:
+            return {'success': False, 'message': str(e)}
+    
+    def execute_script(self, script_id, script_content, parameters=None):
+        """Executa um script e salva o resultado"""
+        try:
+            start_time = time.time()
+            
+            # Executar o script no banco
+            result = self.db_manager.execute_query(script_content)
+            
+            end_time = time.time()
+            execution_time = end_time - start_time
+            
+            # Salvar execução no histórico
+            execution_data = {
+                'script_id': script_id,
+                'projeto_id': self.get_script_project_id(script_id),
+                'status': 'sucesso' if result['success'] else 'erro',
+                'resultado': result,
+                'tempo_execucao': f"{execution_time:.2f} seconds",
+                'registros_afetados': result.get('rows_affected', 0),
+                'parametros_usados': parameters or {},
+                'erro_mensagem': result.get('error') if not result['success'] else None,
+                'executed_by': st.session_state.get('username', 'admin'),
+                'executed_at': datetime.now().isoformat()
+            }
+            
+            self.supabase.table('execucoes_scripts').insert(execution_data).execute()
+            
+            # Atualizar estatísticas do script
+            self.update_script_stats(script_id, execution_time, result['success'])
+            
+            return result
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+    
+    def get_script_project_id(self, script_id):
+        """Busca o projeto_id de um script"""
+        try:
+            result = self.supabase.table('scripts_projetos').select('projeto_id').eq('id', script_id).execute()
+            return result.data[0]['projeto_id'] if result.data else None
+        except:
+            return None
+    
+    def update_script_stats(self, script_id, execution_time, success):
+        """Atualiza estatísticas do script"""
+        try:
+            # Buscar dados atuais
+            result = self.supabase.table('scripts_projetos').select('total_execucoes, tempo_medio_execucao').eq('id', script_id).execute()
+            
+            if result.data:
+                current_executions = result.data[0].get('total_execucoes', 0)
+                current_avg_time = result.data[0].get('tempo_medio_execucao', '0 seconds')
+                
+                # Calcular nova média (simplificado)
+                new_executions = current_executions + 1
+                new_avg_time = f"{execution_time:.2f} seconds"
+                
+                updates = {
+                    'total_execucoes': new_executions,
+                    'tempo_medio_execucao': new_avg_time,
+                    'ultima_execucao': datetime.now().isoformat()
+                }
+                
+                self.supabase.table('scripts_projetos').update(updates).eq('id', script_id).execute()
+        except Exception as e:
+            print(f"Erro ao atualizar estatísticas: {e}")
+    
+    def get_execution_history(self, script_id=None, project_id=None):
+        """Busca histórico de execuções"""
+        try:
+            query = self.supabase.table('execucoes_scripts').select('*')
+            
+            if script_id:
+                query = query.eq('script_id', script_id)
+            elif project_id:
+                query = query.eq('projeto_id', project_id)
+            
+            result = query.order('executed_at', desc=True).limit(50).execute()
+            return result.data if result.data else []
+        except Exception as e:
+            st.error(f"Erro ao buscar histórico: {e}")
+            return []
+    
+    def _get_demo_projects(self):
+        """Retorna projetos de demonstração"""
+        return [
+            {
+                'id': 1,
+                'nome': 'Análise de Usuários',
+                'descricao': 'Scripts para análise de dados de usuários',
+                'categoria': 'Análise',
+                'prioridade': 'Alta',
+                'status': 'ativo',
+                'tags': ['usuarios', 'analytics'],
+                'membros': ['admin@petcareai.com'],
+                'created_at': '2025-06-20T10:00:00Z'
+            }
+        ]
+    
+    def _get_demo_scripts(self, project_id):
+        """Retorna scripts de demonstração"""
+        return [
+            {
+                'id': 1,
+                'projeto_id': project_id,
+                'nome': 'Contagem de Usuários',
+                'descricao': 'Conta total de usuários ativos',
+                'sql_content': 'SELECT COUNT(*) as total_users FROM users WHERE is_active = true;',
+                'tipo_script': 'consulta',
+                'status': 'ativo',
+                'total_execucoes': 15,
+                'created_at': '2025-06-20T10:00:00Z'
+            }
+        ]
+
+# Instanciar o gerenciador de projetos
+project_manager = ProjectManager(db_manager)
+
 # Instância global do gerenciador de banco
 db_manager = DatabaseManager()
 
@@ -6196,469 +6407,559 @@ def render_dba_operations():
                 st.write(action)
 
 def render_projects():
-    """Renderiza página de projetos"""
+    """Renderiza página de gerenciamento de projetos melhorada"""
     st.markdown("""
     <div style='background: linear-gradient(135deg, #F0FFF0, #E6FFE6); 
                 padding: 1.5rem; border-radius: 15px; 
                 border-left: 5px solid #2E8B57; margin-bottom: 2rem;'>
         <h2 style='color: #2E8B57; margin: 0; font-size: 2rem;'>
-            📁 Gerenciamento de Projetos
+            📁 Gerenciamento de Projetos & Scripts
         </h2>
         <p style='color: #228B22; margin: 0.5rem 0 0 0; font-size: 1.1rem;'>
-            Organize scripts, consultas e operações por projetos
+            Organize e execute scripts SQL por projetos
         </p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Inicializar projetos se não existir
-    if 'projects' not in st.session_state:
-        st.session_state.projects = [
-            {
-                'id': 1,
-                'name': 'Sistema Principal',
-                'description': 'Scripts e queries do sistema principal PetCare',
-                'category': 'Desenvolvimento',
-                'priority': 'Alta',
-                'scripts': 45,
-                'status': 'active',
-                'members': ['admin@petcareai.com', 'dev@petcareai.com'],
-                'created_at': datetime.now() - timedelta(days=30),
-                'tags': ['sistema', 'principal', 'crud']
-            },
-            {
-                'id': 2,
-                'name': 'Relatórios BI',
-                'description': 'Consultas e relatórios de business intelligence',
-                'category': 'Análise',
-                'priority': 'Média',
-                'scripts': 23,
-                'status': 'active',
-                'members': ['admin@petcareai.com', 'analyst@petcareai.com'],
-                'created_at': datetime.now() - timedelta(days=20),
-                'tags': ['bi', 'relatórios', 'dashboard']
-            },
-            {
-                'id': 3,
-                'name': 'Manutenção DB',
-                'description': 'Scripts de manutenção e otimização do banco',
-                'category': 'Manutenção',
-                'priority': 'Crítica',
-                'scripts': 12,
-                'status': 'active',
-                'members': ['admin@petcareai.com'],
-                'created_at': datetime.now() - timedelta(days=10),
-                'tags': ['manutenção', 'otimização', 'backup']
-            }
-        ]
-    
-    # Abas de projetos
-    tab1, tab2, tab3 = st.tabs(["📋 Projetos Ativos", "➕ Novo Projeto", "📊 Estatísticas"])
+    # Abas principais
+    tab1, tab2, tab3, tab4 = st.tabs(["📋 Projetos", "📝 Scripts", "📊 Execuções", "➕ Novo"])
     
     with tab1:
-        # Filtros e controles
-        col1, col2, col3 = st.columns([2, 1, 1])
-        
-        with col1:
-            search_project = st.text_input("🔍 Buscar projeto:", placeholder="Digite o nome do projeto...")
-        
-        with col2:
-            filter_status = st.selectbox("📊 Status:", ["Todos", "Ativo", "Pausado", "Concluído"])
-        
-        with col3:
-            filter_priority = st.selectbox("⭐ Prioridade:", ["Todas", "Crítica", "Alta", "Média", "Baixa"])
-        
-        # Aplicar filtros
-        filtered_projects = st.session_state.projects
-        
-        if search_project:
-            filtered_projects = [p for p in filtered_projects 
-                               if search_project.lower() in p['name'].lower()]
-        
-        if filter_status != "Todos":
-            status_map = {"Ativo": "active", "Pausado": "paused", "Concluído": "completed"}
-            filtered_projects = [p for p in filtered_projects 
-                               if p['status'] == status_map.get(filter_status, 'active')]
-        
-        if filter_priority != "Todas":
-            filtered_projects = [p for p in filtered_projects 
-                               if p['priority'] == filter_priority]
-        
-        # Exibir projetos
-        if filtered_projects:
-            for project in filtered_projects:
-                # Definir cores baseadas no status e prioridade
-                status_colors = {
-                    'active': '#2E8B57',
-                    'paused': '#FFD700', 
-                    'completed': '#808080'
-                }
-                
-                priority_colors = {
-                    'Crítica': '#FF6347',
-                    'Alta': '#FF8C00',
-                    'Média': '#FFD700',
-                    'Baixa': '#90EE90'
-                }
-                
-                status_color = status_colors.get(project['status'], '#2E8B57')
-                priority_color = priority_colors.get(project['priority'], '#90EE90')
-                
-                with st.expander(f"📁 {project['name']} ({project['scripts']} scripts)", expanded=False):
-                    # Informações do projeto
-                    col1, col2, col3, col4 = st.columns(4)
-                    
-                    with col1:
-                        st.metric("📜 Scripts", project['scripts'])
-                    
-                    with col2:
-                        status_text = {
-                            'active': '🟢 Ativo',
-                            'paused': '🟡 Pausado',
-                            'completed': '⚫ Concluído'
-                        }.get(project['status'], '🟢 Ativo')
-                        
-                        st.markdown(f"**Status:** {status_text}")
-                    
-                    with col3:
-                        st.markdown(f"**Prioridade:** <span style='color: {priority_color}'>⭐ {project['priority']}</span>", 
-                                  unsafe_allow_html=True)
-                    
-                    with col4:
-                        st.metric("👥 Membros", len(project['members']))
-                    
-                    # Descrição e detalhes
-                    st.write(f"**📝 Descrição:** {project['description']}")
-                    st.write(f"**📂 Categoria:** {project['category']}")
-                    st.write(f"**📅 Criado em:** {format_datetime(project['created_at'], 'short')}")
-                    
-                    # Tags
-                    if project.get('tags'):
-                        tags_html = " ".join([f"<span style='background: #E6FFE6; padding: 2px 6px; border-radius: 10px; font-size: 0.8rem; color: #2E8B57;'>#{tag}</span>" for tag in project['tags']])
-                        st.markdown(f"**🏷️ Tags:** {tags_html}", unsafe_allow_html=True)
-                    
-                    # Membros
-                    st.write(f"**👥 Membros:** {', '.join(project['members'])}")
-                    
-                    # Gráfico de atividade do projeto (simulado)
-                    st.markdown("#### 📊 Atividade do Projeto")
-                    
-                    days = list(range(1, 31))
-                    activity_data = [random.randint(0, project['scripts']//5) for _ in days]
-                    
-                    fig = px.line(
-                        x=days,
-                        y=activity_data,
-                        title=f"Execuções de Scripts - {project['name']} (último mês)",
-                        labels={'x': 'Dia', 'y': 'Execuções'}
-                    )
-                    fig.update_traces(line=dict(color='#2E8B57'))
-                    fig.update_layout(height=300, template="plotly_white")
-                    
-                    st.plotly_chart(fig, use_container_width=True)
-                    
-                    # Scripts do projeto (simulados)
-                    st.markdown("#### 📜 Scripts Recentes")
-                    
-                    project_scripts = [
-                        {
-                            'name': f'{project["name"].lower().replace(" ", "_")}_query_{i}.sql',
-                            'description': f'Script de {["consulta", "manutenção", "relatório"][i%3]} #{i+1}',
-                            'last_run': datetime.now() - timedelta(days=random.randint(1, 10)),
-                            'executions': random.randint(5, 50)
-                        }
-                        for i in range(min(5, project['scripts']))
-                    ]
-                    
-                    for script in project_scripts:
-                        col1, col2, col3, col4 = st.columns([3, 2, 1, 1])
-                        
-                        with col1:
-                            st.write(f"📄 **{script['name']}**")
-                            st.write(f"<small>{script['description']}</small>", unsafe_allow_html=True)
-                        
-                        with col2:
-                            st.write(f"📅 {format_datetime(script['last_run'], 'short')}")
-                        
-                        with col3:
-                            st.write(f"🔄 {script['executions']}x")
-                        
-                        with col4:
-                            if st.button("▶️", key=f"run_script_{project['id']}_{script['name']}", help="Executar script"):
-                                st.info(f"🚀 Executando {script['name']}...")
-                    
-                    # Ações do projeto
-                    st.markdown("---")
-                    st.markdown("#### ⚙️ Ações do Projeto")
-                    
-                    col1, col2, col3, col4, col5 = st.columns(5)
-                    
-                    with col1:
-                        if st.button(f"📝 Editar", key=f"edit_proj_{project['id']}"):
-                            st.session_state.edit_project_id = project['id']
-                            st.info(f"✏️ Editando projeto {project['name']}...")
-                    
-                    with col2:
-                        if st.button(f"📊 Relatório", key=f"report_proj_{project['id']}"):
-                            # Gerar relatório do projeto
-                            st.info(f"📈 Gerando relatório de {project['name']}...")
-                            
-                            project_report = {
-                                "Nome do Projeto": project['name'],
-                                "Total de Scripts": project['scripts'],
-                                "Execuções no Mês": sum(activity_data),
-                                "Média Diária": round(sum(activity_data)/len(activity_data), 1),
-                                "Status": project['status'],
-                                "Membros Ativos": len(project['members']),
-                                "Dias Desde Criação": (datetime.now() - project['created_at']).days
-                            }
-                            
-                            st.json(project_report)
-                            log_activity("Relatório gerado", f"Projeto: {project['name']}")
-                    
-                    with col3:
-                        # Toggle status
-                        if project['status'] == 'active':
-                            if st.button(f"⏸️ Pausar", key=f"pause_proj_{project['id']}"):
-                                project['status'] = 'paused'
-                                st.success(f"⏸️ Projeto {project['name']} pausado!")
-                                st.rerun()
-                        else:
-                            if st.button(f"▶️ Ativar", key=f"activate_proj_{project['id']}"):
-                                project['status'] = 'active'
-                                st.success(f"▶️ Projeto {project['name']} ativado!")
-                                st.rerun()
-                    
-                    with col4:
-                        if st.button(f"📤 Exportar", key=f"export_proj_{project['id']}"):
-                            # Criar dados para exportação
-                            export_data = {
-                                'projeto': project['name'],
-                                'scripts': project_scripts,
-                                'atividade': activity_data,
-                                'membros': project['members']
-                            }
-                            
-                            export_json = json.dumps(export_data, indent=2, default=str)
-                            st.download_button(
-                                "📥 Download JSON",
-                                export_json,
-                                f"{project['name'].lower().replace(' ', '_')}_export.json",
-                                "application/json",
-                                key=f"download_proj_{project['id']}"
-                            )
-                    
-                    with col5:
-                        if st.button(f"🗑️ Excluir", key=f"del_proj_{project['id']}"):
-                            if st.checkbox(f"Confirmar exclusão de {project['name']}", key=f"confirm_del_{project['id']}"):
-                                st.session_state.projects = [p for p in st.session_state.projects if p['id'] != project['id']]
-                                st.success(f"✅ Projeto {project['name']} excluído!")
-                                log_activity("Projeto excluído", project['name'])
-                                st.rerun()
-        
-        else:
-            st.warning("❌ Nenhum projeto encontrado com os critérios especificados.")
+        render_projects_list()
     
     with tab2:
-        st.subheader("➕ Criar Novo Projeto")
-        
-        with st.form("new_project_form"):
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                project_name = st.text_input("📁 Nome do Projeto:", placeholder="Ex: Sistema de Relatórios")
-                project_category = st.selectbox("📂 Categoria:", [
-                    "Desenvolvimento", "Manutenção", "Relatórios", "Backup", "Análise", "Outros"
-                ])
-                project_priority = st.selectbox("⭐ Prioridade:", ["Baixa", "Média", "Alta", "Crítica"])
-            
-            with col2:
-                project_description = st.text_area("📝 Descrição:", placeholder="Descreva o objetivo do projeto...")
-                project_members = st.multiselect("👥 Membros:", [
-                    "admin@petcareai.com", 
-                    "dev@petcareai.com", 
-                    "analyst@petcareai.com",
-                    "dba@petcareai.com"
-                ])
-                project_tags = st.text_input("🏷️ Tags (separadas por vírgula):", 
-                                           placeholder="sql, relatórios, manutenção")
-            
-            # Configurações avançadas
-            st.markdown("#### ⚙️ Configurações Avançadas")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                auto_backup = st.checkbox("💾 Backup automático de scripts", value=True)
-                notifications = st.checkbox("🔔 Notificações de execução", value=False)
-            
-            with col2:
-                schedule_reports = st.checkbox("📊 Relatórios agendados", value=False)
-                version_control = st.checkbox("📝 Controle de versão", value=True)
-            
-            submit_project = st.form_submit_button("🚀 Criar Projeto", type="primary")
-            
-            if submit_project:
-                if project_name and project_description:
-                    # Criar novo projeto
-                    new_project = {
-                        'id': max([p['id'] for p in st.session_state.projects], default=0) + 1,
-                        'name': project_name,
-                        'description': project_description,
-                        'category': project_category,
-                        'priority': project_priority,
-                        'members': project_members,
-                        'tags': [tag.strip() for tag in project_tags.split(',') if tag.strip()],
-                        'scripts': 0,
-                        'status': 'active',
-                        'created_at': datetime.now(),
-                        'settings': {
-                            'auto_backup': auto_backup,
-                            'notifications': notifications,
-                            'schedule_reports': schedule_reports,
-                            'version_control': version_control
-                        }
-                    }
-                    
-                    st.session_state.projects.append(new_project)
-                    log_activity("Projeto criado", project_name)
-                    
-                    st.success(f"✅ Projeto '{project_name}' criado com sucesso!")
-                    
-                    # Mostrar detalhes do projeto criado
-                    with st.expander("📋 Detalhes do Projeto Criado", expanded=True):
-                        col1, col2 = st.columns(2)
-                        
-                        with col1:
-                            st.json({
-                                "Nome": project_name,
-                                "Categoria": project_category,
-                                "Prioridade": project_priority,
-                                "Membros": project_members,
-                                "Tags": project_tags
-                            })
-                        
-                        with col2:
-                            st.json({
-                                "Backup Automático": auto_backup,
-                                "Notificações": notifications,
-                                "Relatórios Agendados": schedule_reports,
-                                "Controle de Versão": version_control,
-                                "Data de Criação": format_datetime(datetime.now(), 'full')
-                            })
-                
-                else:
-                    st.error("❌ Nome e descrição são obrigatórios!")
+        render_scripts_management()
     
     with tab3:
-        st.subheader("📊 Estatísticas dos Projetos")
+        render_execution_history()
+    
+    with tab4:
+        render_new_project_form()
+
+def render_projects_list():
+    """Renderiza lista de projetos"""
+    st.subheader("📋 Lista de Projetos")
+    
+    # Buscar projetos do banco
+    projects = project_manager.get_projects()
+    
+    if not projects:
+        st.info("📭 Nenhum projeto encontrado. Crie seu primeiro projeto na aba 'Novo'.")
+        return
+    
+    # Filtros
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        filter_status = st.selectbox("Status:", ["Todos", "ativo", "pausado", "concluido"])
+    
+    with col2:
+        filter_category = st.selectbox("Categoria:", 
+                                      ["Todas"] + list(set([p.get('categoria', 'Outros') for p in projects])))
+    
+    with col3:
+        search_term = st.text_input("🔍 Buscar:", placeholder="Nome do projeto...")
+    
+    # Aplicar filtros
+    filtered_projects = projects
+    
+    if filter_status != "Todos":
+        filtered_projects = [p for p in filtered_projects if p.get('status') == filter_status]
+    
+    if filter_category != "Todas":
+        filtered_projects = [p for p in filtered_projects if p.get('categoria') == filter_category]
+    
+    if search_term:
+        filtered_projects = [p for p in filtered_projects 
+                           if search_term.lower() in p.get('nome', '').lower()]
+    
+    # Exibir projetos
+    for project in filtered_projects:
+        render_project_card(project)
+
+def render_project_card(project):
+    """Renderiza card de um projeto"""
+    # Buscar scripts do projeto
+    scripts = project_manager.get_project_scripts(project['id'])
+    
+    with st.expander(f"📁 {project['nome']} ({len(scripts)} scripts)", expanded=False):
+        col1, col2 = st.columns([2, 1])
         
-        if st.session_state.projects:
-            # Métricas gerais
-            total_projects = len(st.session_state.projects)
-            active_projects = len([p for p in st.session_state.projects if p['status'] == 'active'])
-            total_scripts = sum(p['scripts'] for p in st.session_state.projects)
-            total_members = len(set([member for p in st.session_state.projects for member in p['members']]))
+        with col1:
+            st.write(f"**📝 Descrição:** {project.get('descricao', 'Sem descrição')}")
+            st.write(f"**📂 Categoria:** {project.get('categoria', 'Outros')}")
+            st.write(f"**⭐ Prioridade:** {project.get('prioridade', 'Média')}")
             
-            col1, col2, col3, col4 = st.columns(4)
+            # Tags
+            if project.get('tags'):
+                tags_html = " ".join([f"<span style='background: #E6FFE6; padding: 2px 6px; border-radius: 10px; font-size: 0.8rem; color: #2E8B57;'>#{tag}</span>" for tag in project['tags']])
+                st.markdown(f"**🏷️ Tags:** {tags_html}", unsafe_allow_html=True)
+        
+        with col2:
+            status_colors = {'ativo': '🟢', 'pausado': '🟡', 'concluido': '⚫'}
+            status_icon = status_colors.get(project.get('status', 'ativo'), '🟢')
+            st.write(f"**Status:** {status_icon} {project.get('status', 'ativo').title()}")
+            st.write(f"**📅 Criado:** {format_datetime(datetime.fromisoformat(project.get('created_at', '').replace('Z', '+00:00')), 'short')}")
+        
+        # Scripts do projeto
+        if scripts:
+            st.markdown("#### 📜 Scripts do Projeto")
             
-            with col1:
-                st.metric("📁 Total Projetos", total_projects)
+            for script in scripts:
+                render_script_item(script, project['id'])
+        else:
+            st.info("📭 Nenhum script encontrado neste projeto.")
+        
+        # Ações do projeto
+        st.markdown("---")
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        with col1:
+            if st.button("➕ Novo Script", key=f"new_script_{project['id']}"):
+                st.session_state.new_script_project_id = project['id']
+                st.session_state.show_new_script_form = True
+                st.rerun()
+        
+        with col2:
+            if st.button("✏️ Editar", key=f"edit_proj_{project['id']}"):
+                st.session_state.edit_project_data = project
+                st.session_state.show_edit_project_form = True
+                st.rerun()
+        
+        with col3:
+            if st.button("📊 Relatório", key=f"report_proj_{project['id']}"):
+                show_project_report(project, scripts) # type: ignore
+        
+        with col4:
+            # Toggle status
+            current_status = project.get('status', 'ativo')
+            new_status = 'pausado' if current_status == 'ativo' else 'ativo'
             
-            with col2:
-                st.metric("🟢 Projetos Ativos", active_projects)
+            if st.button(f"{'⏸️ Pausar' if current_status == 'ativo' else '▶️ Ativar'}", 
+                        key=f"toggle_proj_{project['id']}"):
+                result = project_manager.update_project(project['id'], {'status': new_status})
+                if result['success']:
+                    st.success(f"✅ Projeto {new_status}!")
+                    st.rerun()
+        
+        with col5:
+            if st.button("🗑️ Excluir", key=f"del_proj_{project['id']}"):
+                if st.checkbox(f"Confirmar exclusão", key=f"confirm_del_{project['id']}"):
+                    result = project_manager.delete_project(project['id'])
+                    if result['success']:
+                        st.success("✅ Projeto excluído!")
+                        st.rerun()
+
+def render_script_item(script, project_id):
+    """Renderiza item de script"""
+    with st.container():
+        col1, col2, col3, col4 = st.columns([3, 1, 1, 2])
+        
+        with col1:
+            st.write(f"**📄 {script['nome']}**")
+            st.write(f"<small>{script.get('descricao', 'Sem descrição')}</small>", unsafe_allow_html=True)
+        
+        with col2:
+            st.write(f"🔄 {script.get('total_execucoes', 0)}x")
+        
+        with col3:
+            tipo_icons = {'consulta': '🔍', 'relatorio': '📊', 'manutencao': '🔧', 'backup': '💾'}
+            tipo_icon = tipo_icons.get(script.get('tipo_script', 'consulta'), '📄')
+            st.write(f"{tipo_icon} {script.get('tipo_script', 'consulta').title()}")
+        
+        with col4:
+            btn_col1, btn_col2, btn_col3 = st.columns(3)
             
-            with col3:
-                st.metric("📜 Total Scripts", total_scripts)
+            with btn_col1:
+                if st.button("▶️", key=f"exec_script_{script['id']}", help="Executar"):
+                    execute_script_with_feedback(script)
             
-            with col4:
-                st.metric("👥 Membros Únicos", total_members)
+            with btn_col2:
+                if st.button("✏️", key=f"edit_script_{script['id']}", help="Editar"):
+                    st.session_state.edit_script_data = script
+                    st.session_state.show_edit_script_form = True
+                    st.rerun()
             
-            # Gráficos de análise
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown("#### 📊 Projetos por Categoria")
+            with btn_col3:
+                if st.button("👁️", key=f"view_script_{script['id']}", help="Visualizar"):
+                    show_script_details(script)
+
+def execute_script_with_feedback(script):
+    """Executa script com feedback visual"""
+    with st.spinner(f"⚡ Executando {script['nome']}..."):
+        result = project_manager.execute_script(
+            script['id'], 
+            script['sql_content']
+        )
+    
+    if result['success']:
+        st.success(f"✅ Script {script['nome']} executado com sucesso!")
+        
+        # Mostrar resultados se houver dados
+        if result.get('data'):
+            with st.expander("📊 Resultados", expanded=True):
+                df_result = pd.DataFrame(result['data'])
+                st.dataframe(df_result, use_container_width=True)
                 
-                categories = {}
-                for project in st.session_state.projects:
-                    cat = project['category']
-                    categories[cat] = categories.get(cat, 0) + 1
-                
-                if categories:
-                    fig = px.pie(
-                        values=list(categories.values()),
-                        names=list(categories.keys()),
-                        title="Distribuição por Categoria",
-                        color_discrete_sequence=['#2E8B57', '#90EE90', '#228B22', '#98FB98', '#20B2AA', '#32CD32']
-                    )
-                    fig.update_layout(height=400)
-                    st.plotly_chart(fig, use_container_width=True)
-            
-            with col2:
-                st.markdown("#### ⭐ Projetos por Prioridade")
-                
-                priorities = {}
-                for project in st.session_state.projects:
-                    prio = project['priority']
-                    priorities[prio] = priorities.get(prio, 0) + 1
-                
-                if priorities:
-                    fig = px.bar(
-                        x=list(priorities.keys()),
-                        y=list(priorities.values()),
-                        title="Projetos por Prioridade",
-                        color=list(priorities.values()),
-                        color_continuous_scale=['#90EE90', '#FFD700', '#FF8C00', '#FF6347']
-                    )
-                    fig.update_layout(height=400, template="plotly_white")
-                    st.plotly_chart(fig, use_container_width=True)
-            
-            # Top projetos
-            st.markdown("#### 🏆 Top Projetos por Scripts")
-            
-            sorted_projects = sorted(st.session_state.projects, key=lambda x: x['scripts'], reverse=True)
-            
-            for i, project in enumerate(sorted_projects[:5]):
-                col1, col2, col3, col4 = st.columns([1, 3, 1, 1])
-                
+                # Opções de exportação
+                col1, col2 = st.columns(2)
                 with col1:
-                    medal = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"][i]
-                    st.write(medal)
+                    csv_data = df_result.to_csv(index=False)
+                    st.download_button(
+                        "📄 Download CSV",
+                        csv_data,
+                        f"{script['nome']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                        "text/csv"
+                    )
                 
                 with col2:
-                    st.write(f"**{project['name']}**")
-                    st.write(f"<small>{project['category']} • {project['priority']}</small>", unsafe_allow_html=True)
-                
-                with col3:
-                    st.write(f"📜 {project['scripts']}")
-                
-                with col4:
-                    status_icon = "🟢" if project['status'] == 'active' else "🟡"
-                    st.write(status_icon)
-            
-            # Análise temporal
-            st.markdown("#### 📅 Criação de Projetos ao Longo do Tempo")
-            
-            project_dates = [p['created_at'].date() for p in st.session_state.projects]
-            date_counts = {}
-            
-            for date in project_dates:
-                month_key = date.strftime('%Y-%m')
-                date_counts[month_key] = date_counts.get(month_key, 0) + 1
-            
-            if date_counts:
-                fig = px.line(
-                    x=list(date_counts.keys()),
-                    y=list(date_counts.values()),
-                    title="Projetos Criados por Mês",
-                    markers=True
-                )
-                fig.update_traces(line=dict(color='#2E8B57'))
-                fig.update_layout(height=300, template="plotly_white")
-                st.plotly_chart(fig, use_container_width=True)
+                    json_data = df_result.to_json(orient='records', indent=2)
+                    st.download_button(
+                        "📋 Download JSON",
+                        json_data,
+                        f"{script['nome']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                        "application/json"
+                    )
         
-        else:
-            st.info("📭 Nenhum projeto encontrado para análise estatística.")
+        # Mostrar métricas
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("⏱️ Tempo", result.get('execution_time', 'N/A'))
+        with col2:
+            st.metric("📊 Registros", result.get('rows_affected', 0))
+        with col3:
+            st.metric("✅ Status", "Sucesso")
+    
+    else:
+        st.error(f"❌ Erro ao executar {script['nome']}: {result.get('error', 'Erro desconhecido')}")
+
+def show_script_details(script):
+    """Mostra detalhes completos do script"""
+    st.subheader(f"📄 {script['nome']}")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.write(f"**📝 Descrição:** {script.get('descricao', 'Sem descrição')}")
+        st.write(f"**📂 Tipo:** {script.get('tipo_script', 'consulta').title()}")
+        st.write(f"**🔄 Execuções:** {script.get('total_execucoes', 0)}")
+        st.write(f"**⏱️ Tempo Médio:** {script.get('tempo_medio_execucao', 'N/A')}")
+    
+    with col2:
+        st.write(f"**📅 Criado:** {format_datetime(datetime.fromisoformat(script.get('created_at', '').replace('Z', '+00:00')), 'full')}")
+        st.write(f"**🔄 Atualizado:** {format_datetime(datetime.fromisoformat(script.get('updated_at', '').replace('Z', '+00:00')), 'full')}")
+        st.write(f"**📊 Versão:** {script.get('versao', 1)}")
+        
+        if script.get('ultima_execucao'):
+            st.write(f"**⚡ Última Execução:** {format_datetime(datetime.fromisoformat(script.get('ultima_execucao', '').replace('Z', '+00:00')), 'full')}")
+    
+    # Código SQL
+    st.markdown("#### 💻 Código SQL")
+    st.code(script.get('sql_content', ''), language='sql')
+    
+    # Histórico de execuções
+    history = project_manager.get_execution_history(script_id=script['id'])
+    if history:
+        st.markdown(f"#### 📊 Últimas Execuções ({len(history)})")
+        
+        history_data = []
+        for exec_record in history:
+            history_data.append({
+                'Data': format_datetime(datetime.fromisoformat(exec_record.get('executed_at', '').replace('Z', '+00:00')), 'full'),
+                'Status': '✅ Sucesso' if exec_record.get('status') == 'sucesso' else '❌ Erro',
+                'Tempo': exec_record.get('tempo_execucao', 'N/A'),
+                'Registros': exec_record.get('registros_afetados', 0),
+                'Executado por': exec_record.get('executed_by', 'N/A')
+            })
+        
+        df_history = pd.DataFrame(history_data)
+        st.dataframe(df_history, use_container_width=True)
+
+def render_new_project_form():
+    """Renderiza formulário para novo projeto"""
+    st.subheader("➕ Criar Novo Projeto")
+    
+    with st.form("new_project_form"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            nome = st.text_input("📁 Nome do Projeto:", placeholder="Ex: Análise de Vendas")
+            categoria = st.selectbox("📂 Categoria:", [
+                "Análise", "Relatório", "Manutenção", "Backup", "Desenvolvimento", "Outros"
+            ])
+            prioridade = st.selectbox("⭐ Prioridade:", ["Baixa", "Média", "Alta", "Crítica"])
+        
+        with col2:
+            descricao = st.text_area("📝 Descrição:", placeholder="Descreva o objetivo do projeto...")
+            tags = st.text_input("🏷️ Tags (separadas por vírgula):", placeholder="analytics, vendas, mensal")
+            membros = st.text_input("👥 Membros (emails separados por vírgula):", 
+                                   value=st.session_state.get('username', 'admin') + '@petcareai.com')
+        
+        submit = st.form_submit_button("🚀 Criar Projeto", type="primary")
+        
+        if submit and nome and descricao:
+            project_data = {
+                'nome': nome,
+                'descricao': descricao,
+                'categoria': categoria,
+                'prioridade': prioridade,
+                'status': 'ativo',
+                'tags': [tag.strip() for tag in tags.split(',') if tag.strip()],
+                'membros': [email.strip() for email in membros.split(',') if email.strip()]
+            }
+            
+            result = project_manager.create_project(project_data)
+            
+            if result['success']:
+                st.success("✅ Projeto criado com sucesso!")
+                log_activity("Projeto criado", nome)
+                st.rerun()
+            else:
+                st.error(f"❌ Erro ao criar projeto: {result['message']}")
+
+# Adicionar no início do arquivo após as outras verificações de session_state
+def check_script_forms():
+    """Verifica se deve mostrar formulários de script"""
+    if st.session_state.get('show_new_script_form'):
+        render_new_script_form()
+    
+    if st.session_state.get('show_edit_script_form'):
+        render_edit_script_form() # type: ignore
+    
+    if st.session_state.get('show_edit_project_form'):
+        render_edit_project_form() # type: ignore
+
+def render_new_script_form():
+    """Renderiza formulário para novo script"""
+    st.subheader("➕ Novo Script SQL")
+    
+    project_id = st.session_state.get('new_script_project_id')
+    
+    with st.form("new_script_form"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            nome = st.text_input("📄 Nome do Script:", placeholder="Ex: Relatório Mensal")
+            tipo_script = st.selectbox("📂 Tipo:", [
+                "consulta", "relatorio", "manutencao", "backup", "migracao", "otimizacao"
+            ])
+        
+        with col2:
+            descricao = st.text_area("📝 Descrição:", placeholder="Descreva o que o script faz...")
+            tags = st.text_input("🏷️ Tags:", placeholder="relatorio, mensal, vendas")
+        
+        sql_content = st.text_area(
+            "💻 Código SQL:",
+            placeholder="-- Digite seu código SQL aqui\nSELECT * FROM tabela;",
+            height=300
+        )
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            submit = st.form_submit_button("💾 Salvar Script", type="primary")
+        
+        with col2:
+            cancel = st.form_submit_button("❌ Cancelar")
+        
+        if cancel:
+            st.session_state.show_new_script_form = False
+            st.rerun()
+        
+        if submit and nome and sql_content:
+            script_data = {
+                'projeto_id': project_id,
+                'nome': nome,
+                'descricao': descricao,
+                'sql_content': sql_content,
+                'tipo_script': tipo_script,
+                'status': 'ativo',
+                'tags': [tag.strip() for tag in tags.split(',') if tag.strip()],
+                'versao': 1,
+                'total_execucoes': 0
+            }
+            
+            result = project_manager.create_script(script_data)
+            
+            if result['success']:
+                st.success("✅ Script criado com sucesso!")
+                st.session_state.show_new_script_form = False
+                log_activity("Script criado", nome)
+                st.rerun()
+            else:
+                st.error(f"❌ Erro ao criar script: {result['message']}")
+
+def render_scripts_management():
+    """Gerenciamento de scripts por projeto"""
+    st.subheader("📝 Gerenciamento de Scripts")
+    
+    # Seletor de projeto
+    projects = project_manager.get_projects()
+    if not projects:
+        st.info("📭 Nenhum projeto encontrado. Crie um projeto primeiro.")
+        return
+    
+    project_options = {p['nome']: p['id'] for p in projects}
+    selected_project_name = st.selectbox("Selecione um projeto:", list(project_options.keys()))
+    selected_project_id = project_options[selected_project_name]
+    
+    # Buscar scripts do projeto selecionado
+    scripts = project_manager.get_project_scripts(selected_project_id)
+    
+    if scripts:
+        # Filtros de scripts
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            filter_type = st.selectbox("Tipo:", ["Todos"] + list(set([s.get('tipo_script', 'consulta') for s in scripts])))
+        
+        with col2:
+            filter_status = st.selectbox("Status:", ["Todos", "ativo", "pausado", "obsoleto"])
+        
+        with col3:
+            search_script = st.text_input("🔍 Buscar script:", placeholder="Nome do script...")
+        
+        # Aplicar filtros
+        filtered_scripts = scripts
+        
+        if filter_type != "Todos":
+            filtered_scripts = [s for s in filtered_scripts if s.get('tipo_script') == filter_type]
+        
+        if filter_status != "Todos":
+            filtered_scripts = [s for s in filtered_scripts if s.get('status') == filter_status]
+        
+        if search_script:
+            filtered_scripts = [s for s in filtered_scripts 
+                              if search_script.lower() in s.get('nome', '').lower()]
+        
+        # Lista de scripts
+        for script in filtered_scripts:
+            with st.expander(f"📄 {script['nome']} (v{script.get('versao', 1)})", expanded=False):
+                col1, col2 = st.columns([3, 1])
+                
+                with col1:
+                    st.code(script.get('sql_content', ''), language='sql')
+                
+                with col2:
+                    st.write(f"**Tipo:** {script.get('tipo_script', 'consulta').title()}")
+                    st.write(f"**Execuções:** {script.get('total_execucoes', 0)}")
+                    st.write(f"**Status:** {script.get('status', 'ativo').title()}")
+                    
+                    # Botões de ação
+                    if st.button("▶️ Executar", key=f"exec_{script['id']}", use_container_width=True):
+                        execute_script_with_feedback(script)
+                    
+                    if st.button("✏️ Editar", key=f"edit_{script['id']}", use_container_width=True):
+                        st.session_state.edit_script_data = script
+                        st.session_state.show_edit_script_form = True
+                        st.rerun()
+                    
+                    if st.button("📊 Histórico", key=f"history_{script['id']}", use_container_width=True):
+                        show_script_execution_history(script) # type: ignore
+                    
+                    if st.button("🗑️ Excluir", key=f"del_script_{script['id']}", use_container_width=True):
+                        if st.checkbox(f"Confirmar exclusão de {script['nome']}", key=f"confirm_script_{script['id']}"):
+                            result = project_manager.delete_script(script['id'])
+                            if result['success']:
+                                st.success("✅ Script excluído!")
+                                st.rerun()
+    else:
+        st.info("📭 Nenhum script encontrado neste projeto.")
+        
+        if st.button("➕ Criar Primeiro Script"):
+            st.session_state.new_script_project_id = selected_project_id
+            st.session_state.show_new_script_form = True
+            st.rerun()
+
+def render_execution_history():
+    """Renderiza histórico de execuções"""
+    st.subheader("📊 Histórico de Execuções")
+    
+    # Filtros
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        projects = project_manager.get_projects()
+        project_options = {"Todos": None}
+        project_options.update({p['nome']: p['id'] for p in projects})
+        selected_project = st.selectbox("Projeto:", list(project_options.keys()))
+    
+    with col2:
+        filter_status = st.selectbox("Status Execução:", ["Todos", "sucesso", "erro", "cancelado"])
+    
+    with col3:
+        days_back = st.slider("Últimos dias:", 1, 30, 7)
+    
+    # Buscar histórico
+    project_id = project_options[selected_project] if selected_project != "Todos" else None
+    history = project_manager.get_execution_history(project_id=project_id)
+    
+    # Filtrar por data
+    cutoff_date = datetime.now() - timedelta(days=days_back)
+    history = [h for h in history 
+               if datetime.fromisoformat(h.get('executed_at', '').replace('Z', '+00:00')) > cutoff_date]
+    
+    # Filtrar por status
+    if filter_status != "Todos":
+        history = [h for h in history if h.get('status') == filter_status]
+    
+    if history:
+        # Estatísticas
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Total Execuções", len(history))
+        
+        with col2:
+            success_count = len([h for h in history if h.get('status') == 'sucesso'])
+            st.metric("Sucessos", success_count)
+        
+        with col3:
+            error_count = len([h for h in history if h.get('status') == 'erro'])
+            st.metric("Erros", error_count)
+        
+        with col4:
+            success_rate = (success_count / len(history) * 100) if history else 0
+            st.metric("Taxa Sucesso", f"{success_rate:.1f}%")
+        
+        # Tabela de execuções
+        st.markdown("#### 📋 Detalhes das Execuções")
+        
+        history_data = []
+        for h in history:
+            history_data.append({
+                'Data/Hora': format_datetime(datetime.fromisoformat(h.get('executed_at', '').replace('Z', '+00:00')), 'full'),
+                'Script': h.get('script_nome', f"Script ID {h.get('script_id', 'N/A')}"),
+                'Status': '✅ Sucesso' if h.get('status') == 'sucesso' else '❌ Erro' if h.get('status') == 'erro' else '🟡 Cancelado',
+                'Tempo': h.get('tempo_execucao', 'N/A'),
+                'Registros': h.get('registros_afetados', 0),
+                'Executado por': h.get('executed_by', 'N/A')
+            })
+        
+        df_history = pd.DataFrame(history_data)
+        st.dataframe(df_history, use_container_width=True)
+        
+        # Gráfico de execuções por dia
+        st.markdown("#### 📈 Execuções por Dia")
+        
+        daily_executions = {}
+        for h in history:
+            date_key = datetime.fromisoformat(h.get('executed_at', '').replace('Z', '+00:00')).date()
+            daily_executions[date_key] = daily_executions.get(date_key, 0) + 1
+        
+        if daily_executions:
+            fig = px.line(
+                x=list(daily_executions.keys()),
+                y=list(daily_executions.values()),
+                title="Execuções de Scripts por Dia",
+                labels={'x': 'Data', 'y': 'Número de Execuções'}
+            )
+            fig.update_traces(line=dict(color='#2E8B57'))
+            fig.update_layout(height=400, template="plotly_white")
+            st.plotly_chart(fig, use_container_width=True)
+    
+    else:
+        st.info("📭 Nenhuma execução encontrada nos critérios especificados.")
 
 def render_settings():
     """Renderiza página de configurações"""
@@ -7499,240 +7800,3 @@ SELECT AVG(age) as average_pet_age FROM pets WHERE birth_date IS NOT NULL;""",
 # APLICAÇÃO PRINCIPAL
 # =====================================================================
 
-def main():
-    """Função principal da aplicação"""
-    
-    # Configuração da página
-    st.set_page_config(
-        page_title=CONFIG['app_title'],
-        page_icon="🐾",
-        layout="wide",
-        initial_sidebar_state="expanded",
-        menu_items={
-            'Get Help': 'https://github.com/petcareai/dba-admin',
-            'Report a bug': 'mailto:admin@petcareai.com',
-            'About': f'{CONFIG["app_title"]} v{CONFIG["app_version"]} - Sistema de Gerenciamento de Banco de Dados'
-        }
-    )
-    
-    # CSS customizado
-    st.markdown("""
-    <style>
-    /* Estilo geral */
-    .main .block-container {
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-    }
-    
-    /* Cards de métricas */
-    .metric-card {
-        background: linear-gradient(135deg, #F0FFF0, #E6FFE6);
-        padding: 1.5rem;
-        border-radius: 15px;
-        border-left: 5px solid #2E8B57;
-        margin: 0.5rem 0;
-        box-shadow: 0 2px 10px rgba(46, 139, 87, 0.1);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    
-    .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 20px rgba(46, 139, 87, 0.2);
-    }
-    
-    /* Botões */
-    .stButton > button {
-        background: linear-gradient(135deg, #2E8B57, #90EE90);
-        color: white;
-        border: none;
-        border-radius: 10px;
-        padding: 0.5rem 1rem;
-        transition: all 0.3s ease;
-        font-weight: 500;
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(46, 139, 87, 0.3);
-        background: linear-gradient(135deg, #228B22, #98FB98);
-    }
-    
-    /* Campos de entrada */
-    .stTextInput > div > div, .stTextArea > div > div, .stSelectbox > div > div {
-        border-radius: 10px;
-        border: 2px solid #E6FFE6;
-        transition: border-color 0.3s ease;
-    }
-    
-    .stTextInput > div > div:focus-within, .stTextArea > div > div:focus-within {
-        border-color: #2E8B57;
-        box-shadow: 0 0 0 2px rgba(46, 139, 87, 0.1);
-    }
-    
-    /* Expanders */
-    .stExpander {
-        border: 2px solid #E6FFE6;
-        border-radius: 10px;
-        margin: 0.5rem 0;
-        transition: all 0.3s ease;
-    }
-    
-    .stExpander:hover {
-        border-color: #90EE90;
-        box-shadow: 0 2px 10px rgba(46, 139, 87, 0.1);
-    }
-    
-    /* DataFrames */
-    .stDataFrame {
-        border-radius: 10px;
-        overflow: hidden;
-        box-shadow: 0 2px 10px rgba(46, 139, 87, 0.1);
-    }
-    
-    /* Sidebar */
-    .css-1d391kg {
-        background: linear-gradient(180deg, #F0FFF0, #E6FFE6);
-    }
-    
-    /* Tabs */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 10px 10px 0 0;
-        background: linear-gradient(135deg, #E6FFE6, #F0FFF0);
-        border: 2px solid #90EE90;
-        color: #2E8B57;
-        font-weight: 500;
-    }
-    
-    .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #2E8B57, #90EE90);
-        color: white;
-        border-color: #2E8B57;
-    }
-    
-    /* Métricas */
-    [data-testid="metric-container"] {
-        background: linear-gradient(135deg, #F0FFF0, #E6FFE6);
-        border: 2px solid #90EE90;
-        padding: 1rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 5px rgba(46, 139, 87, 0.1);
-    }
-    
-    /* Alerts */
-    .stAlert {
-        border-radius: 10px;
-        border-left: 5px solid #2E8B57;
-    }
-    
-    /* Code blocks */
-    .stCodeBlock {
-        border-radius: 10px;
-        border: 2px solid #E6FFE6;
-    }
-    
-    /* Progress bars */
-    .stProgress > div > div {
-        background: linear-gradient(90deg, #2E8B57, #90EE90);
-        border-radius: 10px;
-    }
-    
-    /* Hiding Streamlit elements */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-        width: 8px;
-    }
-    
-    ::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 10px;
-    }
-    
-    ::-webkit-scrollbar-thumb {
-        background: linear-gradient(180deg, #2E8B57, #90EE90);
-        border-radius: 10px;
-    }
-    
-    ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(180deg, #228B22, #98FB98);
-    }
-    
-    /* Animações */
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .main .block-container > div {
-        animation: fadeIn 0.5s ease-out;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Inicializar estado da sessão
-    init_session_state()
-    
-    # Verificar autenticação
-    if not st.session_state.authenticated:
-        render_login_page()
-        return
-    
-    # Renderizar interface principal
-    render_header()
-    render_sidebar()
-    
-    # Renderizar página atual
-    current_page = st.session_state.current_page
-    
-    try:
-        if current_page == "dashboard":
-            render_dashboard()
-        elif current_page == "tables":
-            render_tables()
-        elif current_page == "sql_editor":
-            render_sql_editor()
-        elif current_page == "dba_operations":
-            render_dba_operations()
-        elif current_page == "projects":
-            render_projects()
-        elif current_page == "settings":
-            render_settings()
-        else:
-            render_dashboard()  # Página padrão
-    
-    except Exception as e:
-        st.error(f"❌ Erro ao carregar página: {e}")
-        if CONFIG['debug_mode']:
-            st.exception(e)
-        
-        # Voltar para dashboard em caso de erro
-        st.session_state.current_page = 'dashboard'
-        if st.button("🔄 Recarregar"):
-            st.rerun()
-    
-    # Rodapé
-    st.markdown("---")
-    st.markdown(f"""
-    <div style='text-align: center; color: #228B22; padding: 1rem 0; background: linear-gradient(135deg, #F0FFF0, #E6FFE6); border-radius: 10px; margin-top: 2rem;'>
-        <small>
-            🐾 <strong>{CONFIG['app_title']} v{CONFIG['app_version']}</strong> | 
-            Desenvolvido para PetCareAI | 
-            © 2025 Todos os direitos reservados<br>
-            <span style='color: #2E8B57;'>
-                Status: {'🟢 Conectado' if db_manager.connected else '🟡 Demo'} • 
-                Uptime: 5d 12h 30m • 
-                Última atualização: {datetime.now().strftime('%d/%m/%Y %H:%M')}
-            </span>
-        </small>
-    </div>
-    """, unsafe_allow_html=True)
-
-if __name__ == "__main__":
-    main()
