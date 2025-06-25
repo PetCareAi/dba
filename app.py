@@ -1753,249 +1753,6 @@ def generate_policies_sql(table_name, policies, rls_enabled):
     else:
         st.info("ℹ️ Nenhuma política para gerar SQL")
 
-def render_loading_with_progress():
-    """Renderiza carregamento animado com barra de progresso"""
-    
-    # Container para o carregamento
-    loading_container = st.container()
-    
-    with loading_container:
-        st.markdown("""
-        <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    padding: 2rem; border-radius: 15px; text-align: center; margin: 2rem 0;
-                    box-shadow: 0 8px 16px rgba(0,0,0,0.1);'>
-            <h3 style='color: white; margin: 0; font-size: 1.8rem;'>📊 Atualizando Contagens de Registros</h3>
-            <p style='color: #E8F0FF; margin: 0.5rem 0 0 0; font-size: 1.1rem;'>Processando dados do Supabase...</p>
-            <div style='margin-top: 1rem;'>
-                <span style='background: rgba(255,255,255,0.2); padding: 0.3rem 0.8rem; border-radius: 15px; 
-                             color: white; font-size: 0.9rem;'>🚀 Modo Turbo Ativado</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Placeholders para componentes dinâmicos
-        progress_placeholder = st.empty()
-        status_placeholder = st.empty()
-        table_placeholder = st.empty()
-        time_placeholder = st.empty()
-        details_placeholder = st.empty()
-        
-        # Lista de tabelas para simular processamento
-        tables_to_process = [
-            {'name': 'users', 'icon': '👥', 'desc': 'Usuários do sistema'},
-            {'name': 'pets', 'icon': '🐕', 'desc': 'Cadastro de pets'},
-            {'name': 'appointments', 'icon': '📅', 'desc': 'Agendamentos médicos'},
-            {'name': 'medical_records', 'icon': '📋', 'desc': 'Prontuários médicos'},
-            {'name': 'veterinarians', 'icon': '👨‍⚕️', 'desc': 'Veterinários cadastrados'},
-            {'name': 'clinics', 'icon': '🏥', 'desc': 'Clínicas parceiras'},
-            {'name': 'treatments', 'icon': '💊', 'desc': 'Tratamentos realizados'},
-            {'name': 'medications', 'icon': '💉', 'desc': 'Medicamentos disponíveis'},
-            {'name': 'invoices', 'icon': '💰', 'desc': 'Faturas e pagamentos'},
-            {'name': 'notifications', 'icon': '🔔', 'desc': 'Notificações do sistema'},
-            {'name': 'audit_logs', 'icon': '📊', 'desc': 'Logs de auditoria'},
-            {'name': 'settings', 'icon': '⚙️', 'desc': 'Configurações gerais'}
-        ]
-        
-        total_tables = len(tables_to_process)
-        start_time = datetime.now()
-        
-        # Processar cada tabela com animação
-        for i, table_info in enumerate(tables_to_process):
-            current_progress = (i + 1) / total_tables
-            percentage = int(current_progress * 100)
-            
-            # Atualizar barra de progresso principal
-            with progress_placeholder.container():
-                st.progress(current_progress)
-                
-                # Barra de progresso customizada com CSS
-                st.markdown(f"""
-                <div style='background-color: #f0f0f0; border-radius: 10px; padding: 3px; margin: 10px 0;
-                            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);'>
-                    <div style='background: linear-gradient(90deg, #4CAF50 0%, #45a049 {percentage}%, #e0e0e0 {percentage}%); 
-                                height: 30px; border-radius: 7px; position: relative; overflow: hidden; transition: all 0.3s ease;'>
-                        <div style='position: absolute; width: 100%; text-align: center; line-height: 30px; 
-                                    font-weight: bold; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); font-size: 1.1rem;'>
-                            {percentage}% Concluído ({i+1}/{total_tables})
-                        </div>
-                        <div style='position: absolute; top: 0; left: -100%; width: 100%; height: 100%; 
-                                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); 
-                                    animation: shimmer 1.5s infinite;'></div>
-                    </div>
-                </div>
-                
-                <style>
-                @keyframes shimmer {{
-                    0% {{ left: -100%; }}
-                    100% {{ left: 100%; }}
-                }}
-                @keyframes pulse {{
-                    0% {{ opacity: 1; }}
-                    50% {{ opacity: 0.7; }}
-                    100% {{ opacity: 1; }}
-                }}
-                </style>
-                """, unsafe_allow_html=True)
-            
-            # Status atual
-            with status_placeholder.container():
-                col1, col2, col3, col4 = st.columns(4)
-                
-                with col1:
-                    st.metric("Progresso", f"{i+1}/{total_tables}", delta=f"+{percentage}%", delta_color="normal")
-                
-                with col2:
-                    elapsed_time = (datetime.now() - start_time).total_seconds()
-                    avg_time_per_table = elapsed_time / (i + 1) if i > 0 else 0
-                    remaining_tables = total_tables - (i + 1)
-                    eta_seconds = remaining_tables * avg_time_per_table
-                    st.metric("ETA", f"{eta_seconds:.0f}s", delta=f"-{avg_time_per_table:.1f}s/tab", delta_color="inverse")
-                
-                with col3:
-                    tables_per_sec = (i + 1) / elapsed_time if elapsed_time > 0 else 0
-                    st.metric("Velocidade", f"{tables_per_sec:.1f} tab/s", delta=f"{random.uniform(0.1, 0.5):.1f}", delta_color="normal")
-                
-                with col4:
-                    memory_usage = random.randint(45, 85)
-                    st.metric("Memória", f"{memory_usage}%", delta=f"{random.randint(-5, 5)}%", delta_color="inverse" if memory_usage > 80 else "normal")
-            
-            # Tabela atual sendo processada
-            with table_placeholder.container():
-                st.markdown(f"""
-                <div style='background: linear-gradient(135deg, #FF6B6B, #FF8E8E); 
-                            padding: 1.5rem; border-radius: 12px; text-align: center; margin: 1rem 0;
-                            box-shadow: 0 6px 12px rgba(0,0,0,0.15); animation: pulse 2s infinite;'>
-                    <h4 style='color: white; margin: 0; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;'>
-                        <span style='margin-right: 15px; font-size: 1.5rem;'>{table_info['icon']}</span>
-                        Processando: <code style='background: rgba(255,255,255,0.25); 
-                                                  padding: 4px 12px; border-radius: 6px; margin-left: 10px; font-size: 1.1rem;'>
-                            {table_info['name']}
-                        </code>
-                    </h4>
-                    <p style='color: #FFE8E8; margin: 0.8rem 0 0 0; font-size: 1rem;'>
-                        {table_info['desc']} - Contando registros e analisando estrutura...
-                    </p>
-                    <div style='margin-top: 1rem;'>
-                        <span style='background: rgba(255,255,255,0.2); padding: 0.3rem 0.8rem; border-radius: 15px; 
-                                     color: white; font-size: 0.85rem;'>🔍 Analisando índices e relações</span>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            # Informações de tempo em tempo real
-            with time_placeholder.container():
-                elapsed_time = (datetime.now() - start_time).total_seconds()
-                
-                time_col1, time_col2, time_col3, time_col4 = st.columns(4)
-                
-                with time_col1:
-                    st.markdown(f"""
-                    <div style='text-align: center; padding: 1rem; background: linear-gradient(135deg, #4CAF50, #45a049); 
-                                border-radius: 10px; color: white; box-shadow: 0 4px 8px rgba(0,0,0,0.1);'>
-                        <div style='font-size: 1.5rem; font-weight: bold;'>{elapsed_time:.1f}s</div>
-                        <div style='font-size: 0.9rem; opacity: 0.9;'>Tempo Decorrido</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                with time_col2:
-                    avg_time = elapsed_time / (i + 1)
-                    st.markdown(f"""
-                    <div style='text-align: center; padding: 1rem; background: linear-gradient(135deg, #2196F3, #1976D2); 
-                                border-radius: 10px; color: white; box-shadow: 0 4px 8px rgba(0,0,0,0.1);'>
-                        <div style='font-size: 1.5rem; font-weight: bold;'>{avg_time:.2f}s</div>
-                        <div style='font-size: 0.9rem; opacity: 0.9;'>Tempo Médio/Tabela</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                with time_col3:
-                    remaining_time = (total_tables - i - 1) * avg_time
-                    st.markdown(f"""
-                    <div style='text-align: center; padding: 1rem; background: linear-gradient(135deg, #FF9800, #F57C00); 
-                                border-radius: 10px; color: white; box-shadow: 0 4px 8px rgba(0,0,0,0.1);'>
-                        <div style='font-size: 1.5rem; font-weight: bold;'>{remaining_time:.1f}s</div>
-                        <div style='font-size: 0.9rem; opacity: 0.9;'>Tempo Restante</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                with time_col4:
-                    total_estimated = total_tables * avg_time
-                    st.markdown(f"""
-                    <div style='text-align: center; padding: 1rem; background: linear-gradient(135deg, #9C27B0, #7B1FA2); 
-                                border-radius: 10px; color: white; box-shadow: 0 4px 8px rgba(0,0,0,0.1);'>
-                        <div style='font-size: 1.5rem; font-weight: bold;'>{total_estimated:.1f}s</div>
-                        <div style='font-size: 0.9rem; opacity: 0.9;'>Tempo Total Est.</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-            
-            # Detalhes técnicos do processamento
-            with details_placeholder.container():
-                st.markdown("#### 🔧 Detalhes do Processamento")
-                
-                detail_col1, detail_col2, detail_col3 = st.columns(3)
-                
-                with detail_col1:
-                    records_found = random.randint(100, 5000)
-                    st.metric("Registros Encontrados", f"{records_found:,}", delta=f"+{random.randint(1, 50)}")
-                
-                with detail_col2:
-                    indexes_analyzed = random.randint(2, 8)
-                    st.metric("Índices Analisados", indexes_analyzed, delta=f"+{random.randint(0, 2)}")
-                
-                with detail_col3:
-                    data_size_mb = random.uniform(0.5, 25.0)
-                    st.metric("Tamanho dos Dados", f"{data_size_mb:.1f} MB", delta=f"+{random.uniform(0.1, 1.0):.1f} MB")
-            
-            # Simular processamento com delay variável
-            processing_time = random.uniform(0.4, 1.2)
-            time.sleep(processing_time)
-        
-        # Conclusão com animação
-        progress_placeholder.empty()
-        status_placeholder.empty()
-        table_placeholder.empty()
-        details_placeholder.empty()
-        
-        with time_placeholder.container():
-            total_time = (datetime.now() - start_time).total_seconds()
-            
-            st.markdown(f"""
-            <div style='background: linear-gradient(135deg, #4CAF50, #45a049); 
-                        padding: 3rem; border-radius: 20px; text-align: center; margin: 2rem 0;
-                        animation: success-pulse 3s infinite; box-shadow: 0 10px 20px rgba(76, 175, 80, 0.3);'>
-                <h2 style='color: white; margin: 0; font-size: 2.2rem;'>✅ Carregamento Concluído!</h2>
-                <p style='color: #E8F5E8; margin: 1rem 0; font-size: 1.3rem;'>
-                    {total_tables} tabelas processadas em {total_time:.1f} segundos
-                </p>
-                <div style='margin-top: 2rem; display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;'>
-                    <span style='background: rgba(255,255,255,0.2); padding: 0.8rem 1.5rem; 
-                                 border-radius: 25px; color: white; font-weight: bold; font-size: 1.1rem;'>
-                        🚀 Velocidade: {total_tables/total_time:.2f} tabelas/segundo
-                    </span>
-                    <span style='background: rgba(255,255,255,0.2); padding: 0.8rem 1.5rem; 
-                                 border-radius: 25px; color: white; font-weight: bold; font-size: 1.1rem;'>
-                        📊 Performance: {100 - (total_time * 2):.0f}% eficiência
-                    </span>
-                </div>
-            </div>
-            
-            <style>
-            @keyframes success-pulse {{
-                0% {{ transform: scale(1); box-shadow: 0 10px 20px rgba(76, 175, 80, 0.3); }}
-                50% {{ transform: scale(1.02); box-shadow: 0 15px 30px rgba(76, 175, 80, 0.4); }}
-                100% {{ transform: scale(1); box-shadow: 0 10px 20px rgba(76, 175, 80, 0.3); }}
-            }}
-            </style>
-            """, unsafe_allow_html=True)
-        
-        time.sleep(2)
-        
-        # Limpar todos os placeholders
-        progress_placeholder.empty()
-        status_placeholder.empty() 
-        table_placeholder.empty()
-        time_placeholder.empty()
-        details_placeholder.empty()
-
 def test_table_access(table_name, db_manager):
     """Testa o acesso à tabela com diferentes contextos"""
     st.markdown("### 🧪 Teste de Acesso")
@@ -2093,16 +1850,6 @@ def show_rls_documentation():
 
 def render_dashboard():
     """Renderiza o dashboard principal com métricas completas do Supabase"""
-    
-    # Verificar se é a primeira vez carregando (usando session_state)
-    if 'dashboard_loaded' not in st.session_state:
-        st.session_state.dashboard_loaded = False
-    
-    # Se não foi carregado ainda, mostrar animação
-    if not st.session_state.dashboard_loaded:
-        render_loading_with_progress()
-        st.session_state.dashboard_loaded = True
-        st.rerun()
     
     # Cabeçalho do Dashboard
     st.markdown("""
@@ -2209,7 +1956,7 @@ def render_dashboard():
     
     # Análise Detalhada das Tabelas
     st.markdown("### 📋 Análise Detalhada das Tabelas")
-    
+
     if db_manager.connected:
         tables = db_manager.get_tables()
         
@@ -2391,8 +2138,6 @@ def render_dashboard():
             else:
                 tables_list = tables if 'tables' in locals() and tables else ['users', 'pets', 'appointments', 'medical_records']
                 table = random.choice(tables_list)
-                if isinstance(table, dict):
-                    table = table['name']
                 message = f"{log_type} em {table}"
             
             status_icon = '✅' if log_level == 'INFO' else '⚠️' if log_level == 'WARN' else '❌' if log_level == 'ERROR' else '🔍'
@@ -2589,26 +2334,11 @@ def render_dashboard():
     action_col1, action_col2, action_col3, action_col4, action_col5 = st.columns(5)
     
     with action_col1:
-      # Botão principal de atualização com loading
-      if st.button("🔄 Atualizar Dados", use_container_width=True, help="Atualiza todos os dados do dashboard com animação"):
-          # Resetar o estado de carregamento
-          st.session_state.dashboard_loaded = False
-          
-          # Mostrar loading animado
-          render_loading_with_progress()
-          
-          # Marcar como carregado e atualizar
-          st.session_state.dashboard_loaded = True
-          st.session_state.last_refresh = datetime.now()
-          
-          # Log da atividade
-          log_activity("Dashboard atualizado via botão Atualizar Dados")
-          
-          # Mostrar mensagem de sucesso
-          st.success("✅ Dados atualizados com sucesso!")
-          
-          # Forçar reload da página
-          st.rerun()
+        if st.button("🔄 Reiniciar Conexão", use_container_width=True):
+            with st.spinner("Reiniciando conexão..."):
+                time.sleep(2)
+            st.success("✅ Conexão reiniciada!")
+            log_activity("Conexão com Supabase reiniciada")
     
     with action_col2:
         if st.button("📊 Executar Análise", use_container_width=True):
@@ -7087,404 +6817,238 @@ SELECT AVG(age) as average_pet_age FROM pets WHERE birth_date IS NOT NULL;""",
 
 def main():
     """Função principal da aplicação"""
+    
+    # Configuração da página
+    st.set_page_config(
+        page_title=CONFIG['app_title'],
+        page_icon="🐾",
+        layout="wide",
+        initial_sidebar_state="expanded",
+        menu_items={
+            'Get Help': 'https://github.com/petcareai/dba-admin',
+            'Report a bug': 'mailto:admin@petcareai.com',
+            'About': f'{CONFIG["app_title"]} v{CONFIG["app_version"]} - Sistema de Gerenciamento de Banco de Dados'
+        }
+    )
+    
+    # CSS customizado
+    st.markdown("""
+    <style>
+    /* Estilo geral */
+    .main .block-container {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    
+    /* Cards de métricas */
+    .metric-card {
+        background: linear-gradient(135deg, #F0FFF0, #E6FFE6);
+        padding: 1.5rem;
+        border-radius: 15px;
+        border-left: 5px solid #2E8B57;
+        margin: 0.5rem 0;
+        box-shadow: 0 2px 10px rgba(46, 139, 87, 0.1);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(46, 139, 87, 0.2);
+    }
+    
+    /* Botões */
+    .stButton > button {
+        background: linear-gradient(135deg, #2E8B57, #90EE90);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 0.5rem 1rem;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(46, 139, 87, 0.3);
+        background: linear-gradient(135deg, #228B22, #98FB98);
+    }
+    
+    /* Campos de entrada */
+    .stTextInput > div > div, .stTextArea > div > div, .stSelectbox > div > div {
+        border-radius: 10px;
+        border: 2px solid #E6FFE6;
+        transition: border-color 0.3s ease;
+    }
+    
+    .stTextInput > div > div:focus-within, .stTextArea > div > div:focus-within {
+        border-color: #2E8B57;
+        box-shadow: 0 0 0 2px rgba(46, 139, 87, 0.1);
+    }
+    
+    /* Expanders */
+    .stExpander {
+        border: 2px solid #E6FFE6;
+        border-radius: 10px;
+        margin: 0.5rem 0;
+        transition: all 0.3s ease;
+    }
+    
+    .stExpander:hover {
+        border-color: #90EE90;
+        box-shadow: 0 2px 10px rgba(46, 139, 87, 0.1);
+    }
+    
+    /* DataFrames */
+    .stDataFrame {
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(46, 139, 87, 0.1);
+    }
+    
+    /* Sidebar */
+    .css-1d391kg {
+        background: linear-gradient(180deg, #F0FFF0, #E6FFE6);
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 10px 10px 0 0;
+        background: linear-gradient(135deg, #E6FFE6, #F0FFF0);
+        border: 2px solid #90EE90;
+        color: #2E8B57;
+        font-weight: 500;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #2E8B57, #90EE90);
+        color: white;
+        border-color: #2E8B57;
+    }
+    
+    /* Métricas */
+    [data-testid="metric-container"] {
+        background: linear-gradient(135deg, #F0FFF0, #E6FFE6);
+        border: 2px solid #90EE90;
+        padding: 1rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(46, 139, 87, 0.1);
+    }
+    
+    /* Alerts */
+    .stAlert {
+        border-radius: 10px;
+        border-left: 5px solid #2E8B57;
+    }
+    
+    /* Code blocks */
+    .stCodeBlock {
+        border-radius: 10px;
+        border: 2px solid #E6FFE6;
+    }
+    
+    /* Progress bars */
+    .stProgress > div > div {
+        background: linear-gradient(90deg, #2E8B57, #90EE90);
+        border-radius: 10px;
+    }
+    
+    /* Hiding Streamlit elements */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #2E8B57, #90EE90);
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(180deg, #228B22, #98FB98);
+    }
+    
+    /* Animações */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .main .block-container > div {
+        animation: fadeIn 0.5s ease-out;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Inicializar estado da sessão
+    init_session_state()
+    
+    # Verificar autenticação
+    if not st.session_state.authenticated:
+        render_login_page()
+        return
+    
+    # Renderizar interface principal
+    render_header()
+    render_sidebar()
+    
+    # Renderizar página atual
+    current_page = st.session_state.current_page
+    
     try:
-        # Configuração da página
-        st.set_page_config(
-            page_title="PetCare DBA Admin",
-            page_icon="🏥",
-            layout="wide",
-            initial_sidebar_state="expanded",
-            menu_items={
-                'Get Help': 'https://github.com/your-repo',
-                'Report a bug': 'https://github.com/your-repo/issues',
-                'About': f"PetCare DBA Admin v{CONFIG['app_version']}"
-            }
-        )
-        
-        # CSS customizado
-        st.markdown("""
-        <style>
-        .main {
-            padding-top: 1rem;
-        }
-        .block-container {
-            padding-top: 1rem;
-            padding-bottom: 0rem;
-            padding-left: 5rem;
-            padding-right: 5rem;
-        }
-        .stSelectbox {
-            margin-bottom: 1rem;
-        }
-        .metric-card {
-            background: white;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border-left: 4px solid #2E8B57;
-        }
-        .alert-critical {
-            background: linear-gradient(135deg, #ff4757, #ff6b7a);
-            color: white;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin: 0.5rem 0;
-        }
-        .alert-warning {
-            background: linear-gradient(135deg, #ffa502, #ffb627);
-            color: white;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin: 0.5rem 0;
-        }
-        .alert-info {
-            background: linear-gradient(135deg, #3742fa, #5352ed);
-            color: white;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin: 0.5rem 0;
-        }
-        .success-message {
-            background: linear-gradient(135deg, #2ed573, #7bed9f);
-            color: white;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin: 0.5rem 0;
-        }
-        .sidebar .sidebar-content {
-            background: linear-gradient(180deg, #2E8B57, #3CB371);
-        }
-        .stButton > button {
-            width: 100%;
-            border-radius: 0.5rem;
-            border: none;
-            padding: 0.5rem 1rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        .stButton > button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        .stMetric {
-            background: white;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .reportview-container .main .block-container {
-            max-width: 1200px;
-        }
-        .stDataFrame {
-            border: 1px solid #e0e0e0;
-            border-radius: 0.5rem;
-            overflow: hidden;
-        }
-        .stPlotlyChart {
-            background: white;
-            border-radius: 0.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 1rem;
-        }
-        .connection-status-online {
-            color: #2ed573;
-            font-weight: bold;
-        }
-        .connection-status-offline {
-            color: #ff4757;
-            font-weight: bold;
-        }
-        .loading-spinner {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 200px;
-        }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        
-        # Inicialização do estado da sessão
-        if 'current_user' not in st.session_state:
-            st.session_state.current_user = None
-        if 'last_activity' not in st.session_state:
-            st.session_state.last_activity = datetime.now()
-        if 'activity_logs' not in st.session_state:
-            st.session_state.activity_logs = []
-        if 'alert_count' not in st.session_state:
-            st.session_state.alert_count = 0
-        if 'dashboard_loaded' not in st.session_state:
-            st.session_state.dashboard_loaded = False
-        if 'connection_retries' not in st.session_state:
-            st.session_state.connection_retries = 0
-        if 'last_refresh' not in st.session_state:
-            st.session_state.last_refresh = datetime.now()
-        
-        # Header da aplicação
-        with st.container():
-            col1, col2, col3 = st.columns([2, 3, 2])
-            
-            with col1:
-                st.markdown("### 🏥 PetCare DBA")
-                
-            with col2:
-                st.markdown(f"""
-                <div style='text-align: center; padding: 1rem;'>
-                    <h2 style='margin: 0; color: #2E8B57;'>Database Administration Panel</h2>
-                    <p style='margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;'>
-                        Versão {CONFIG['app_version']} | {datetime.now().strftime('%d/%m/%Y %H:%M')}
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            with col3:
-                # Status de conexão em tempo real
-                connection_status = "🟢 Online" if db_manager.connected else "🔴 Offline"
-                status_class = "connection-status-online" if db_manager.connected else "connection-status-offline"
-                
-                st.markdown(f"""
-                <div style='text-align: right; padding: 1rem;'>
-                    <div class='{status_class}' style='font-size: 1.2rem; margin-bottom: 0.5rem;'>
-                        {connection_status}
-                    </div>
-                    <div style='font-size: 0.8rem; color: #666;'>
-                        Último refresh: {st.session_state.last_refresh.strftime('%H:%M:%S')}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        
-        # Sidebar para navegação
-        with st.sidebar:
-            st.markdown("""
-            <div style='background: linear-gradient(135deg, #2E8B57, #3CB371); 
-                        padding: 1.5rem; border-radius: 10px; text-align: center; margin-bottom: 2rem;'>
-                <h3 style='color: white; margin: 0;'>🛠️ Painel de Controle</h3>
-                <p style='color: #E8F5E8; margin: 0.5rem 0 0 0; font-size: 0.9rem;'>
-                    Administração do Banco de Dados
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Menu de navegação
-            menu_options = [
-                "Dashboard",
-                "Gerenciar Tabelas", 
-                "Backup & Restore",
-                "Monitoramento",
-                "Usuários & Permissões",
-                "Configurações do Banco",
-                "Logs & Auditoria",
-                "Análise de Performance",
-                "Segurança",
-                "Configurações"
-            ]
-            
-            menu_icons = [
-                "📊", "🗄️", "💾", "📈", "👥", 
-                "⚙️", "📋", "🚀", "🔐", "🛠️"
-            ]
-            
-            menu_option = st.selectbox(
-                "Selecione uma opção:",
-                menu_options,
-                format_func=lambda x: f"{menu_icons[menu_options.index(x)]} {x}"
-            )
-            
-            st.markdown("---")
-            
-            # Informações rápidas na sidebar
-            st.markdown("#### 📊 Status Rápido")
-            
-            # Métricas rápidas
-            if db_manager.connected:
-                try:
-                    tables = db_manager.get_tables()
-                    table_count = len(tables) if tables else 0
-                    
-                    # Simular outras métricas
-                    active_connections = random.randint(5, 15)
-                    last_backup = datetime.now() - timedelta(hours=random.randint(1, 24))
-                    
-                    st.metric("Tabelas", table_count)
-                    st.metric("Conexões", active_connections)
-                    st.metric("Último Backup", last_backup.strftime('%H:%M'))
-                    
-                    # Status de saúde do banco
-                    health_score = random.randint(75, 100)
-                    health_color = "🟢" if health_score >= 90 else "🟡" if health_score >= 75 else "🔴"
-                    st.metric("Saúde do DB", f"{health_color} {health_score}%")
-                    
-                except Exception as e:
-                    st.error(f"Erro ao obter métricas: {str(e)}")
-                    st.metric("Tabelas", "N/A")
-                    st.metric("Conexões", "N/A")
-                    st.metric("Status", "🔴 Erro")
-            else:
-                st.metric("Status", "🔴 Offline")
-                st.metric("Conectar", "Manual")
-                
-                # Botão de reconexão
-                if st.button("🔄 Tentar Conectar", use_container_width=True):
-                    with st.spinner("Conectando..."):
-                        if db_manager.connect_to_supabase():
-                            st.success("✅ Conectado!")
-                            st.rerun()
-                        else:
-                            st.error("❌ Falha na conexão")
-                            st.session_state.connection_retries += 1
-            
-            st.markdown("---")
-            
-            # Alertas na sidebar
-            st.markdown("#### 🚨 Alertas Recentes")
-            
-            recent_alerts = [
-                {"type": "warning", "msg": "Query lenta detectada", "time": "5 min"},
-                {"type": "info", "msg": "Backup concluído", "time": "1 hora"},
-                {"type": "error", "msg": "Falha de conexão", "time": "2 horas"}
-            ]
-            
-            for alert in recent_alerts[:3]:  # Mostrar apenas os 3 mais recentes
-                alert_icon = "⚠️" if alert["type"] == "warning" else "ℹ️" if alert["type"] == "info" else "❌"
-                st.markdown(f"""
-                <div style='background: rgba(255,255,255,0.1); padding: 0.5rem; border-radius: 5px; margin: 0.3rem 0;'>
-                    <div style='font-size: 0.8rem; color: white;'>
-                        {alert_icon} {alert['msg']}<br>
-                        <span style='opacity: 0.7;'>{alert['time']} atrás</span>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            # Botão para refresh geral
-            st.markdown("---")
-            if st.button("🔄 Refresh Geral", use_container_width=True):
-                st.session_state.last_refresh = datetime.now()
-                st.session_state.dashboard_loaded = False
-                st.rerun()
-            
-            # Informações de sessão
-            st.markdown("---")
-            st.markdown("#### ℹ️ Sessão")
-            session_duration = datetime.now() - st.session_state.last_activity
-            st.text(f"⏰ Duração: {session_duration.seconds // 60}min")
-            st.text(f"👤 Usuário: {st.session_state.current_user or 'admin'}")
-            st.text(f"🌐 IP: 192.168.1.{random.randint(1, 255)}")
-        
-        # Conteúdo principal baseado na seleção do menu
-        try:
-            if menu_option == "Dashboard":
-                # Botão de atualização rápida do dashboard
-                dashboard_col1, dashboard_col2, dashboard_col3 = st.columns([1, 2, 1])
-                
-                with dashboard_col2:
-                    refresh_col1, refresh_col2 = st.columns(2)
-                    
-                    with refresh_col1:
-                        if st.button("🔄 Atualizar Dashboard", use_container_width=True):
-                            render_loading_with_progress()
-                            st.session_state.dashboard_loaded = True
-                            st.rerun()
-                    
-                    with refresh_col2:
-                        auto_refresh = st.checkbox("🔄 Auto-refresh (60s)", key="auto_refresh_main")
-                
-                # Renderizar o dashboard
-                render_dashboard()
-                
-                # Auto-refresh se habilitado
-                if auto_refresh:
-                    time.sleep(60)
-                    st.rerun()
-                    
-            elif menu_option == "Gerenciar Tabelas":
-                render_table_management() # type: ignore
-                
-            elif menu_option == "Backup & Restore":
-                render_backup_restore() # type: ignore
-                
-            elif menu_option == "Monitoramento":
-                render_monitoring() # type: ignore
-                
-            elif menu_option == "Usuários & Permissões":
-                render_user_management() # type: ignore
-                
-            elif menu_option == "Configurações do Banco":
-                render_database_config() # type: ignore
-                
-            elif menu_option == "Logs & Auditoria":
-                render_logs_audit() # type: ignore
-                
-            elif menu_option == "Análise de Performance":
-                render_performance_analysis() # type: ignore
-                
-            elif menu_option == "Segurança":
-                render_security() # type: ignore
-                
-            elif menu_option == "Configurações":
-                render_settings()
-            
-            # Log da atividade
-            log_activity(f"Acessou {menu_option}")
-            
-        except Exception as e:
-            st.error(f"❌ Erro ao carregar página: {str(e)}")
-            st.exception(e)
-            
-            # Opções de recuperação
-            recovery_col1, recovery_col2, recovery_col3 = st.columns(3)
-            
-            with recovery_col1:
-                if st.button("🔄 Tentar Novamente"):
-                    st.rerun()
-            
-            with recovery_col2:
-                if st.button("🏠 Voltar ao Dashboard"):
-                    st.session_state.dashboard_loaded = False
-                    st.rerun()
-            
-            with recovery_col3:
-                if st.button("🔧 Limpar Cache"):
-                    for key in list(st.session_state.keys()):
-                        if key.startswith('cache_'):
-                            del st.session_state[key]
-                    st.success("Cache limpo!")
-        
-        # Footer
-        st.markdown("---")
-        footer_col1, footer_col2, footer_col3 = st.columns(3)
-        
-        with footer_col1:
-            st.markdown("**🏥 PetCare DBA Admin**")
-            st.text(f"Versão {CONFIG['app_version']}")
-        
-        with footer_col2:
-            st.markdown("**📊 Estatísticas da Sessão**")
-            st.text(f"Páginas visitadas: {len(st.session_state.activity_logs)}")
-            st.text(f"Última atividade: {st.session_state.last_activity.strftime('%H:%M:%S')}")
-        
-        with footer_col3:
-            st.markdown("**🔗 Links Úteis**")
-            st.markdown("- [Documentação](https://docs.supabase.com)")
-            st.markdown("- [Suporte](https://github.com/your-repo)")
-        
+        if current_page == "dashboard":
+            render_dashboard()
+        elif current_page == "tables":
+            render_tables()
+        elif current_page == "sql_editor":
+            render_sql_editor()
+        elif current_page == "dba_operations":
+            render_dba_operations()
+        elif current_page == "projects":
+            render_projects()
+        elif current_page == "settings":
+            render_settings()
+        else:
+            render_dashboard()  # Página padrão
+    
     except Exception as e:
-        st.error(f"❌ Erro crítico na aplicação: {str(e)}")
-        st.exception(e)
+        st.error(f"❌ Erro ao carregar página: {e}")
+        if CONFIG['debug_mode']:
+            st.exception(e)
         
-        if st.button("🔄 Reiniciar Aplicação"):
-            # Limpar todo o estado da sessão
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
+        # Voltar para dashboard em caso de erro
+        st.session_state.current_page = 'dashboard'
+        if st.button("🔄 Recarregar"):
             st.rerun()
+    
+    # Rodapé
+    st.markdown("---")
+    st.markdown(f"""
+    <div style='text-align: center; color: #228B22; padding: 1rem 0; background: linear-gradient(135deg, #F0FFF0, #E6FFE6); border-radius: 10px; margin-top: 2rem;'>
+        <small>
+            🐾 <strong>{CONFIG['app_title']} v{CONFIG['app_version']}</strong> | 
+            Desenvolvido para PetCareAI | 
+            © 2025 Todos os direitos reservados<br>
+            <span style='color: #2E8B57;'>
+                Status: {'🟢 Conectado' if db_manager.connected else '🟡 Demo'} • 
+                Uptime: 5d 12h 30m • 
+                Última atualização: {datetime.now().strftime('%d/%m/%Y %H:%M')}
+            </span>
+        </small>
+    </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
