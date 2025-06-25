@@ -4,7 +4,6 @@ Desenvolvido para PetCareAI
 Sistema completo com conexão real ao banco
 """
 
-import io
 import streamlit as st # type: ignore
 import pandas as pd
 import plotly.express as px
@@ -74,6 +73,14 @@ CONFIG = {
     'supabase_anon_key': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aHpvY2RpcnlodXl0bm10ZWtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgzMDA4NDUsImV4cCI6MjA2Mzg3Njg0NX0.eNbN8wZsAYz_RmcjyspXUJDPhEGYKHa4pSrWc4Hbb-M',
     'supabase_service_key': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aHpvY2RpcnlodXl0bm10ZWtqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODMwMDg0NSwiZXhwIjoyMDYzODc2ODQ1fQ.TiLBm9GgT5QFTY3oMNEiQ1869z5hmRcmHv-wRPnPVRg'
 }
+
+# =====================================================================
+# CLASSE DE CONEXÃO COM BANCO DE DADOS
+# =====================================================================
+
+# =====================================================================
+# CLASSE DE CONEXÃO COM BANCO DE DADOS
+# =====================================================================
 
 # =====================================================================
 # CLASSE DE CONEXÃO COM BANCO DE DADOS
@@ -952,217 +959,6 @@ class DatabaseManager:
             'success': True,
             'message': f'Tabela {table_name} otimizada (simulado)'
         }
-
-# Adicionar após a classe DatabaseManager
-
-class ProjectManager:
-    """Gerenciador de projetos e scripts no Supabase"""
-    
-    def __init__(self, db_manager):
-        self.db_manager = db_manager
-        self.supabase = db_manager.supabase_admin if hasattr(db_manager, 'supabase_admin') else db_manager.supabase_client
-    
-    def get_projects(self):
-        """Busca todos os projetos do usuário"""
-        try:
-            if not self.db_manager.connected:
-                return self._get_demo_projects()
-            
-            result = self.supabase.table('projetos_analytics').select('*').order('created_at', desc=True).execute()
-            return result.data if result.data else []
-        except Exception as e:
-            st.error(f"Erro ao buscar projetos: {e}")
-            return self._get_demo_projects()
-    
-    def create_project(self, project_data):
-        """Cria um novo projeto"""
-        try:
-            if not self.db_manager.connected:
-                return {'success': False, 'message': 'Banco não conectado'}
-            
-            project_data['created_by'] = st.session_state.get('username', 'admin')
-            project_data['created_at'] = datetime.now().isoformat()
-            
-            result = self.supabase.table('projetos_analytics').insert(project_data).execute()
-            return {'success': True, 'data': result.data[0] if result.data else None}
-        except Exception as e:
-            return {'success': False, 'message': str(e)}
-    
-    def update_project(self, project_id, updates):
-        """Atualiza um projeto"""
-        try:
-            updates['updated_at'] = datetime.now().isoformat()
-            result = self.supabase.table('projetos_analytics').update(updates).eq('id', project_id).execute()
-            return {'success': True, 'data': result.data[0] if result.data else None}
-        except Exception as e:
-            return {'success': False, 'message': str(e)}
-    
-    def delete_project(self, project_id):
-        """Deleta um projeto"""
-        try:
-            result = self.supabase.table('projetos_analytics').delete().eq('id', project_id).execute()
-            return {'success': True}
-        except Exception as e:
-            return {'success': False, 'message': str(e)}
-    
-    def get_project_scripts(self, project_id):
-        """Busca scripts de um projeto"""
-        try:
-            if not self.db_manager.connected:
-                return self._get_demo_scripts(project_id)
-            
-            result = self.supabase.table('scripts_projetos').select('*').eq('projeto_id', project_id).order('created_at', desc=True).execute()
-            return result.data if result.data else []
-        except Exception as e:
-            st.error(f"Erro ao buscar scripts: {e}")
-            return []
-    
-    def create_script(self, script_data):
-        """Cria um novo script"""
-        try:
-            script_data['created_by'] = st.session_state.get('username', 'admin')
-            script_data['created_at'] = datetime.now().isoformat()
-            
-            result = self.supabase.table('scripts_projetos').insert(script_data).execute()
-            return {'success': True, 'data': result.data[0] if result.data else None}
-        except Exception as e:
-            return {'success': False, 'message': str(e)}
-    
-    def update_script(self, script_id, updates):
-        """Atualiza um script"""
-        try:
-            updates['updated_at'] = datetime.now().isoformat()
-            updates['versao'] = updates.get('versao', 1) + 1
-            
-            result = self.supabase.table('scripts_projetos').update(updates).eq('id', script_id).execute()
-            return {'success': True, 'data': result.data[0] if result.data else None}
-        except Exception as e:
-            return {'success': False, 'message': str(e)}
-    
-    def delete_script(self, script_id):
-        """Deleta um script"""
-        try:
-            result = self.supabase.table('scripts_projetos').delete().eq('id', script_id).execute()
-            return {'success': True}
-        except Exception as e:
-            return {'success': False, 'message': str(e)}
-    
-    def execute_script(self, script_id, script_content, parameters=None):
-        """Executa um script e salva o resultado"""
-        try:
-            start_time = time.time()
-            
-            # Executar o script no banco
-            result = self.db_manager.execute_query(script_content)
-            
-            end_time = time.time()
-            execution_time = end_time - start_time
-            
-            # Salvar execução no histórico
-            execution_data = {
-                'script_id': script_id,
-                'projeto_id': self.get_script_project_id(script_id),
-                'status': 'sucesso' if result['success'] else 'erro',
-                'resultado': result,
-                'tempo_execucao': f"{execution_time:.2f} seconds",
-                'registros_afetados': result.get('rows_affected', 0),
-                'parametros_usados': parameters or {},
-                'erro_mensagem': result.get('error') if not result['success'] else None,
-                'executed_by': st.session_state.get('username', 'admin'),
-                'executed_at': datetime.now().isoformat()
-            }
-            
-            self.supabase.table('execucoes_scripts').insert(execution_data).execute()
-            
-            # Atualizar estatísticas do script
-            self.update_script_stats(script_id, execution_time, result['success'])
-            
-            return result
-        except Exception as e:
-            return {'success': False, 'error': str(e)}
-    
-    def get_script_project_id(self, script_id):
-        """Busca o projeto_id de um script"""
-        try:
-            result = self.supabase.table('scripts_projetos').select('projeto_id').eq('id', script_id).execute()
-            return result.data[0]['projeto_id'] if result.data else None
-        except:
-            return None
-    
-    def update_script_stats(self, script_id, execution_time, success):
-        """Atualiza estatísticas do script"""
-        try:
-            # Buscar dados atuais
-            result = self.supabase.table('scripts_projetos').select('total_execucoes, tempo_medio_execucao').eq('id', script_id).execute()
-            
-            if result.data:
-                current_executions = result.data[0].get('total_execucoes', 0)
-                current_avg_time = result.data[0].get('tempo_medio_execucao', '0 seconds')
-                
-                # Calcular nova média (simplificado)
-                new_executions = current_executions + 1
-                new_avg_time = f"{execution_time:.2f} seconds"
-                
-                updates = {
-                    'total_execucoes': new_executions,
-                    'tempo_medio_execucao': new_avg_time,
-                    'ultima_execucao': datetime.now().isoformat()
-                }
-                
-                self.supabase.table('scripts_projetos').update(updates).eq('id', script_id).execute()
-        except Exception as e:
-            print(f"Erro ao atualizar estatísticas: {e}")
-    
-    def get_execution_history(self, script_id=None, project_id=None):
-        """Busca histórico de execuções"""
-        try:
-            query = self.supabase.table('execucoes_scripts').select('*')
-            
-            if script_id:
-                query = query.eq('script_id', script_id)
-            elif project_id:
-                query = query.eq('projeto_id', project_id)
-            
-            result = query.order('executed_at', desc=True).limit(50).execute()
-            return result.data if result.data else []
-        except Exception as e:
-            st.error(f"Erro ao buscar histórico: {e}")
-            return []
-    
-    def _get_demo_projects(self):
-        """Retorna projetos de demonstração"""
-        return [
-            {
-                'id': 1,
-                'nome': 'Análise de Usuários',
-                'descricao': 'Scripts para análise de dados de usuários',
-                'categoria': 'Análise',
-                'prioridade': 'Alta',
-                'status': 'ativo',
-                'tags': ['usuarios', 'analytics'],
-                'membros': ['admin@petcareai.com'],
-                'created_at': '2025-06-20T10:00:00Z'
-            }
-        ]
-    
-    def _get_demo_scripts(self, project_id):
-        """Retorna scripts de demonstração"""
-        return [
-            {
-                'id': 1,
-                'projeto_id': project_id,
-                'nome': 'Contagem de Usuários',
-                'descricao': 'Conta total de usuários ativos',
-                'sql_content': 'SELECT COUNT(*) as total_users FROM users WHERE is_active = true;',
-                'tipo_script': 'consulta',
-                'status': 'ativo',
-                'total_execucoes': 15,
-                'created_at': '2025-06-20T10:00:00Z'
-            }
-        ]
-
-# Instanciar o gerenciador de projetos
-project_manager = ProjectManager(db_manager)
 
 # Instância global do gerenciador de banco
 db_manager = DatabaseManager()
@@ -2642,83 +2438,50 @@ def render_dashboard():
         st.rerun()
 
 def render_tables():
-    """Renderiza página de gerenciamento de tabelas com interface profissional"""
-    # Header principal mais elegante
+    """Renderiza página de gerenciamento de tabelas"""
     st.markdown("""
-    <div style='background: linear-gradient(135deg, #2E8B57, #3CB371, #90EE90); 
-                padding: 2rem; border-radius: 20px; 
-                box-shadow: 0 10px 30px rgba(46, 139, 87, 0.3); 
-                margin-bottom: 2rem; text-align: center;'>
-        <h1 style='color: white; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);'>
+    <div style='background: linear-gradient(135deg, #F0FFF0, #E6FFE6); 
+                padding: 1.5rem; border-radius: 15px; 
+                border-left: 5px solid #2E8B57; margin-bottom: 2rem;'>
+        <h2 style='color: #2E8B57; margin: 0; font-size: 2rem;'>
             🗄️ Gerenciamento de Tabelas
-        </h1>
-        <p style='color: #F0FFF0; margin: 0.5rem 0 0 0; font-size: 1.2rem; opacity: 0.9;'>
-            Visualize, analise e gerencie as tabelas do banco de dados com ferramentas profissionais
+        </h2>
+        <p style='color: #228B22; margin: 0.5rem 0 0 0; font-size: 1.1rem;'>
+            Visualize, analise e gerencie as tabelas do banco de dados
         </p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Barra de status e controles principais
-    status_col1, status_col2, status_col3, status_col4, status_col5 = st.columns([2, 1, 1, 1, 1])
+    # Controles de atualização e informações
+    col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
     
-    with status_col1:
-        connection_status = db_manager.connection_info.get('status', 'Desconhecido')
-        status_color = "#2E8B57" if "Conectado" in connection_status else "#FFD700" if "Demo" in connection_status else "#FF6347"
-        st.markdown(f"""
-        <div style='background: linear-gradient(135deg, {status_color}, {status_color}33); 
-                   padding: 1rem; border-radius: 15px; border-left: 5px solid {status_color};'>
-            <h4 style='margin: 0; color: {status_color}; font-size: 1.1rem;'>📊 Status da Conexão</h4>
-            <p style='margin: 0.2rem 0 0 0; color: #006400; font-weight: 500;'>{connection_status}</p>
-        </div>
-        """, unsafe_allow_html=True)
+    with col1:
+        st.markdown(f"#### 📊 Status: {db_manager.connection_info.get('status', 'Desconhecido')}")
     
-    with status_col2:
-        if st.button("🔄 Atualizar", use_container_width=True, help="Redescobrir tabelas"):
+    with col2:
+        if st.button("🔄 Atualizar Lista", use_container_width=True):
             with st.spinner("🔍 Descobrindo tabelas..."):
                 db_manager.refresh_tables()
             st.rerun()
     
-    with status_col3:
-        if st.button("ℹ️ Conexão", use_container_width=True, help="Detalhes da conexão"):
-            with st.expander("🔗 Informações da Conexão", expanded=True):
-                connection_details = {
-                    "Tipo": db_manager.connection_info.get('type', 'N/A'),
-                    "Status": db_manager.connection_info.get('status', 'N/A'),
-                    "URL": db_manager.connection_info.get('url', 'N/A')[:50] + "..." if db_manager.connection_info.get('url') else 'N/A',
-                    "Tabelas": db_manager.connection_info.get('tables_found', len(db_manager.get_tables()))
-                }
-                for key, value in connection_details.items():
-                    st.markdown(f"**{key}:** `{value}`")
+    with col3:
+        if st.button("ℹ️ Info Conexão", use_container_width=True):
+            connection_details = f"""
+            **Tipo:** {db_manager.connection_info.get('type', 'N/A')}
+            **Status:** {db_manager.connection_info.get('status', 'N/A')}
+            **URL:** {db_manager.connection_info.get('url', 'N/A')}
+            **Tabelas Encontradas:** {db_manager.connection_info.get('tables_found', len(db_manager.get_tables()))}
+            """
+            st.info(connection_details)
     
-    with status_col4:
-        if st.button("📊 Métricas", use_container_width=True, help="Métricas do banco"):
-            with st.expander("📈 Métricas do Banco", expanded=True):
-                metrics = db_manager.get_database_metrics()
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric("💻 CPU", f"{metrics.get('cpu_usage', 'N/A')}%")
-                    st.metric("💾 Memória", f"{metrics.get('memory_usage', 'N/A')}%")
-                with col2:
-                    st.metric("🔗 Conexões", metrics.get('connection_count', 'N/A'))
-                    st.metric("📦 Tamanho", metrics.get('total_size', 'N/A'))
-    
-    with status_col5:
-        if st.button("🔧 Ações", use_container_width=True, help="Ações rápidas"):
-            with st.expander("⚡ Ações Rápidas", expanded=True):
-                if st.button("🎯 Ir para SQL Editor", use_container_width=True):
-                    st.session_state.current_page = 'sql_editor'
-                    st.rerun()
-                if st.button("🔄 Reiniciar Conexão", use_container_width=True):
-                    db_manager._init_connection()
-                    st.success("✅ Conexão reiniciada!")
-                if st.button("📋 Copiar Lista", use_container_width=True):
-                    tables = db_manager.get_tables()
-                    table_list = "\n".join([t['name'] for t in tables])
-                    st.text_area("Lista de Tabelas:", value=table_list, height=100)
+    with col4:
+        if st.button("📊 Métricas", use_container_width=True):
+            metrics = db_manager.get_database_metrics()
+            st.json(metrics)
     
     st.markdown("---")
     
-    # Obter e verificar tabelas
+    # Obter lista de tabelas
     try:
         tables = db_manager.get_tables()
     except Exception as e:
@@ -2726,1349 +2489,691 @@ def render_tables():
         tables = []
     
     if not tables:
-        # Interface melhorada quando não há tabelas
+        st.warning("⚠️ Nenhuma tabela encontrada no banco de dados.")
+        
+        # Opções quando não há tabelas
         col1, col2 = st.columns(2)
         
         with col1:
             st.markdown("""
-            <div style='background: linear-gradient(135deg, #FFE4E1, #FFF0F5); 
-                       padding: 2rem; border-radius: 15px; border-left: 5px solid #FF6347;'>
-                <h4 style='color: #FF6347; margin: 0;'>🤔 Possíveis Causas</h4>
-                <ul style='color: #CD5C5C; margin: 1rem 0;'>
-                    <li>Banco de dados vazio</li>
-                    <li>Problemas de conexão</li>
-                    <li>Permissões insuficientes</li>
-                    <li>Configuração incorreta</li>
-                </ul>
-            </div>
-            """, unsafe_allow_html=True)
+            #### 🤔 Possíveis causas:
+            - Banco de dados vazio
+            - Problemas de conexão
+            - Permissões insuficientes
+            - Configuração incorreta
+            """)
         
         with col2:
             st.markdown("""
-            <div style='background: linear-gradient(135deg, #E6FFE6, #F0FFF0); 
-                       padding: 2rem; border-radius: 15px; border-left: 5px solid #2E8B57;'>
-                <h4 style='color: #2E8B57; margin: 0;'>💡 Soluções</h4>
-                <ul style='color: #228B22; margin: 1rem 0;'>
-                    <li>Verificar credenciais do Supabase</li>
-                    <li>Criar tabelas no banco</li>
-                    <li>Verificar permissões RLS</li>
-                    <li>Usar SQL Editor para criar tabelas</li>
-                </ul>
-            </div>
-            """, unsafe_allow_html=True)
+            #### 💡 Soluções:
+            - Verificar credenciais do Supabase
+            - Criar tabelas no banco
+            - Verificar permissões RLS
+            - Usar SQL Editor para criar tabelas
+            """)
         
-        # Botões de ação mais atrativos
-        action_col1, action_col2, action_col3 = st.columns(3)
-        
-        with action_col1:
-            if st.button("🔧 Ir para SQL Editor", type="primary", use_container_width=True):
-                st.session_state.current_page = 'sql_editor'
-                st.rerun()
-        
-        with action_col2:
-            if st.button("🔄 Tentar Reconectar", use_container_width=True):
-                with st.spinner("Reconectando..."):
-                    db_manager._init_connection()
-                st.rerun()
-        
-        with action_col3:
-            if st.button("⚙️ Configurações", use_container_width=True):
-                st.session_state.current_page = 'settings'
-                st.rerun()
+        # Botão para ir ao SQL Editor
+        if st.button("🔧 Ir para SQL Editor", type="primary"):
+            st.session_state.current_page = 'sql_editor'
+            st.rerun()
         
         return
     
-    # Filtros e controles avançados
-    st.markdown("### 🔍 Filtros e Busca")
+    # Filtros e busca
+    col1, col2, col3 = st.columns([2, 1, 1])
     
-    filter_col1, filter_col2, filter_col3, filter_col4 = st.columns([3, 1, 1, 1])
+    with col1:
+        search_table = st.text_input("🔍 Buscar tabela:", placeholder="Digite o nome da tabela...")
     
-    with filter_col1:
-        search_table = st.text_input(
-            "🔍 Buscar tabela:", 
-            placeholder="Digite o nome da tabela, schema ou descrição...",
-            help="Busca inteligente por nome, schema ou outros atributos"
+    with col2:
+        schema_filter = st.selectbox("📂 Schema:", 
+            ["Todos"] + list(set([table.get('schema', 'public') for table in tables]))
         )
     
-    with filter_col2:
-        schema_filter = st.selectbox(
-            "📂 Schema:", 
-            ["Todos"] + list(set([table.get('schema', 'public') for table in tables])),
-            help="Filtrar por schema do banco"
+    with col3:
+        sort_by = st.selectbox("📈 Ordenar por:", 
+            ["Nome", "Registros", "Tamanho", "Última Modificação"]
         )
-    
-    with filter_col3:
-        sort_by = st.selectbox(
-            "📈 Ordenar por:", 
-            ["Nome ↑", "Nome ↓", "Registros ↑", "Registros ↓", "Tamanho ↑", "Tamanho ↓", "Modificação ↑", "Modificação ↓"],
-            help="Escolha a ordenação desejada"
-        )
-    
-    with filter_col4:
-        view_mode = st.selectbox(
-            "👁️ Visualização:",
-            ["Cards", "Tabela", "Compacta"],
-            help="Modo de visualização das tabelas"
-        )
-    
-    # Filtros avançados
-    with st.expander("🔧 Filtros Avançados", expanded=False):
-        adv_col1, adv_col2, adv_col3, adv_col4 = st.columns(4)
-        
-        with adv_col1:
-            min_rows = st.number_input("Min. registros:", min_value=0, value=0, help="Filtrar por número mínimo de registros")
-        
-        with adv_col2:
-            max_rows = st.number_input("Max. registros:", min_value=0, value=0, help="Filtrar por número máximo (0 = sem limite)")
-        
-        with adv_col3:
-            has_indexes_filter = st.selectbox("Índices:", ["Todos", "Com índices", "Sem índices"])
-        
-        with adv_col4:
-            has_data_filter = st.selectbox("Dados:", ["Todos", "Com dados", "Vazias"])
     
     # Aplicar filtros
     filtered_tables = tables
     
-    # Filtro de busca
     if search_table:
         filtered_tables = [t for t in filtered_tables 
-                          if search_table.lower() in t['name'].lower() or 
-                             search_table.lower() in t.get('schema', 'public').lower()]
+                          if search_table.lower() in t['name'].lower()]
     
-    # Filtro de schema
     if schema_filter != "Todos":
         filtered_tables = [t for t in filtered_tables 
                           if t.get('schema', 'public') == schema_filter]
     
-    # Filtros avançados
-    if min_rows > 0:
-        filtered_tables = [t for t in filtered_tables if t.get('rows', 0) >= min_rows]
-    
-    if max_rows > 0:
-        filtered_tables = [t for t in filtered_tables if t.get('rows', 0) <= max_rows]
-    
-    if has_indexes_filter == "Com índices":
-        filtered_tables = [t for t in filtered_tables if t.get('has_indexes', False)]
-    elif has_indexes_filter == "Sem índices":
-        filtered_tables = [t for t in filtered_tables if not t.get('has_indexes', False)]
-    
-    if has_data_filter == "Com dados":
-        filtered_tables = [t for t in filtered_tables if t.get('rows', 0) > 0]
-    elif has_data_filter == "Vazias":
-        filtered_tables = [t for t in filtered_tables if t.get('rows', 0) == 0]
-    
     # Aplicar ordenação
-    reverse_sort = "↓" in sort_by
-    if "Nome" in sort_by:
-        filtered_tables.sort(key=lambda x: x['name'], reverse=reverse_sort)
-    elif "Registros" in sort_by:
-        filtered_tables.sort(key=lambda x: x.get('rows', 0), reverse=reverse_sort)
-    elif "Tamanho" in sort_by:
-        filtered_tables.sort(key=lambda x: x.get('size', '0'), reverse=reverse_sort)
-    elif "Modificação" in sort_by:
-        filtered_tables.sort(key=lambda x: x.get('last_modified', ''), reverse=reverse_sort)
+    if sort_by == "Nome":
+        filtered_tables.sort(key=lambda x: x['name'])
+    elif sort_by == "Registros":
+        filtered_tables.sort(key=lambda x: x.get('rows', 0), reverse=True)
+    elif sort_by == "Tamanho":
+        filtered_tables.sort(key=lambda x: x.get('size', '0'), reverse=True)
+    elif sort_by == "Última Modificação":
+        filtered_tables.sort(key=lambda x: x.get('last_modified', ''), reverse=True)
     
-    # Dashboard de estatísticas melhorado
+    # Estatísticas das tabelas
     if filtered_tables:
-        st.markdown("### 📊 Dashboard das Tabelas")
-        
         total_tables = len(filtered_tables)
         total_rows = sum(table.get('rows', 0) for table in filtered_tables)
-        tables_with_data = len([t for t in filtered_tables if t.get('rows', 0) > 0])
-        tables_with_indexes = len([t for t in filtered_tables if t.get('has_indexes', False)])
         
-        # Métricas principais em cards elegantes
-        metric_col1, metric_col2, metric_col3, metric_col4, metric_col5 = st.columns(5)
+        col1, col2, col3, col4 = st.columns(4)
         
-        metrics_data = [
-            ("📋", "Total de Tabelas", total_tables, len(tables) - total_tables),
-            ("📊", "Total de Registros", f"{total_rows:,}", None),
-            ("📈", "Média de Registros", f"{total_rows // total_tables if total_tables > 0 else 0:,}", None),
-            ("💾", "Tabelas com Dados", tables_with_data, total_tables - tables_with_data),
-            ("🗂️", "Com Índices", tables_with_indexes, total_tables - tables_with_indexes)
-        ]
+        with col1:
+            st.metric("📋 Total de Tabelas", total_tables)
         
-        cols = [metric_col1, metric_col2, metric_col3, metric_col4, metric_col5]
+        with col2:
+            st.metric("📊 Total de Registros", f"{total_rows:,}")
         
-        for i, (icon, label, value, delta) in enumerate(metrics_data):
-            with cols[i]:
-                delta_str = f"{delta:+}" if delta is not None else None
-                delta_color = "normal" if delta is None or delta >= 0 else "inverse"
-                
-                st.markdown(f"""
-                <div style='background: linear-gradient(135deg, #F0FFF0, #E6FFE6); 
-                           padding: 1.5rem; border-radius: 15px; text-align: center;
-                           border-left: 4px solid #2E8B57; margin: 0.5rem 0;
-                           box-shadow: 0 4px 15px rgba(46, 139, 87, 0.1);
-                           transition: transform 0.2s ease;'>
-                    <div style='font-size: 2rem; margin-bottom: 0.5rem;'>{icon}</div>
-                    <div style='color: #2E8B57; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.3rem;'>{label}</div>
-                    <div style='color: #006400; font-weight: 700; font-size: 1.5rem;'>{value}</div>
-                    {f'<div style="color: #666; font-size: 0.8rem; margin-top: 0.3rem;">{delta_str}</div>' if delta_str else ''}
-                </div>
-                """, unsafe_allow_html=True)
+        with col3:
+            avg_rows = total_rows / total_tables if total_tables > 0 else 0
+            st.metric("📈 Média de Registros", f"{avg_rows:,.0f}")
+        
+        with col4:
+            tables_with_data = len([t for t in filtered_tables if t.get('rows', 0) > 0])
+            st.metric("💾 Tabelas com Dados", tables_with_data)
     
     st.markdown("---")
     
-    # Exibir tabelas com base no modo de visualização
+    # Exibir tabelas
     if filtered_tables:
-        tab1, tab2, tab3, tab4 = st.tabs(["📋 Visualização Principal", "📊 Análise Detalhada", "🔧 Operações em Lote", "📈 Insights"])
+        # Abas para diferentes visualizações
+        tab1, tab2, tab3 = st.tabs(["📋 Lista de Tabelas", "📊 Análise Detalhada", "🔧 Operações em Lote"])
         
         with tab1:
-            if view_mode == "Cards":
-                render_tables_card_view(filtered_tables, db_manager)
-            elif view_mode == "Tabela":
-                render_tables_table_view(filtered_tables, db_manager)
-            elif view_mode == "Compacta":
-                render_tables_compact_view(filtered_tables, db_manager)
+            # Visualização em cards
+            for i, table in enumerate(filtered_tables):
+                with st.expander(f"🗂️ {table['name']} ({table.get('rows', 0):,} registros)", expanded=False):
+                    # Informações da tabela
+                    col1, col2, col3, col4 = st.columns(4)
+                    
+                    with col1:
+                        st.metric("📊 Registros", f"{table.get('rows', 0):,}")
+                    
+                    with col2:
+                        st.metric("💾 Tamanho", table.get('size', 'N/A'))
+                    
+                    with col3:
+                        st.metric("📂 Schema", table.get('schema', 'public'))
+                    
+                    with col4:
+                        st.metric("📅 Modificado", table.get('last_modified', 'N/A'))
+                    
+                    # Indicadores de recursos
+                    st.markdown("#### 🔧 Recursos da Tabela")
+                    
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        index_status = "✅ Sim" if table.get('has_indexes') else "❌ Não"
+                        st.markdown(f"**🗂️ Índices:** {index_status}")
+                    
+                    with col2:
+                        rules_status = "✅ Sim" if table.get('has_rules') else "❌ Não"
+                        st.markdown(f"**📋 Regras:** {rules_status}")
+                    
+                    with col3:
+                        triggers_status = "✅ Sim" if table.get('has_triggers') else "❌ Não"
+                        st.markdown(f"**⚡ Triggers:** {triggers_status}")
+                    
+                    # Botões de ação
+                    st.markdown("#### ⚙️ Ações")
+                    
+                    col1, col2, col3, col4, col5, col6 = st.columns(6)
+                    
+                    with col1:
+                        if st.button(f"👁️ Visualizar", key=f"view_{table['name']}_{i}", use_container_width=True):
+                            with st.spinner(f"🔍 Carregando dados de {table['name']}..."):
+                                result = db_manager.get_table_data(table['name'], limit=100)
+                            
+                            if result['success'] and result['data']:
+                                st.success(f"✅ Dados de {table['name']} carregados!")
+                                
+                                # Criar DataFrame
+                                df_data = pd.DataFrame(result['data'])
+                                
+                                # Mostrar informações dos dados
+                                col_info1, col_info2, col_info3 = st.columns(3)
+                                with col_info1:
+                                    st.metric("📊 Registros exibidos", len(df_data))
+                                with col_info2:
+                                    st.metric("📋 Colunas", len(df_data.columns) if not df_data.empty else 0)
+                                with col_info3:
+                                    st.metric("⏱️ Tempo", result['execution_time'])
+                                
+                                # Exibir dados
+                                st.dataframe(df_data, use_container_width=True, height=400)
+                                
+                                # Opções de exportação
+                                if not df_data.empty:
+                                    col_exp1, col_exp2, col_exp3 = st.columns(3)
+                                    
+                                    with col_exp1:
+                                        csv_data = df_data.to_csv(index=False)
+                                        st.download_button(
+                                            "📥 Download CSV",
+                                            csv_data,
+                                            f"{table['name']}_data.csv",
+                                            "text/csv",
+                                            key=f"download_csv_{table['name']}_{i}"
+                                        )
+                                    
+                                    with col_exp2:
+                                        json_data = df_data.to_json(orient='records', indent=2)
+                                        st.download_button(
+                                            "📥 Download JSON",
+                                            json_data,
+                                            f"{table['name']}_data.json",
+                                            "application/json",
+                                            key=f"download_json_{table['name']}_{i}"
+                                        )
+                                    
+                                    with col_exp3:
+                                        # Criar Excel em buffer
+                                        excel_buffer = io.BytesIO() # type: ignore
+                                        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+                                            df_data.to_excel(writer, sheet_name=table['name'], index=False)
+                                        
+                                        st.download_button(
+                                            "📥 Download Excel",
+                                            excel_buffer.getvalue(),
+                                            f"{table['name']}_data.xlsx",
+                                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                            key=f"download_excel_{table['name']}_{i}"
+                                        )
+                            
+                            elif result['success'] and not result['data']:
+                                st.info(f"📭 A tabela {table['name']} está vazia (0 registros)")
+                            else:
+                                st.error(f"❌ Erro ao carregar dados: {result.get('message', 'Erro desconhecido')}")
+                    
+                    with col2:
+                        if st.button(f"🔍 Estrutura", key=f"structure_{table['name']}_{i}", use_container_width=True):
+                            with st.spinner(f"🔍 Analisando estrutura de {table['name']}..."):
+                                columns = db_manager.get_table_columns(table['name'])
+                            
+                            if columns:
+                                st.success(f"✅ Estrutura de {table['name']} carregada!")
+                                
+                                # Criar DataFrame das colunas
+                                df_columns = pd.DataFrame(columns)
+                                
+                                st.markdown(f"#### 📋 Colunas da Tabela `{table['name']}`")
+                                st.dataframe(df_columns, use_container_width=True)
+                                
+                                # Estatísticas das colunas
+                                col_stats1, col_stats2, col_stats3 = st.columns(3)
+                                
+                                with col_stats1:
+                                    st.metric("🔢 Total Colunas", len(columns))
+                                
+                                with col_stats2:
+                                    nullable_count = len([c for c in columns if c.get('nullable', True)])
+                                    st.metric("❓ Colunas Nulas", nullable_count)
+                                
+                                with col_stats3:
+                                    indexed_count = len([c for c in columns if 'id' in c.get('name', '').lower()])
+                                    st.metric("🗂️ Possíveis Chaves", indexed_count)
+                                
+                                # Análise de tipos
+                                st.markdown("#### 📊 Distribuição de Tipos")
+                                
+                                type_counts = {}
+                                for col in columns:
+                                    col_type = col.get('type', 'unknown')
+                                    type_counts[col_type] = type_counts.get(col_type, 0) + 1
+                                
+                                if type_counts:
+                                    # Criar gráfico de tipos
+                                    fig = px.pie(
+                                        values=list(type_counts.values()),
+                                        names=list(type_counts.keys()),
+                                        title=f"Tipos de Dados - {table['name']}",
+                                        color_discrete_sequence=['#2E8B57', '#90EE90', '#228B22', '#98FB98', '#20B2AA']
+                                    )
+                                    fig.update_layout(height=300)
+                                    st.plotly_chart(fig, use_container_width=True)
+                            else:
+                                st.warning(f"⚠️ Não foi possível carregar a estrutura de {table['name']}")
+                    
+                    with col3:
+                        if st.button(f"📊 Análise", key=f"analyze_{table['name']}_{i}", use_container_width=True):
+                            with st.spinner(f"📊 Analisando {table['name']}..."):
+                                # Obter dados para análise
+                                result = db_manager.get_table_data(table['name'], limit=1000)
+                            
+                            if result['success'] and result['data']:
+                                df_analysis = pd.DataFrame(result['data'])
+                                
+                                st.success(f"✅ Análise de {table['name']} concluída!")
+                                
+                                # Estatísticas gerais
+                                st.markdown(f"#### 📈 Estatísticas de `{table['name']}`")
+                                
+                                col_anal1, col_anal2, col_anal3, col_anal4 = st.columns(4)
+                                
+                                with col_anal1:
+                                    st.metric("📊 Registros Analisados", len(df_analysis))
+                                
+                                with col_anal2:
+                                    st.metric("📋 Colunas", len(df_analysis.columns))
+                                
+                                with col_anal3:
+                                    # Calcular densidade de dados (não nulos)
+                                    total_cells = len(df_analysis) * len(df_analysis.columns)
+                                    non_null_cells = df_analysis.count().sum()
+                                    density = (non_null_cells / total_cells * 100) if total_cells > 0 else 0
+                                    st.metric("💾 Densidade", f"{density:.1f}%")
+                                
+                                with col_anal4:
+                                    # Estimar tamanho em memória
+                                    memory_usage = df_analysis.memory_usage(deep=True).sum()
+                                    memory_mb = memory_usage / (1024 * 1024)
+                                    st.metric("🧠 Memória", f"{memory_mb:.1f} MB")
+                                
+                                # Análise de valores nulos
+                                st.markdown("#### ❓ Análise de Valores Nulos")
+                                
+                                null_counts = df_analysis.isnull().sum()
+                                null_percentages = (null_counts / len(df_analysis) * 100).round(1)
+                                
+                                null_analysis = pd.DataFrame({
+                                    'Coluna': null_counts.index,
+                                    'Valores Nulos': null_counts.values,
+                                    'Percentual (%)': null_percentages.values
+                                })
+                                
+                                # Mostrar apenas colunas com valores nulos
+                                null_analysis_filtered = null_analysis[null_analysis['Valores Nulos'] > 0]
+                                
+                                if not null_analysis_filtered.empty:
+                                    st.dataframe(null_analysis_filtered, use_container_width=True)
+                                    
+                                    # Gráfico de valores nulos
+                                    if len(null_analysis_filtered) > 0:
+                                        fig = px.bar(
+                                            null_analysis_filtered,
+                                            x='Coluna',
+                                            y='Percentual (%)',
+                                            title=f"Percentual de Valores Nulos - {table['name']}",
+                                            color='Percentual (%)',
+                                            color_continuous_scale=['#90EE90', '#FFD700', '#FF6347']
+                                        )
+                                        fig.update_layout(height=300)
+                                        st.plotly_chart(fig, use_container_width=True)
+                                else:
+                                    st.success("🎉 Nenhum valor nulo encontrado!")
+                                
+                                # Análise de tipos únicos
+                                st.markdown("#### 🔢 Valores Únicos por Coluna")
+                                
+                                unique_counts = []
+                                for col in df_analysis.columns:
+                                    unique_count = df_analysis[col].nunique()
+                                    total_count = len(df_analysis)
+                                    uniqueness = (unique_count / total_count * 100) if total_count > 0 else 0
+                                    
+                                    unique_counts.append({
+                                        'Coluna': col,
+                                        'Valores Únicos': unique_count,
+                                        'Total': total_count,
+                                        'Unicidade (%)': round(uniqueness, 1)
+                                    })
+                                
+                                df_unique = pd.DataFrame(unique_counts)
+                                st.dataframe(df_unique, use_container_width=True)
+                            
+                            else:
+                                st.warning(f"⚠️ Não foi possível analisar {table['name']} - tabela vazia ou erro de acesso")
+                    
+                    with col4:
+                        if st.button(f"💾 Backup", key=f"backup_{table['name']}_{i}", use_container_width=True):
+                            with st.spinner(f"💾 Criando backup de {table['name']}..."):
+                                result = db_manager.backup_table(table['name'])
+                            
+                            if result['success']:
+                                st.success(f"✅ {result['message']}")
+                                
+                                # Log da atividade
+                                log_activity("Backup criado", f"Tabela: {table['name']}")
+                                
+                                # Mostrar detalhes do backup
+                                backup_info = {
+                                    "Tabela": table['name'],
+                                    "Backup": result.get('backup_name', 'backup_criado'),
+                                    "Timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                    "Registros": table.get('rows', 0),
+                                    "Tamanho": table.get('size', 'N/A')
+                                }
+                                
+                                st.json(backup_info)
+                            else:
+                                st.error(f"❌ {result['message']}")
+                    
+                    with col5:
+                        if st.button(f"⚡ Otimizar", key=f"optimize_{table['name']}_{i}", use_container_width=True):
+                            with st.spinner(f"⚡ Otimizando {table['name']}..."):
+                                result = db_manager.optimize_table(table['name'])
+                            
+                            if result['success']:
+                                st.success(f"✅ {result['message']}")
+                                log_activity("Tabela otimizada", table['name'])
+                            else:
+                                st.error(f"❌ {result['message']}")
+                    
+                    with col6:
+                        if st.button(f"🔧 SQL", key=f"sql_{table['name']}_{i}", use_container_width=True):
+                            # Ir para o SQL Editor com query pré-preenchida
+                            st.session_state.current_page = 'sql_editor'
+                            st.session_state.sql_query = f"SELECT * FROM {table['name']} LIMIT 50;"
+                            st.rerun()
         
         with tab2:
-            render_tables_detailed_analysis(filtered_tables)
+            st.subheader("📊 Análise Detalhada das Tabelas")
+            
+            if filtered_tables:
+                # Gráfico de distribuição de registros
+                st.markdown("#### 📈 Distribuição de Registros")
+                
+                table_names = [t['name'] for t in filtered_tables]
+                table_rows = [t.get('rows', 0) for t in filtered_tables]
+                
+                fig = px.bar(
+                    x=table_names,
+                    y=table_rows,
+                    title="Número de Registros por Tabela",
+                    labels={'x': 'Tabelas', 'y': 'Registros'},
+                    color=table_rows,
+                    color_continuous_scale=['#90EE90', '#2E8B57', '#228B22']
+                )
+                fig.update_layout(height=400, xaxis_tickangle=-45)
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Análise de tamanhos
+                st.markdown("#### 💾 Análise de Tamanhos")
+                
+                # Converter tamanhos para bytes para comparação
+                def parse_size(size_str):
+                    if 'MB' in size_str:
+                        return float(size_str.replace(' MB', '').replace(',', '.')) * 1024
+                    elif 'KB' in size_str:
+                        return float(size_str.replace(' KB', '').replace(',', '.'))
+                    else:
+                        return 0
+                
+                table_sizes = []
+                for table in filtered_tables:
+                    size_str = table.get('size', '0 KB')
+                    size_kb = parse_size(size_str)
+                    table_sizes.append({
+                        'Tabela': table['name'],
+                        'Tamanho (KB)': size_kb,
+                        'Registros': table.get('rows', 0)
+                    })
+                
+                df_sizes = pd.DataFrame(table_sizes)
+                
+                if not df_sizes.empty and df_sizes['Tamanho (KB)'].sum() > 0:
+                    # Gráfico de pizza para tamanhos
+                    fig_pie = px.pie(
+                        df_sizes,
+                        values='Tamanho (KB)',
+                        names='Tabela',
+                        title="Distribuição de Tamanho por Tabela",
+                        color_discrete_sequence=['#2E8B57', '#90EE90', '#228B22', '#98FB98', '#20B2AA']
+                    )
+                    fig_pie.update_layout(height=400)
+                    st.plotly_chart(fig_pie, use_container_width=True)
+                    
+                    # Scatter plot: Registros vs Tamanho
+                    fig_scatter = px.scatter(
+                        df_sizes,
+                        x='Registros',
+                        y='Tamanho (KB)',
+                        text='Tabela',
+                        title="Relação entre Registros e Tamanho",
+                        color='Tamanho (KB)',
+                        color_continuous_scale=['#90EE90', '#2E8B57']
+                    )
+                    fig_scatter.update_traces(textposition="top center")
+                    fig_scatter.update_layout(height=400)
+                    st.plotly_chart(fig_scatter, use_container_width=True)
+                else:
+                    st.info("📊 Dados de tamanho não disponíveis para análise gráfica")
+                
+                # Estatísticas consolidadas
+                st.markdown("#### 📋 Resumo Estatístico")
+                
+                total_records = sum(t.get('rows', 0) for t in filtered_tables)
+                avg_records = total_records / len(filtered_tables) if filtered_tables else 0
+                max_records = max(t.get('rows', 0) for t in filtered_tables) if filtered_tables else 0
+                min_records = min(t.get('rows', 0) for t in filtered_tables) if filtered_tables else 0
+                
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    st.metric("📊 Total de Registros", f"{total_records:,}")
+                
+                with col2:
+                    st.metric("📈 Média por Tabela", f"{avg_records:,.0f}")
+                
+                with col3:
+                    st.metric("🔝 Maior Tabela", f"{max_records:,}")
+                
+                with col4:
+                    st.metric("🔻 Menor Tabela", f"{min_records:,}")
         
         with tab3:
-            render_tables_batch_operations(filtered_tables, db_manager)
-        
-        with tab4:
-            render_tables_insights(filtered_tables)
-    
-    else:
-        st.markdown("""
-        <div style='background: linear-gradient(135deg, #FFF8DC, #FFFACD); 
-                   padding: 2rem; border-radius: 15px; text-align: center;
-                   border-left: 5px solid #FFD700; margin: 2rem 0;'>
-            <h3 style='color: #B8860B; margin: 0;'>📋 Nenhuma tabela encontrada</h3>
-            <p style='color: #DAA520; margin: 1rem 0;'>
-                Nenhuma tabela corresponde aos critérios de filtro especificados.
-            </p>
-            <p style='color: #CD853F; margin: 0; font-size: 0.9rem;'>
-                💡 <strong>Dica:</strong> Tente limpar os filtros para ver todas as tabelas disponíveis.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        if st.button("🧹 Limpar Todos os Filtros", type="primary"):
-            st.rerun()
-
-def render_tables_card_view(filtered_tables, db_manager):
-    """Renderiza visualização em cards elegantes"""
-    for i, table in enumerate(filtered_tables):
-        # Card container mais elegante
-        st.markdown(f"""
-        <div style='background: linear-gradient(135deg, #F8FFF8, #F0FFF0); 
-                   padding: 0; border-radius: 20px; margin: 1rem 0;
-                   border: 2px solid #E6FFE6; box-shadow: 0 6px 20px rgba(46, 139, 87, 0.1);
-                   transition: all 0.3s ease; hover: transform: translateY(-5px);'>
-        """, unsafe_allow_html=True)
-        
-        with st.container():
-            # Header do card
-            header_col1, header_col2, header_col3 = st.columns([3, 1, 1])
+            st.subheader("🔧 Operações em Lote")
             
-            with header_col1:
-                status_icon = "🟢" if table.get('rows', 0) > 0 else "🟡" if table.get('rows', 0) == 0 else "🔴"
-                st.markdown(f"""
-                <div style='padding: 1rem 1.5rem 0.5rem 1.5rem;'>
-                    <h3 style='color: #2E8B57; margin: 0; font-size: 1.4rem;'>
-                        {status_icon} {table['name']}
-                    </h3>
-                    <p style='color: #228B22; margin: 0.2rem 0 0 0; font-size: 0.9rem;'>
-                        📂 {table.get('schema', 'public')} • 📊 {table.get('rows', 0):,} registros
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
+            st.markdown("#### ⚙️ Selecionar Tabelas para Operação em Lote")
             
-            with header_col2:
-                size_display = table.get('size', 'N/A')
-                st.markdown(f"""
-                <div style='text-align: center; padding: 1rem 0;'>
-                    <div style='color: #2E8B57; font-weight: 600;'>💾 Tamanho</div>
-                    <div style='color: #006400; font-size: 1.1rem; font-weight: 500;'>{size_display}</div>
-                </div>
-                """, unsafe_allow_html=True)
+            # Seleção de tabelas
+            selected_tables = []
             
-            with header_col3:
-                last_mod = table.get('last_modified', 'N/A')
-                st.markdown(f"""
-                <div style='text-align: center; padding: 1rem 0;'>
-                    <div style='color: #2E8B57; font-weight: 600;'>📅 Modificado</div>
-                    <div style='color: #006400; font-size: 0.9rem;'>{last_mod}</div>
-                </div>
-                """, unsafe_allow_html=True)
+            # Checkbox para selecionar todas
+            select_all = st.checkbox("✅ Selecionar todas as tabelas")
             
-            # Recursos e características
-            resources_col1, resources_col2, resources_col3, resources_col4 = st.columns(4)
+            if select_all:
+                selected_tables = [t['name'] for t in filtered_tables]
+            else:
+                # Checkboxes individuais
+                cols = st.columns(min(4, len(filtered_tables)))
+                
+                for i, table in enumerate(filtered_tables):
+                    with cols[i % 4]:
+                        if st.checkbox(f"📋 {table['name']}", key=f"select_{table['name']}"):
+                            selected_tables.append(table['name'])
             
-            resources = [
-                ("🗂️ Índices", table.get('has_indexes', False)),
-                ("📋 Regras", table.get('has_rules', False)),
-                ("⚡ Triggers", table.get('has_triggers', False)),
-                ("🛡️ RLS", random.choice([True, False]))  # Simulated
-            ]
-            
-            for j, (resource_col, (label, has_resource)) in enumerate(zip([resources_col1, resources_col2, resources_col3, resources_col4], resources)):
-                with resource_col:
-                    status = "✅" if has_resource else "❌"
-                    color = "#2E8B57" if has_resource else "#CD5C5C"
-                    st.markdown(f"""
-                    <div style='text-align: center; padding: 0.5rem;'>
-                        <div style='color: {color}; font-size: 1.1rem;'>{status}</div>
-                        <div style='color: #666; font-size: 0.8rem;'>{label}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-            
-            # Botões de ação organizados
-            st.markdown("<div style='padding: 0 1.5rem 1.5rem 1.5rem;'>", unsafe_allow_html=True)
-            
-            action_col1, action_col2, action_col3, action_col4, action_col5, action_col6 = st.columns(6)
-            
-            actions = [
-                ("👁️", "Visualizar", "primary"),
-                ("🔍", "Estrutura", "secondary"),
-                ("📊", "Análise", "secondary"),
-                ("💾", "Backup", "secondary"),
-                ("⚡", "Otimizar", "secondary"),
-                ("🔧", "SQL", "secondary")
-            ]
-            
-            for k, (action_col, (icon, label, btn_type)) in enumerate(zip([action_col1, action_col2, action_col3, action_col4, action_col5, action_col6], actions)):
-                with action_col:
-                    button_key = f"{label.lower()}_{table['name']}_{i}"
-                    if st.button(f"{icon}", key=button_key, help=label, use_container_width=True):
-                        handle_table_action(label.lower(), table, db_manager, i)
-            
-            st.markdown("</div>", unsafe_allow_html=True)
-        
-        st.markdown("</div>", unsafe_allow_html=True)
-
-def render_tables_table_view(filtered_tables, db_manager):
-    """Renderiza visualização em tabela profissional"""
-    if not filtered_tables:
-        return
-    
-    # Preparar dados para a tabela
-    table_data = []
-    for table in filtered_tables:
-        # Status visual
-        rows = table.get('rows', 0)
-        if rows > 10000:
-            status = "🟢 Grande"
-        elif rows > 1000:
-            status = "🟡 Média"
-        elif rows > 0:
-            status = "🔵 Pequena"
-        else:
-            status = "⚪ Vazia"
-        
-        # Recursos
-        resources = []
-        if table.get('has_indexes'): resources.append("🗂️")
-        if table.get('has_rules'): resources.append("📋")
-        if table.get('has_triggers'): resources.append("⚡")
-        
-        table_data.append({
-            "Status": status,
-            "Nome": table['name'],
-            "Schema": table.get('schema', 'public'),
-            "Registros": f"{rows:,}",
-            "Tamanho": table.get('size', 'N/A'),
-            "Recursos": " ".join(resources) if resources else "—",
-            "Modificado": table.get('last_modified', 'N/A'),
-            "Ações": f"table_{table['name']}"
-        })
-    
-    # Criar DataFrame
-    df_tables = pd.DataFrame(table_data)
-    
-    # Configurações de exibição
-    st.markdown("#### 📋 Tabela Detalhada")
-    
-    config_col1, config_col2, config_col3 = st.columns(3)
-    
-    with config_col1:
-        show_index = st.checkbox("📄 Mostrar índice", value=False)
-    
-    with config_col2:
-        page_size = st.selectbox("📄 Itens por página:", [10, 25, 50, 100], index=1)
-    
-    with config_col3:
-        if st.button("📊 Estatísticas", help="Mostrar estatísticas da tabela"):
-            st.json({
-                "Total de tabelas": len(df_tables),
-                "Com dados": len([t for t in filtered_tables if t.get('rows', 0) > 0]),
-                "Vazias": len([t for t in filtered_tables if t.get('rows', 0) == 0]),
-                "Com índices": len([t for t in filtered_tables if t.get('has_indexes')])
-            })
-    
-    # Exibir tabela com paginação
-    total_pages = len(df_tables) // page_size + (1 if len(df_tables) % page_size > 0 else 0)
-    
-    if total_pages > 1:
-        page = st.selectbox("📄 Página:", range(1, total_pages + 1))
-        start_idx = (page - 1) * page_size
-        end_idx = start_idx + page_size
-        df_display = df_tables.iloc[start_idx:end_idx]
-    else:
-        df_display = df_tables
-    
-    # Tabela principal
-    st.dataframe(
-        df_display.drop(columns=['Ações']),
-        use_container_width=True,
-        hide_index=not show_index,
-        height=min(len(df_display) * 35 + 100, 600)
-    )
-    
-    # Ações rápidas para tabelas selecionadas
-    st.markdown("#### ⚡ Ações Rápidas")
-    selected_tables = st.multiselect(
-        "Selecionar tabelas:", 
-        [t['name'] for t in filtered_tables],
-        help="Selecione uma ou mais tabelas para ações em lote"
-    )
-    
-    if selected_tables:
-        quick_col1, quick_col2, quick_col3, quick_col4 = st.columns(4)
-        
-        with quick_col1:
-            if st.button("👁️ Visualizar Todas", use_container_width=True):
-                for table_name in selected_tables[:3]:  # Limitar para não sobrecarregar
-                    with st.expander(f"📊 Dados - {table_name}"):
-                        result = db_manager.get_table_data(table_name, limit=10)
+            if selected_tables:
+                st.success(f"✅ {len(selected_tables)} tabela(s) selecionada(s)")
+                
+                # Operações disponíveis
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    if st.button("💾 Backup em Lote", type="primary", use_container_width=True):
+                        progress_bar = st.progress(0)
+                        status_text = st.empty()
+                        
+                        successful_backups = []
+                        failed_backups = []
+                        
+                        for i, table_name in enumerate(selected_tables):
+                            status_text.text(f"Criando backup de {table_name}...")
+                            progress_bar.progress((i + 1) / len(selected_tables))
+                            
+                            result = db_manager.backup_table(table_name)
+                            
+                            if result['success']:
+                                successful_backups.append(table_name)
+                            else:
+                                failed_backups.append(table_name)
+                            
+                            time.sleep(0.5)  # Simular tempo de processamento
+                        
+                        status_text.empty()
+                        progress_bar.empty()
+                        
+                        # Mostrar resultados
+                        if successful_backups:
+                            st.success(f"✅ Backup concluído para {len(successful_backups)} tabela(s)")
+                            log_activity("Backup em lote", f"{len(successful_backups)} tabelas")
+                        
+                        if failed_backups:
+                            st.error(f"❌ Falha no backup de {len(failed_backups)} tabela(s): {', '.join(failed_backups)}")
+                
+                with col2:
+                    if st.button("⚡ Otimizar em Lote", type="secondary", use_container_width=True):
+                        progress_bar = st.progress(0)
+                        status_text = st.empty()
+                        
+                        successful_optimizations = []
+                        failed_optimizations = []
+                        
+                        for i, table_name in enumerate(selected_tables):
+                            status_text.text(f"Otimizando {table_name}...")
+                            progress_bar.progress((i + 1) / len(selected_tables))
+                            
+                            result = db_manager.optimize_table(table_name)
+                            
+                            if result['success']:
+                                successful_optimizations.append(table_name)
+                            else:
+                                failed_optimizations.append(table_name)
+                            
+                            time.sleep(0.3)  # Simular tempo de processamento
+                        
+                        status_text.empty()
+                        progress_bar.empty()
+                        
+                        # Mostrar resultados
+                        if successful_optimizations:
+                            st.success(f"✅ Otimização concluída para {len(successful_optimizations)} tabela(s)")
+                            log_activity("Otimização em lote", f"{len(successful_optimizations)} tabelas")
+                        
+                        if failed_optimizations:
+                            st.error(f"❌ Falha na otimização de {len(failed_optimizations)} tabela(s): {', '.join(failed_optimizations)}")
+                
+                with col3:
+                    if st.button("📊 Analisar em Lote", use_container_width=True):
+                        progress_bar = st.progress(0)
+                        status_text = st.empty()
+                        
+                        batch_analysis = []
+                        
+                        for i, table_name in enumerate(selected_tables):
+                            status_text.text(f"Analisando {table_name}...")
+                            progress_bar.progress((i + 1) / len(selected_tables))
+                            
+                            # Obter informações da tabela
+                            table_info = db_manager.get_table_info(table_name)
+                            
+                            batch_analysis.append({
+                                'Tabela': table_name,
+                                'Registros': table_info.get('rows', 0),
+                                'Tamanho': table_info.get('size', 'N/A'),
+                                'Última Modificação': table_info.get('last_modified', 'N/A')
+                            })
+                            
+                            time.sleep(0.2)  # Simular tempo de processamento
+                        
+                        status_text.empty()
+                        progress_bar.empty()
+                        
+                        # Mostrar resultados da análise
+                        st.success("✅ Análise em lote concluída!")
+                        
+                        df_batch_analysis = pd.DataFrame(batch_analysis)
+                        st.dataframe(df_batch_analysis, use_container_width=True)
+                        
+                        # Estatísticas da análise em lote
+                        total_records_batch = df_batch_analysis['Registros'].sum()
+                        avg_records_batch = df_batch_analysis['Registros'].mean()
+                        
+                        col_batch1, col_batch2 = st.columns(2)
+                        
+                        with col_batch1:
+                            st.metric("📊 Total de Registros (Lote)", f"{total_records_batch:,}")
+                        
+                        with col_batch2:
+                            st.metric("📈 Média de Registros (Lote)", f"{avg_records_batch:,.0f}")
+                        
+                        log_activity("Análise em lote", f"{len(selected_tables)} tabelas")
+                
+                # Exportar dados de tabelas selecionadas
+                st.markdown("#### 📤 Exportar Dados das Tabelas Selecionadas")
+                
+                export_format = st.selectbox("📁 Formato de Exportação:", 
+                    ["CSV Individual", "JSON Consolidado", "Excel Multi-Sheets"])
+                
+                if st.button("📤 Exportar Dados Selecionadas", use_container_width=True):
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    
+                    export_data = {}
+                    
+                    for i, table_name in enumerate(selected_tables):
+                        status_text.text(f"Exportando dados de {table_name}...")
+                        progress_bar.progress((i + 1) / len(selected_tables))
+                        
+                        result = db_manager.get_table_data(table_name, limit=1000)
+                        
                         if result['success'] and result['data']:
-                            st.dataframe(pd.DataFrame(result['data']))
-        
-        with quick_col2:
-            if st.button("💾 Backup Lote", use_container_width=True):
-                for table_name in selected_tables:
-                    result = db_manager.backup_table(table_name)
-                    if result['success']:
-                        st.success(f"✅ Backup de {table_name} criado")
-        
-        with quick_col3:
-            if st.button("📊 Analisar Lote", use_container_width=True):
-                analysis_results = []
-                for table_name in selected_tables:
-                    table_info = db_manager.get_table_info(table_name)
-                    analysis_results.append({
-                        'Tabela': table_name,
-                        'Registros': table_info.get('rows', 0),
-                        'Tamanho': table_info.get('size', 'N/A')
-                    })
-                
-                st.dataframe(pd.DataFrame(analysis_results), use_container_width=True)
-        
-        with quick_col4:
-            if st.button("📤 Exportar Lote", use_container_width=True):
-                export_data = []
-                for table_name in selected_tables:
-                    result = db_manager.get_table_data(table_name, limit=100)
-                    if result['success'] and result['data']:
-                        export_data.extend(result['data'])
-                
-                if export_data:
-                    df_export = pd.DataFrame(export_data)
-                    csv_data = df_export.to_csv(index=False)
-                    st.download_button(
-                        "📥 Download CSV",
-                        csv_data,
-                        f"tabelas_selecionadas_{len(selected_tables)}.csv",
-                        "text/csv"
-                    )
-
-def render_tables_compact_view(filtered_tables, db_manager):
-    """Renderiza visualização compacta para muitas tabelas"""
-    st.markdown("#### 📋 Visualização Compacta")
-    
-    # Organizar em colunas
-    cols_per_row = 4
-    for i in range(0, len(filtered_tables), cols_per_row):
-        cols = st.columns(cols_per_row)
-        
-        for j, table in enumerate(filtered_tables[i:i+cols_per_row]):
-            with cols[j]:
-                rows = table.get('rows', 0)
-                status_color = "#2E8B57" if rows > 0 else "#FFD700"
-                
-                st.markdown(f"""
-                <div style='background: linear-gradient(135deg, #F0FFF0, #E6FFE6); 
-                           padding: 1rem; border-radius: 10px; text-align: center;
-                           border-left: 4px solid {status_color}; margin: 0.5rem 0;
-                           cursor: pointer; transition: transform 0.2s ease;'>
-                    <div style='color: {status_color}; font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem;'>
-                        📊 {table['name']}
-                    </div>
-                    <div style='color: #666; font-size: 0.8rem;'>
-                        {rows:,} registros<br>
-                        {table.get('size', 'N/A')}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Botões de ação compactos
-                compact_col1, compact_col2 = st.columns(2)
-                
-                with compact_col1:
-                    if st.button("👁️", key=f"view_compact_{table['name']}_{i}_{j}", help="Visualizar", use_container_width=True):
-                        handle_table_action('visualizar', table, db_manager, f"{i}_{j}")
-                
-                with compact_col2:
-                    if st.button("🔧", key=f"sql_compact_{table['name']}_{i}_{j}", help="SQL", use_container_width=True):
-                        st.session_state.current_page = 'sql_editor'
-                        st.session_state.sql_query = f"SELECT * FROM {table['name']} LIMIT 10;"
-                        st.rerun()
-
-def handle_table_action(action, table, db_manager, index):
-    """Manipula ações das tabelas de forma centralizada"""
-    table_name = table['name']
-    
-    if action == 'visualizar':
-        with st.spinner(f"🔍 Carregando dados de {table_name}..."):
-            result = db_manager.get_table_data(table_name, limit=100)
-        
-        if result['success'] and result['data']:
-            st.success(f"✅ Dados de {table_name} carregados!")
-            
-            df_data = pd.DataFrame(result['data'])
-            
-            # Informações resumidas
-            info_col1, info_col2, info_col3 = st.columns(3)
-            with info_col1:
-                st.metric("📊 Registros", len(df_data))
-            with info_col2:
-                st.metric("📋 Colunas", len(df_data.columns))
-            with info_col3:
-                st.metric("⏱️ Tempo", result['execution_time'])
-            
-            # Dados com controles
-            st.markdown("#### 📊 Preview dos Dados")
-            
-            preview_col1, preview_col2 = st.columns([3, 1])
-            
-            with preview_col1:
-                st.dataframe(df_data, use_container_width=True, height=400)
-            
-            with preview_col2:
-                st.markdown("**💾 Exportar:**")
-                
-                # CSV
-                csv_data = df_data.to_csv(index=False)
-                st.download_button(
-                    "📄 CSV",
-                    csv_data,
-                    f"{table_name}_data.csv",
-                    "text/csv",
-                    use_container_width=True
-                )
-                
-                # JSON
-                json_data = df_data.to_json(orient='records', indent=2)
-                st.download_button(
-                    "📋 JSON",
-                    json_data,
-                    f"{table_name}_data.json",
-                    "application/json",
-                    use_container_width=True
-                )
-                
-                # Excel
-                excel_buffer = io.BytesIO()
-                with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-                    df_data.to_excel(writer, sheet_name=table_name[:31], index=False)
-                
-                st.download_button(
-                    "📊 Excel",
-                    excel_buffer.getvalue(),
-                    f"{table_name}_data.xlsx",
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True
-                )
-        
-        elif result['success'] and not result['data']:
-            st.info(f"📭 A tabela {table_name} está vazia")
-        else:
-            st.error(f"❌ Erro: {result.get('message', 'Erro desconhecido')}")
-    
-    elif action == 'estrutura':
-        with st.spinner(f"🔍 Analisando estrutura de {table_name}..."):
-            columns = db_manager.get_table_columns(table_name)
-        
-        if columns:
-            st.success(f"✅ Estrutura de {table_name} carregada!")
-            
-            df_columns = pd.DataFrame(columns)
-            
-            st.markdown(f"#### 📋 Estrutura - {table_name}")
-            st.dataframe(df_columns, use_container_width=True)
-            
-            # Estatísticas das colunas
-            stats_col1, stats_col2, stats_col3 = st.columns(3)
-            
-            with stats_col1:
-                st.metric("🔢 Total Colunas", len(columns))
-            
-            with stats_col2:
-                nullable_count = len([c for c in columns if c.get('nullable', True)])
-                st.metric("❓ Colunas Nulas", nullable_count)
-            
-            with stats_col3:
-                key_count = len([c for c in columns if 'id' in c.get('name', '').lower()])
-                st.metric("🗂️ Possíveis Chaves", key_count)
-        else:
-            st.warning(f"⚠️ Não foi possível carregar a estrutura de {table_name}")
-    
-    # Implementar outras ações...
-
-def render_tables_detailed_analysis(filtered_tables):
-    """Renderiza análise detalhada das tabelas"""
-    st.subheader("📊 Análise Detalhada das Tabelas")
-    
-    if not filtered_tables:
-        st.info("📊 Nenhuma tabela disponível para análise")
-        return
-    
-    # Gráficos de análise
-    analysis_col1, analysis_col2 = st.columns(2)
-    
-    with analysis_col1:
-        st.markdown("#### 📈 Distribuição de Registros")
-        
-        table_names = [t['name'] for t in filtered_tables[:10]]  # Limitar para legibilidade
-        table_rows = [t.get('rows', 0) for t in filtered_tables[:10]]
-        
-        fig = px.bar(
-            x=table_names,
-            y=table_rows,
-            title="Número de Registros por Tabela (Top 10)",
-            labels={'x': 'Tabelas', 'y': 'Registros'},
-            color=table_rows,
-            color_continuous_scale=['#E6FFE6', '#90EE90', '#2E8B57']
-        )
-        fig.update_layout(height=400, xaxis_tickangle=-45)
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with analysis_col2:
-        st.markdown("#### 🥧 Distribuição por Status")
-        
-        # Categorizar tabelas por tamanho
-        categories = {'Grandes (>10k)': 0, 'Médias (1k-10k)': 0, 'Pequenas (1-1k)': 0, 'Vazias (0)': 0}
-        
-        for table in filtered_tables:
-            rows = table.get('rows', 0)
-            if rows > 10000:
-                categories['Grandes (>10k)'] += 1
-            elif rows > 1000:
-                categories['Médias (1k-10k)'] += 1
-            elif rows > 0:
-                categories['Pequenas (1-1k)'] += 1
-            else:
-                categories['Vazias (0)'] += 1
-        
-        fig_pie = px.pie(
-            values=list(categories.values()),
-            names=list(categories.keys()),
-            title="Distribuição por Categoria de Tamanho",
-            color_discrete_sequence=['#2E8B57', '#90EE90', '#98FB98', '#F0FFF0']
-        )
-        fig_pie.update_layout(height=400)
-        st.plotly_chart(fig_pie, use_container_width=True)
-    
-    # Tabela de análise avançada
-    st.markdown("#### 🔍 Análise Avançada")
-    
-    advanced_analysis = []
-    for table in filtered_tables:
-        rows = table.get('rows', 0)
-        size_str = table.get('size', '0 KB')
-        
-        # Calcular densidade (estimativa)
-        if 'MB' in size_str:
-            size_mb = float(size_str.replace(' MB', '').replace(',', '.'))
-            density = rows / (size_mb * 1024) if size_mb > 0 else 0
-        else:
-            size_kb = float(size_str.replace(' KB', '').replace(',', '.'))
-            density = rows / size_kb if size_kb > 0 else 0
-        
-        # Calcular score de saúde
-        health_score = 100
-        if rows == 0:
-            health_score -= 30  # Tabela vazia
-        if not table.get('has_indexes'):
-            health_score -= 20  # Sem índices
-        if not table.get('has_triggers'):
-            health_score -= 10  # Sem triggers
-        
-        health_score = max(0, health_score)
-        
-        advanced_analysis.append({
-            'Tabela': table['name'],
-            'Registros': f"{rows:,}",
-            'Tamanho': size_str,
-            'Densidade': f"{density:.2f}" if density > 0 else "N/A",
-            'Score Saúde': f"{health_score}%",
-            'Status': "🟢 Ótima" if health_score > 80 else "🟡 Boa" if health_score > 60 else "🔴 Atenção"
-        })
-    
-    df_analysis = pd.DataFrame(advanced_analysis)
-    st.dataframe(df_analysis, use_container_width=True)
-    
-    # Insights automáticos
-    st.markdown("#### 💡 Insights Automáticos")
-    
-    insights = []
-    
-    # Tabelas grandes
-    large_tables = [t for t in filtered_tables if t.get('rows', 0) > 50000]
-    if large_tables:
-        insights.append(f"🔍 **Tabelas Grandes:** {len(large_tables)} tabela(s) com mais de 50k registros requerem atenção especial para performance.")
-    
-    # Tabelas vazias
-    empty_tables = [t for t in filtered_tables if t.get('rows', 0) == 0]
-    if empty_tables:
-        insights.append(f"📭 **Tabelas Vazias:** {len(empty_tables)} tabela(s) estão vazias - considere se são necessárias.")
-    
-    # Tabelas sem índices
-    no_index_tables = [t for t in filtered_tables if not t.get('has_indexes', False)]
-    if no_index_tables:
-        insights.append(f"🗂️ **Sem Índices:** {len(no_index_tables)} tabela(s) podem se beneficiar de índices para melhor performance.")
-    
-    # Schema diversificado
-    schemas = set([t.get('schema', 'public') for t in filtered_tables])
-    if len(schemas) > 1:
-        insights.append(f"📂 **Schemas Múltiplos:** Dados organizados em {len(schemas)} schemas diferentes: {', '.join(schemas)}")
-    
-    for insight in insights:
-        st.markdown(insight)
-    
-    if not insights:
-        st.success("✅ Nenhum problema significativo detectado nas tabelas!")
-
-def render_tables_batch_operations(filtered_tables, db_manager):
-    """Renderiza operações em lote"""
-    st.subheader("🔧 Operações em Lote")
-    
-    if not filtered_tables:
-        st.info("🔧 Nenhuma tabela disponível para operações em lote")
-        return
-    
-    # Seleção inteligente de tabelas
-    st.markdown("#### ⚙️ Seleção de Tabelas")
-    
-    selection_col1, selection_col2, selection_col3 = st.columns(3)
-    
-    with selection_col1:
-        if st.button("✅ Selecionar Todas", use_container_width=True):
-            st.session_state.selected_batch_tables = [t['name'] for t in filtered_tables]
-    
-    with selection_col2:
-        if st.button("🟢 Só com Dados", use_container_width=True):
-            st.session_state.selected_batch_tables = [t['name'] for t in filtered_tables if t.get('rows', 0) > 0]
-    
-    with selection_col3:
-        if st.button("🔄 Limpar Seleção", use_container_width=True):
-            st.session_state.selected_batch_tables = []
-    
-    # Interface de seleção
-    if 'selected_batch_tables' not in st.session_state:
-        st.session_state.selected_batch_tables = []
-    
-    selected_tables = st.multiselect(
-        "Tabelas selecionadas:",
-        [t['name'] for t in filtered_tables],
-        default=st.session_state.selected_batch_tables,
-        help="Selecione as tabelas para operações em lote"
-    )
-    
-    st.session_state.selected_batch_tables = selected_tables
-    
-    if selected_tables:
-        st.success(f"✅ {len(selected_tables)} tabela(s) selecionada(s)")
-        
-        # Preview das tabelas selecionadas
-        with st.expander("👁️ Preview das Tabelas Selecionadas"):
-            preview_data = []
-            for table_name in selected_tables:
-                table = next((t for t in filtered_tables if t['name'] == table_name), None)
-                if table:
-                    preview_data.append({
-                        'Nome': table['name'],
-                        'Registros': f"{table.get('rows', 0):,}",
-                        'Tamanho': table.get('size', 'N/A'),
-                        'Schema': table.get('schema', 'public')
-                    })
-            
-            st.dataframe(pd.DataFrame(preview_data), use_container_width=True)
-        
-        # Operações disponíveis
-        st.markdown("#### 🚀 Operações Disponíveis")
-        
-        op_col1, op_col2, op_col3, op_col4 = st.columns(4)
-        
-        with op_col1:
-            if st.button("💾 Backup em Lote", type="primary", use_container_width=True):
-                execute_batch_backup(selected_tables, db_manager)
-        
-        with op_col2:
-            if st.button("⚡ Otimizar em Lote", use_container_width=True):
-                execute_batch_optimization(selected_tables, db_manager)
-        
-        with op_col3:
-            if st.button("📊 Analisar em Lote", use_container_width=True):
-                execute_batch_analysis(selected_tables, db_manager)
-        
-        with op_col4:
-            if st.button("📤 Exportar em Lote", use_container_width=True):
-                execute_batch_export(selected_tables, db_manager)
-        
-    else:
-        st.info("ℹ️ Selecione pelo menos uma tabela para realizar operações em lote")
-
-def execute_batch_backup(selected_tables, db_manager):
-    """Executa backup em lote com interface melhorada"""
-    st.markdown("### 💾 Executando Backup em Lote")
-    
-    progress_bar = st.progress(0)
-    status_container = st.container()
-    
-    successful_backups = []
-    failed_backups = []
-    
-    for i, table_name in enumerate(selected_tables):
-        with status_container:
-            st.info(f"🔄 Criando backup de **{table_name}** ({i+1}/{len(selected_tables)})")
-        
-        progress_bar.progress((i + 1) / len(selected_tables))
-        
-        try:
-            result = db_manager.backup_table(table_name)
-            
-            if result['success']:
-                successful_backups.append({
-                    'table': table_name,
-                    'backup_name': result.get('backup_name', 'backup_criado'),
-                    'timestamp': datetime.now().strftime('%H:%M:%S')
-                })
-            else:
-                failed_backups.append({
-                    'table': table_name,
-                    'error': result.get('message', 'Erro desconhecido')
-                })
-        
-        except Exception as e:
-            failed_backups.append({
-                'table': table_name,
-                'error': str(e)
-            })
-        
-        time.sleep(0.5)  # Simular tempo de processamento
-    
-    # Limpar interface temporária
-    status_container.empty()
-    progress_bar.empty()
-    
-    # Mostrar resultados
-    if successful_backups:
-        st.success(f"✅ Backup concluído para {len(successful_backups)} tabela(s)!")
-        
-        # Tabela de sucessos
-        df_success = pd.DataFrame(successful_backups)
-        st.dataframe(df_success, use_container_width=True)
-        
-        log_activity("Backup em lote", f"{len(successful_backups)} tabelas")
-    
-    if failed_backups:
-        st.error(f"❌ Falha no backup de {len(failed_backups)} tabela(s)")
-        
-        # Tabela de falhas
-        df_failed = pd.DataFrame(failed_backups)
-        st.dataframe(df_failed, use_container_width=True)
-
-def execute_batch_optimization(selected_tables, db_manager):
-    """Executa otimização em lote"""
-    st.markdown("### ⚡ Executando Otimização em Lote")
-    
-    progress_bar = st.progress(0)
-    status_container = st.container()
-    
-    optimization_results = []
-    
-    for i, table_name in enumerate(selected_tables):
-        with status_container:
-            st.info(f"⚡ Otimizando **{table_name}** ({i+1}/{len(selected_tables)})")
-        
-        progress_bar.progress((i + 1) / len(selected_tables))
-        
-        try:
-            result = db_manager.optimize_table(table_name)
-            
-            optimization_results.append({
-                'Tabela': table_name,
-                'Status': '✅ Sucesso' if result['success'] else '❌ Falha',
-                'Mensagem': result.get('message', 'Otimizado'),
-                'Tempo': f"{random.uniform(0.5, 2.0):.1f}s"
-            })
-        
-        except Exception as e:
-            optimization_results.append({
-                'Tabela': table_name,
-                'Status': '❌ Erro',
-                'Mensagem': str(e),
-                'Tempo': '0s'
-            })
-        
-        time.sleep(0.3)
-    
-    # Limpar interface temporária
-    status_container.empty()
-    progress_bar.empty()
-    
-    # Mostrar resultados
-    df_results = pd.DataFrame(optimization_results)
-    st.dataframe(df_results, use_container_width=True)
-    
-    successful_count = len([r for r in optimization_results if '✅' in r['Status']])
-    
-    if successful_count == len(selected_tables):
-        st.success(f"✅ Todas as {len(selected_tables)} tabelas foram otimizadas com sucesso!")
-    elif successful_count > 0:
-        st.warning(f"⚠️ {successful_count} de {len(selected_tables)} tabelas otimizadas com sucesso")
-    else:
-        st.error("❌ Nenhuma tabela foi otimizada com sucesso")
-    
-    log_activity("Otimização em lote", f"{successful_count}/{len(selected_tables)} tabelas")
-
-def execute_batch_analysis(selected_tables, db_manager):
-    """Executa análise em lote"""
-    st.markdown("### 📊 Executando Análise em Lote")
-    
-    progress_bar = st.progress(0)
-    status_container = st.container()
-    
-    analysis_results = []
-    
-    for i, table_name in enumerate(selected_tables):
-        with status_container:
-            st.info(f"📊 Analisando **{table_name}** ({i+1}/{len(selected_tables)})")
-        
-        progress_bar.progress((i + 1) / len(selected_tables))
-        
-        try:
-            table_info = db_manager.get_table_info(table_name)
-            
-            analysis_results.append({
-                'Tabela': table_name,
-                'Registros': f"{table_info.get('rows', 0):,}",
-                'Tamanho': table_info.get('size', 'N/A'),
-                'Última Modificação': table_info.get('last_modified', 'N/A'),
-                'Status': '🟢 Analisada'
-            })
-        
-        except Exception as e:
-            analysis_results.append({
-                'Tabela': table_name,
-                'Registros': 'Erro',
-                'Tamanho': 'Erro',
-                'Última Modificação': 'Erro',
-                'Status': f'❌ {str(e)[:50]}'
-            })
-        
-        time.sleep(0.2)
-    
-    # Limpar interface temporária
-    status_container.empty()
-    progress_bar.empty()
-    
-    # Mostrar resultados
-    st.success("✅ Análise em lote concluída!")
-    
-    df_analysis = pd.DataFrame(analysis_results)
-    st.dataframe(df_analysis, use_container_width=True)
-    
-    # Estatísticas consolidadas
-    total_records = 0
-    valid_analyses = 0
-    
-    for result in analysis_results:
-        if result['Status'] == '🟢 Analisada':
-            valid_analyses += 1
-            try:
-                records_str = result['Registros'].replace(',', '')
-                total_records += int(records_str)
-            except:
-                pass
-    
-    if valid_analyses > 0:
-        summary_col1, summary_col2, summary_col3 = st.columns(3)
-        
-        with summary_col1:
-            st.metric("📊 Tabelas Analisadas", f"{valid_analyses}/{len(selected_tables)}")
-        
-        with summary_col2:
-            st.metric("📈 Total de Registros", f"{total_records:,}")
-        
-        with summary_col3:
-            avg_records = total_records // valid_analyses if valid_analyses > 0 else 0
-            st.metric("📊 Média de Registros", f"{avg_records:,}")
-    
-    log_activity("Análise em lote", f"{valid_analyses} tabelas")
-
-def execute_batch_export(selected_tables, db_manager):
-    """Executa exportação em lote"""
-    st.markdown("### 📤 Configurando Exportação em Lote")
-    
-    # Opções de exportação
-    export_col1, export_col2, export_col3 = st.columns(3)
-    
-    with export_col1:
-        export_format = st.selectbox("📁 Formato:", ["JSON Consolidado", "Excel Multi-Sheets", "ZIP com CSVs"])
-    
-    with export_col2:
-        max_records = st.number_input("🔢 Máx. registros por tabela:", min_value=100, value=1000, step=100)
-    
-    with export_col3:
-        include_schema = st.checkbox("📋 Incluir schema", value=True)
-    
-    if st.button("🚀 Iniciar Exportação", type="primary"):
-        progress_bar = st.progress(0)
-        status_container = st.container()
-        
-        export_data = {}
-        successful_exports = 0
-        
-        for i, table_name in enumerate(selected_tables):
-            with status_container:
-                st.info(f"📤 Exportando **{table_name}** ({i+1}/{len(selected_tables)})")
-            
-            progress_bar.progress((i + 1) / len(selected_tables))
-            
-            try:
-                result = db_manager.get_table_data(table_name, limit=max_records)
-                
-                if result['success'] and result['data']:
-                    export_data[table_name] = {
-                        'data': result['data'],
-                        'count': len(result['data']),
-                        'execution_time': result['execution_time']
-                    }
-                    successful_exports += 1
-                
-            except Exception as e:
-                st.warning(f"⚠️ Erro ao exportar {table_name}: {e}")
-            
-            time.sleep(0.3)
-        
-        # Limpar interface temporária
-        status_container.empty()
-        progress_bar.empty()
-        
-        if export_data:
-            st.success(f"✅ {successful_exports} tabela(s) exportada(s) com sucesso!")
-            
-            # Gerar arquivo baseado no formato
-            if export_format == "JSON Consolidado":
-                # Preparar dados para JSON
-                json_export = {
-                    'metadata': {
-                        'exported_at': datetime.now().isoformat(),
-                        'tables_count': len(export_data),
-                        'total_records': sum([info['count'] for info in export_data.values()])
-                    },
-                    'tables': {}
-                }
-                
-                for table_name, info in export_data.items():
-                    json_export['tables'][table_name] = {
-                        'count': info['count'],
-                        'data': info['data']
-                    }
-                
-                json_str = json.dumps(json_export, indent=2, default=str)
-                
-                st.download_button(
-                    "📥 Download JSON Consolidado",
-                    json_str,
-                    f"export_lote_{len(selected_tables)}_tabelas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                    "application/json",
-                    use_container_width=True
-                )
-            
-            elif export_format == "Excel Multi-Sheets":
-                # Criar Excel com múltiplas abas
-                excel_buffer = io.BytesIO()
-                
-                with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-                    # Aba de resumo
-                    summary_data = []
-                    for table_name, info in export_data.items():
-                        summary_data.append({
-                            'Tabela': table_name,
-                            'Registros Exportados': info['count'],
-                            'Tempo de Execução': info['execution_time']
-                        })
+                            export_data[table_name] = result['data']
+                        
+                        time.sleep(0.3)
                     
-                    pd.DataFrame(summary_data).to_excel(writer, sheet_name='Resumo', index=False)
+                    status_text.empty()
+                    progress_bar.empty()
                     
-                    # Abas de dados
-                    for table_name, info in export_data.items():
-                        if info['data']:
-                            df_table = pd.DataFrame(info['data'])
-                            sheet_name = table_name[:31]  # Limite do Excel
-                            df_table.to_excel(writer, sheet_name=sheet_name, index=False)
-                
-                st.download_button(
-                    "📥 Download Excel Multi-Sheets",
-                    excel_buffer.getvalue(),
-                    f"export_lote_{len(selected_tables)}_tabelas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True
-                )
+                    if export_data:
+                        if export_format == "JSON Consolidado":
+                            json_export = json.dumps(export_data, indent=2, default=str)
+                            st.download_button(
+                                "📥 Download JSON Consolidado",
+                                json_export,
+                                f"tabelas_selecionadas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                                "application/json"
+                            )
+                        
+                        elif export_format == "Excel Multi-Sheets":
+                            # Criar Excel com múltiplas sheets
+                            excel_buffer = io.BytesIO() # type: ignore
+                            
+                            with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+                                for table_name, data in export_data.items():
+                                    if data:
+                                        df_export = pd.DataFrame(data)
+                                        # Limitar nome da sheet (Excel tem limite de 31 caracteres)
+                                        sheet_name = table_name[:31]
+                                        df_export.to_excel(writer, sheet_name=sheet_name, index=False)
+                            
+                            st.download_button(
+                                "📥 Download Excel Multi-Sheets",
+                                excel_buffer.getvalue(),
+                                f"tabelas_selecionadas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            )
+                        
+                        st.success(f"✅ Dados de {len(export_data)} tabela(s) prontos para download!")
+                        log_activity("Exportação em lote", f"{len(export_data)} tabelas")
+                    
+                    else:
+                        st.warning("⚠️ Nenhum dado encontrado nas tabelas selecionadas para exportação")
             
-            # Mostrar resumo da exportação
-            with st.expander("📋 Resumo da Exportação"):
-                summary_data = []
-                for table_name, info in export_data.items():
-                    summary_data.append({
-                        'Tabela': table_name,
-                        'Registros': info['count'],
-                        'Tempo': info['execution_time']
-                    })
-                
-                st.dataframe(pd.DataFrame(summary_data), use_container_width=True)
-            
-            log_activity("Exportação em lote", f"{successful_exports} tabelas")
-        
-        else:
-            st.error("❌ Nenhuma tabela foi exportada com sucesso")
-
-def render_tables_insights(filtered_tables):
-    """Renderiza insights automáticos das tabelas"""
-    st.subheader("🔍 Insights e Recomendações")
-    
-    if not filtered_tables:
-        st.info("🔍 Nenhuma tabela disponível para análise de insights")
-        return
-    
-    # Análise de performance
-    st.markdown("#### ⚡ Análise de Performance")
-    
-    perf_col1, perf_col2 = st.columns(2)
-    
-    with perf_col1:
-        # Tabelas que podem precisar de otimização
-        large_tables = [t for t in filtered_tables if t.get('rows', 0) > 100000]
-        no_index_tables = [t for t in filtered_tables if not t.get('has_indexes', False) and t.get('rows', 0) > 1000]
-        
-        if large_tables:
-            st.warning(f"⚠️ **{len(large_tables)} tabela(s) grande(s)** (>100k registros) podem impactar performance:")
-            for table in large_tables[:5]:  # Mostrar até 5
-                st.markdown(f"• `{table['name']}` - {table.get('rows', 0):,} registros")
-        
-        if no_index_tables:
-            st.warning(f"⚠️ **{len(no_index_tables)} tabela(s) sem índices** com muitos registros:")
-            for table in no_index_tables[:5]:
-                st.markdown(f"• `{table['name']}` - {table.get('rows', 0):,} registros")
-    
-    with perf_col2:
-        # Recomendações de manutenção
-        empty_tables = [t for t in filtered_tables if t.get('rows', 0) == 0]
-        old_tables = [t for t in filtered_tables if t.get('last_modified', '2025-01-01') < '2024-12-01']
-        
-        if empty_tables:
-            st.info(f"📭 **{len(empty_tables)} tabela(s) vazia(s)** - considere remover se não utilizadas:")
-            for table in empty_tables[:5]:
-                st.markdown(f"• `{table['name']}` - Schema: {table.get('schema', 'public')}")
-        
-        if old_tables:
-            st.info(f"📅 **{len(old_tables)} tabela(s) antiga(s)** - verificar se ainda são necessárias:")
-            for table in old_tables[:5]:
-                st.markdown(f"• `{table['name']}` - Modificada: {table.get('last_modified', 'N/A')}")
-    
-    # Distribuição e padrões
-    st.markdown("#### 📊 Padrões Identificados")
-    
-    patterns_col1, patterns_col2, patterns_col3 = st.columns(3)
-    
-    with patterns_col1:
-        # Análise de nomes
-        table_names = [t['name'] for t in filtered_tables]
-        
-        # Prefixos comuns
-        prefixes = {}
-        for name in table_names:
-            if '_' in name:
-                prefix = name.split('_')[0]
-                prefixes[prefix] = prefixes.get(prefix, 0) + 1
-        
-        common_prefixes = [(k, v) for k, v in prefixes.items() if v > 1]
-        
-        if common_prefixes:
-            st.success("✅ **Convenções de nomenclatura detectadas:**")
-            for prefix, count in sorted(common_prefixes, key=lambda x: x[1], reverse=True)[:5]:
-                st.markdown(f"• `{prefix}_*` - {count} tabelas")
-        else:
-            st.info("ℹ️ Nenhuma convenção de nomenclatura clara detectada")
-    
-    with patterns_col2:
-        # Análise de schemas
-        schemas = {}
-        for table in filtered_tables:
-            schema = table.get('schema', 'public')
-            schemas[schema] = schemas.get(schema, 0) + 1
-        
-        if len(schemas) > 1:
-            st.success("✅ **Organização por schemas:**")
-            for schema, count in schemas.items():
-                percentage = (count / len(filtered_tables)) * 100
-                st.markdown(f"• `{schema}` - {count} tabelas ({percentage:.1f}%)")
-        else:
-            st.info("ℹ️ Todas as tabelas estão no schema public")
-    
-    with patterns_col3:
-        # Análise de tamanhos
-        size_distribution = {'Pequenas (<1k)': 0, 'Médias (1k-100k)': 0, 'Grandes (>100k)': 0}
-        
-        for table in filtered_tables:
-            rows = table.get('rows', 0)
-            if rows < 1000:
-                size_distribution['Pequenas (<1k)'] += 1
-            elif rows < 100000:
-                size_distribution['Médias (1k-100k)'] += 1
             else:
-                size_distribution['Grandes (>100k)'] += 1
+                st.info("ℹ️ Selecione pelo menos uma tabela para realizar operações em lote")
+    
+    else:
+        st.info("📋 Nenhuma tabela encontrada com os critérios de filtro especificados.")
         
-        st.success("✅ **Distribuição por tamanho:**")
-        for category, count in size_distribution.items():
-            if count > 0:
-                percentage = (count / len(filtered_tables)) * 100
-                st.markdown(f"• {category} - {count} ({percentage:.1f}%)")
-    
-    # Recomendações automáticas
-    st.markdown("#### 💡 Recomendações Automáticas")
-    
-    recommendations = []
-    
-    # Baseado no número de tabelas
-    if len(filtered_tables) > 50:
-        recommendations.append({
-            'type': 'organization',
-            'title': 'Organização do Banco',
-            'description': f'Com {len(filtered_tables)} tabelas, considere organizá-las em schemas separados por funcionalidade.',
-            'priority': 'Média',
-            'action': 'Criar schemas temáticos (ex: auth, analytics, core)'
-        })
-    
-    # Baseado em tabelas grandes
-    if len(large_tables) > 0:
-        recommendations.append({
-            'type': 'performance',
-            'title': 'Otimização de Performance',
-            'description': f'{len(large_tables)} tabela(s) com mais de 100k registros podem causar lentidão.',
-            'priority': 'Alta',
-            'action': 'Implementar índices, particionamento ou arquivamento'
-        })
-    
-    # Baseado em tabelas vazias
-    if len(empty_tables) > 5:
-        recommendations.append({
-            'type': 'cleanup',
-            'title': 'Limpeza do Banco',
-            'description': f'{len(empty_tables)} tabelas vazias ocupam espaço desnecessário.',
-            'priority': 'Baixa',
-            'action': 'Avaliar necessidade e remover tabelas não utilizadas'
-        })
-    
-    # Baseado em índices
-    if len(no_index_tables) > 0:
-        recommendations.append({
-            'type': 'indexing',
-            'title': 'Estratégia de Indexação',
-            'description': f'{len(no_index_tables)} tabela(s) sem índices com dados significativos.',
-            'priority': 'Alta',
-            'action': 'Criar índices em colunas frequentemente consultadas'
-        })
-    
-    # Exibir recomendações
-    if recommendations:
-        for i, rec in enumerate(recommendations):
-            priority_color = {'Alta': '#FF6347', 'Média': '#FFD700', 'Baixa': '#90EE90'}.get(rec['priority'], '#90EE90')
-            
-            st.markdown(f"""
-            <div style='background: linear-gradient(135deg, #F8FFF8, #F0FFF0); 
-                       padding: 1.5rem; border-radius: 15px; margin: 1rem 0;
-                       border-left: 5px solid {priority_color};'>
-                <h5 style='color: #2E8B57; margin: 0 0 0.5rem 0;'>
-                    {rec['type'].title()} - {rec['title']}
-                    <span style='background: {priority_color}; color: white; padding: 0.2rem 0.5rem; 
-                                border-radius: 10px; font-size: 0.7rem; margin-left: 1rem;'>
-                        {rec['priority']}
-                    </span>
-                </h5>
-                <p style='color: #006400; margin: 0.5rem 0;'>{rec['description']}</p>
-                <p style='color: #228B22; margin: 0; font-weight: 500;'>
-                    <strong>Ação:</strong> {rec['action']}
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
-    else:
-        st.success("🎉 **Excelente!** Nenhuma recomendação crítica identificada. Seu banco está bem organizado!")
-    
-    # Score geral do banco
-    st.markdown("#### 🏆 Score Geral do Banco")
-    
-    score = 100
-    
-    # Penalidades
-    if len(empty_tables) > len(filtered_tables) * 0.3:  # Mais de 30% vazias
-        score -= 20
-    
-    if len(no_index_tables) > len(filtered_tables) * 0.5:  # Mais de 50% sem índices
-        score -= 25
-    
-    if len(large_tables) > len(filtered_tables) * 0.2:  # Mais de 20% grandes
-        score -= 15
-    
-    if len(schemas) == 1 and len(filtered_tables) > 20:  # Muitas tabelas em um schema
-        score -= 10
-    
-    # Bônus
-    if len(schemas) > 1:  # Boa organização
-        score += 5
-    
-    if len(no_index_tables) == 0:  # Todas com índices
-        score += 10
-    
-    score = max(0, min(100, score))
-    
-    # Exibir score com cor baseada na pontuação
-    if score >= 80:
-        score_color = "#2E8B57"
-        score_text = "Excelente"
-        score_icon = "🏆"
-    elif score >= 60:
-        score_color = "#FFD700"
-        score_text = "Bom"
-        score_icon = "⭐"
-    elif score >= 40:
-        score_color = "#FF8C00"
-        score_text = "Regular"
-        score_icon = "⚠️"
-    else:
-        score_color = "#FF6347"
-        score_text = "Precisa Atenção"
-        score_icon = "🚨"
-    
-    st.markdown(f"""
-    <div style='background: linear-gradient(135deg, {score_color}22, {score_color}11); 
-               padding: 2rem; border-radius: 20px; text-align: center;
-               border: 3px solid {score_color}; margin: 2rem 0;'>
-        <div style='font-size: 3rem; margin-bottom: 1rem;'>{score_icon}</div>
-        <h2 style='color: {score_color}; margin: 0; font-size: 3rem;'>{score}/100</h2>
-        <h3 style='color: {score_color}; margin: 0.5rem 0; font-size: 1.5rem;'>{score_text}</h3>
-        <p style='color: #666; margin: 0; font-size: 1rem;'>
-            Score geral de saúde e organização do banco de dados
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+        if search_table or schema_filter != "Todos":
+            st.markdown("💡 **Dica:** Tente limpar os filtros para ver todas as tabelas disponíveis.")
 
 def render_sql_editor():
     """Renderiza a interface do editor SQL com tratamento robusto de erros"""
@@ -6407,559 +5512,469 @@ def render_dba_operations():
                 st.write(action)
 
 def render_projects():
-    """Renderiza página de gerenciamento de projetos melhorada"""
+    """Renderiza página de projetos"""
     st.markdown("""
     <div style='background: linear-gradient(135deg, #F0FFF0, #E6FFE6); 
                 padding: 1.5rem; border-radius: 15px; 
                 border-left: 5px solid #2E8B57; margin-bottom: 2rem;'>
         <h2 style='color: #2E8B57; margin: 0; font-size: 2rem;'>
-            📁 Gerenciamento de Projetos & Scripts
+            📁 Gerenciamento de Projetos
         </h2>
         <p style='color: #228B22; margin: 0.5rem 0 0 0; font-size: 1.1rem;'>
-            Organize e execute scripts SQL por projetos
+            Organize scripts, consultas e operações por projetos
         </p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Abas principais
-    tab1, tab2, tab3, tab4 = st.tabs(["📋 Projetos", "📝 Scripts", "📊 Execuções", "➕ Novo"])
+    # Inicializar projetos se não existir
+    if 'projects' not in st.session_state:
+        st.session_state.projects = [
+            {
+                'id': 1,
+                'name': 'Sistema Principal',
+                'description': 'Scripts e queries do sistema principal PetCare',
+                'category': 'Desenvolvimento',
+                'priority': 'Alta',
+                'scripts': 45,
+                'status': 'active',
+                'members': ['admin@petcareai.com', 'dev@petcareai.com'],
+                'created_at': datetime.now() - timedelta(days=30),
+                'tags': ['sistema', 'principal', 'crud']
+            },
+            {
+                'id': 2,
+                'name': 'Relatórios BI',
+                'description': 'Consultas e relatórios de business intelligence',
+                'category': 'Análise',
+                'priority': 'Média',
+                'scripts': 23,
+                'status': 'active',
+                'members': ['admin@petcareai.com', 'analyst@petcareai.com'],
+                'created_at': datetime.now() - timedelta(days=20),
+                'tags': ['bi', 'relatórios', 'dashboard']
+            },
+            {
+                'id': 3,
+                'name': 'Manutenção DB',
+                'description': 'Scripts de manutenção e otimização do banco',
+                'category': 'Manutenção',
+                'priority': 'Crítica',
+                'scripts': 12,
+                'status': 'active',
+                'members': ['admin@petcareai.com'],
+                'created_at': datetime.now() - timedelta(days=10),
+                'tags': ['manutenção', 'otimização', 'backup']
+            }
+        ]
+    
+    # Abas de projetos
+    tab1, tab2, tab3 = st.tabs(["📋 Projetos Ativos", "➕ Novo Projeto", "📊 Estatísticas"])
     
     with tab1:
-        render_projects_list()
-    
-    with tab2:
-        render_scripts_management()
-    
-    with tab3:
-        render_execution_history()
-    
-    with tab4:
-        render_new_project_form()
-
-def render_projects_list():
-    """Renderiza lista de projetos"""
-    st.subheader("📋 Lista de Projetos")
-    
-    # Buscar projetos do banco
-    projects = project_manager.get_projects()
-    
-    if not projects:
-        st.info("📭 Nenhum projeto encontrado. Crie seu primeiro projeto na aba 'Novo'.")
-        return
-    
-    # Filtros
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        filter_status = st.selectbox("Status:", ["Todos", "ativo", "pausado", "concluido"])
-    
-    with col2:
-        filter_category = st.selectbox("Categoria:", 
-                                      ["Todas"] + list(set([p.get('categoria', 'Outros') for p in projects])))
-    
-    with col3:
-        search_term = st.text_input("🔍 Buscar:", placeholder="Nome do projeto...")
-    
-    # Aplicar filtros
-    filtered_projects = projects
-    
-    if filter_status != "Todos":
-        filtered_projects = [p for p in filtered_projects if p.get('status') == filter_status]
-    
-    if filter_category != "Todas":
-        filtered_projects = [p for p in filtered_projects if p.get('categoria') == filter_category]
-    
-    if search_term:
-        filtered_projects = [p for p in filtered_projects 
-                           if search_term.lower() in p.get('nome', '').lower()]
-    
-    # Exibir projetos
-    for project in filtered_projects:
-        render_project_card(project)
-
-def render_project_card(project):
-    """Renderiza card de um projeto"""
-    # Buscar scripts do projeto
-    scripts = project_manager.get_project_scripts(project['id'])
-    
-    with st.expander(f"📁 {project['nome']} ({len(scripts)} scripts)", expanded=False):
-        col1, col2 = st.columns([2, 1])
+        # Filtros e controles
+        col1, col2, col3 = st.columns([2, 1, 1])
         
         with col1:
-            st.write(f"**📝 Descrição:** {project.get('descricao', 'Sem descrição')}")
-            st.write(f"**📂 Categoria:** {project.get('categoria', 'Outros')}")
-            st.write(f"**⭐ Prioridade:** {project.get('prioridade', 'Média')}")
-            
-            # Tags
-            if project.get('tags'):
-                tags_html = " ".join([f"<span style='background: #E6FFE6; padding: 2px 6px; border-radius: 10px; font-size: 0.8rem; color: #2E8B57;'>#{tag}</span>" for tag in project['tags']])
-                st.markdown(f"**🏷️ Tags:** {tags_html}", unsafe_allow_html=True)
+            search_project = st.text_input("🔍 Buscar projeto:", placeholder="Digite o nome do projeto...")
         
         with col2:
-            status_colors = {'ativo': '🟢', 'pausado': '🟡', 'concluido': '⚫'}
-            status_icon = status_colors.get(project.get('status', 'ativo'), '🟢')
-            st.write(f"**Status:** {status_icon} {project.get('status', 'ativo').title()}")
-            st.write(f"**📅 Criado:** {format_datetime(datetime.fromisoformat(project.get('created_at', '').replace('Z', '+00:00')), 'short')}")
-        
-        # Scripts do projeto
-        if scripts:
-            st.markdown("#### 📜 Scripts do Projeto")
-            
-            for script in scripts:
-                render_script_item(script, project['id'])
-        else:
-            st.info("📭 Nenhum script encontrado neste projeto.")
-        
-        # Ações do projeto
-        st.markdown("---")
-        col1, col2, col3, col4, col5 = st.columns(5)
-        
-        with col1:
-            if st.button("➕ Novo Script", key=f"new_script_{project['id']}"):
-                st.session_state.new_script_project_id = project['id']
-                st.session_state.show_new_script_form = True
-                st.rerun()
-        
-        with col2:
-            if st.button("✏️ Editar", key=f"edit_proj_{project['id']}"):
-                st.session_state.edit_project_data = project
-                st.session_state.show_edit_project_form = True
-                st.rerun()
+            filter_status = st.selectbox("📊 Status:", ["Todos", "Ativo", "Pausado", "Concluído"])
         
         with col3:
-            if st.button("📊 Relatório", key=f"report_proj_{project['id']}"):
-                show_project_report(project, scripts) # type: ignore
-        
-        with col4:
-            # Toggle status
-            current_status = project.get('status', 'ativo')
-            new_status = 'pausado' if current_status == 'ativo' else 'ativo'
-            
-            if st.button(f"{'⏸️ Pausar' if current_status == 'ativo' else '▶️ Ativar'}", 
-                        key=f"toggle_proj_{project['id']}"):
-                result = project_manager.update_project(project['id'], {'status': new_status})
-                if result['success']:
-                    st.success(f"✅ Projeto {new_status}!")
-                    st.rerun()
-        
-        with col5:
-            if st.button("🗑️ Excluir", key=f"del_proj_{project['id']}"):
-                if st.checkbox(f"Confirmar exclusão", key=f"confirm_del_{project['id']}"):
-                    result = project_manager.delete_project(project['id'])
-                    if result['success']:
-                        st.success("✅ Projeto excluído!")
-                        st.rerun()
-
-def render_script_item(script, project_id):
-    """Renderiza item de script"""
-    with st.container():
-        col1, col2, col3, col4 = st.columns([3, 1, 1, 2])
-        
-        with col1:
-            st.write(f"**📄 {script['nome']}**")
-            st.write(f"<small>{script.get('descricao', 'Sem descrição')}</small>", unsafe_allow_html=True)
-        
-        with col2:
-            st.write(f"🔄 {script.get('total_execucoes', 0)}x")
-        
-        with col3:
-            tipo_icons = {'consulta': '🔍', 'relatorio': '📊', 'manutencao': '🔧', 'backup': '💾'}
-            tipo_icon = tipo_icons.get(script.get('tipo_script', 'consulta'), '📄')
-            st.write(f"{tipo_icon} {script.get('tipo_script', 'consulta').title()}")
-        
-        with col4:
-            btn_col1, btn_col2, btn_col3 = st.columns(3)
-            
-            with btn_col1:
-                if st.button("▶️", key=f"exec_script_{script['id']}", help="Executar"):
-                    execute_script_with_feedback(script)
-            
-            with btn_col2:
-                if st.button("✏️", key=f"edit_script_{script['id']}", help="Editar"):
-                    st.session_state.edit_script_data = script
-                    st.session_state.show_edit_script_form = True
-                    st.rerun()
-            
-            with btn_col3:
-                if st.button("👁️", key=f"view_script_{script['id']}", help="Visualizar"):
-                    show_script_details(script)
-
-def execute_script_with_feedback(script):
-    """Executa script com feedback visual"""
-    with st.spinner(f"⚡ Executando {script['nome']}..."):
-        result = project_manager.execute_script(
-            script['id'], 
-            script['sql_content']
-        )
-    
-    if result['success']:
-        st.success(f"✅ Script {script['nome']} executado com sucesso!")
-        
-        # Mostrar resultados se houver dados
-        if result.get('data'):
-            with st.expander("📊 Resultados", expanded=True):
-                df_result = pd.DataFrame(result['data'])
-                st.dataframe(df_result, use_container_width=True)
-                
-                # Opções de exportação
-                col1, col2 = st.columns(2)
-                with col1:
-                    csv_data = df_result.to_csv(index=False)
-                    st.download_button(
-                        "📄 Download CSV",
-                        csv_data,
-                        f"{script['nome']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                        "text/csv"
-                    )
-                
-                with col2:
-                    json_data = df_result.to_json(orient='records', indent=2)
-                    st.download_button(
-                        "📋 Download JSON",
-                        json_data,
-                        f"{script['nome']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                        "application/json"
-                    )
-        
-        # Mostrar métricas
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("⏱️ Tempo", result.get('execution_time', 'N/A'))
-        with col2:
-            st.metric("📊 Registros", result.get('rows_affected', 0))
-        with col3:
-            st.metric("✅ Status", "Sucesso")
-    
-    else:
-        st.error(f"❌ Erro ao executar {script['nome']}: {result.get('error', 'Erro desconhecido')}")
-
-def show_script_details(script):
-    """Mostra detalhes completos do script"""
-    st.subheader(f"📄 {script['nome']}")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.write(f"**📝 Descrição:** {script.get('descricao', 'Sem descrição')}")
-        st.write(f"**📂 Tipo:** {script.get('tipo_script', 'consulta').title()}")
-        st.write(f"**🔄 Execuções:** {script.get('total_execucoes', 0)}")
-        st.write(f"**⏱️ Tempo Médio:** {script.get('tempo_medio_execucao', 'N/A')}")
-    
-    with col2:
-        st.write(f"**📅 Criado:** {format_datetime(datetime.fromisoformat(script.get('created_at', '').replace('Z', '+00:00')), 'full')}")
-        st.write(f"**🔄 Atualizado:** {format_datetime(datetime.fromisoformat(script.get('updated_at', '').replace('Z', '+00:00')), 'full')}")
-        st.write(f"**📊 Versão:** {script.get('versao', 1)}")
-        
-        if script.get('ultima_execucao'):
-            st.write(f"**⚡ Última Execução:** {format_datetime(datetime.fromisoformat(script.get('ultima_execucao', '').replace('Z', '+00:00')), 'full')}")
-    
-    # Código SQL
-    st.markdown("#### 💻 Código SQL")
-    st.code(script.get('sql_content', ''), language='sql')
-    
-    # Histórico de execuções
-    history = project_manager.get_execution_history(script_id=script['id'])
-    if history:
-        st.markdown(f"#### 📊 Últimas Execuções ({len(history)})")
-        
-        history_data = []
-        for exec_record in history:
-            history_data.append({
-                'Data': format_datetime(datetime.fromisoformat(exec_record.get('executed_at', '').replace('Z', '+00:00')), 'full'),
-                'Status': '✅ Sucesso' if exec_record.get('status') == 'sucesso' else '❌ Erro',
-                'Tempo': exec_record.get('tempo_execucao', 'N/A'),
-                'Registros': exec_record.get('registros_afetados', 0),
-                'Executado por': exec_record.get('executed_by', 'N/A')
-            })
-        
-        df_history = pd.DataFrame(history_data)
-        st.dataframe(df_history, use_container_width=True)
-
-def render_new_project_form():
-    """Renderiza formulário para novo projeto"""
-    st.subheader("➕ Criar Novo Projeto")
-    
-    with st.form("new_project_form"):
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            nome = st.text_input("📁 Nome do Projeto:", placeholder="Ex: Análise de Vendas")
-            categoria = st.selectbox("📂 Categoria:", [
-                "Análise", "Relatório", "Manutenção", "Backup", "Desenvolvimento", "Outros"
-            ])
-            prioridade = st.selectbox("⭐ Prioridade:", ["Baixa", "Média", "Alta", "Crítica"])
-        
-        with col2:
-            descricao = st.text_area("📝 Descrição:", placeholder="Descreva o objetivo do projeto...")
-            tags = st.text_input("🏷️ Tags (separadas por vírgula):", placeholder="analytics, vendas, mensal")
-            membros = st.text_input("👥 Membros (emails separados por vírgula):", 
-                                   value=st.session_state.get('username', 'admin') + '@petcareai.com')
-        
-        submit = st.form_submit_button("🚀 Criar Projeto", type="primary")
-        
-        if submit and nome and descricao:
-            project_data = {
-                'nome': nome,
-                'descricao': descricao,
-                'categoria': categoria,
-                'prioridade': prioridade,
-                'status': 'ativo',
-                'tags': [tag.strip() for tag in tags.split(',') if tag.strip()],
-                'membros': [email.strip() for email in membros.split(',') if email.strip()]
-            }
-            
-            result = project_manager.create_project(project_data)
-            
-            if result['success']:
-                st.success("✅ Projeto criado com sucesso!")
-                log_activity("Projeto criado", nome)
-                st.rerun()
-            else:
-                st.error(f"❌ Erro ao criar projeto: {result['message']}")
-
-# Adicionar no início do arquivo após as outras verificações de session_state
-def check_script_forms():
-    """Verifica se deve mostrar formulários de script"""
-    if st.session_state.get('show_new_script_form'):
-        render_new_script_form()
-    
-    if st.session_state.get('show_edit_script_form'):
-        render_edit_script_form() # type: ignore
-    
-    if st.session_state.get('show_edit_project_form'):
-        render_edit_project_form() # type: ignore
-
-def render_new_script_form():
-    """Renderiza formulário para novo script"""
-    st.subheader("➕ Novo Script SQL")
-    
-    project_id = st.session_state.get('new_script_project_id')
-    
-    with st.form("new_script_form"):
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            nome = st.text_input("📄 Nome do Script:", placeholder="Ex: Relatório Mensal")
-            tipo_script = st.selectbox("📂 Tipo:", [
-                "consulta", "relatorio", "manutencao", "backup", "migracao", "otimizacao"
-            ])
-        
-        with col2:
-            descricao = st.text_area("📝 Descrição:", placeholder="Descreva o que o script faz...")
-            tags = st.text_input("🏷️ Tags:", placeholder="relatorio, mensal, vendas")
-        
-        sql_content = st.text_area(
-            "💻 Código SQL:",
-            placeholder="-- Digite seu código SQL aqui\nSELECT * FROM tabela;",
-            height=300
-        )
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            submit = st.form_submit_button("💾 Salvar Script", type="primary")
-        
-        with col2:
-            cancel = st.form_submit_button("❌ Cancelar")
-        
-        if cancel:
-            st.session_state.show_new_script_form = False
-            st.rerun()
-        
-        if submit and nome and sql_content:
-            script_data = {
-                'projeto_id': project_id,
-                'nome': nome,
-                'descricao': descricao,
-                'sql_content': sql_content,
-                'tipo_script': tipo_script,
-                'status': 'ativo',
-                'tags': [tag.strip() for tag in tags.split(',') if tag.strip()],
-                'versao': 1,
-                'total_execucoes': 0
-            }
-            
-            result = project_manager.create_script(script_data)
-            
-            if result['success']:
-                st.success("✅ Script criado com sucesso!")
-                st.session_state.show_new_script_form = False
-                log_activity("Script criado", nome)
-                st.rerun()
-            else:
-                st.error(f"❌ Erro ao criar script: {result['message']}")
-
-def render_scripts_management():
-    """Gerenciamento de scripts por projeto"""
-    st.subheader("📝 Gerenciamento de Scripts")
-    
-    # Seletor de projeto
-    projects = project_manager.get_projects()
-    if not projects:
-        st.info("📭 Nenhum projeto encontrado. Crie um projeto primeiro.")
-        return
-    
-    project_options = {p['nome']: p['id'] for p in projects}
-    selected_project_name = st.selectbox("Selecione um projeto:", list(project_options.keys()))
-    selected_project_id = project_options[selected_project_name]
-    
-    # Buscar scripts do projeto selecionado
-    scripts = project_manager.get_project_scripts(selected_project_id)
-    
-    if scripts:
-        # Filtros de scripts
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            filter_type = st.selectbox("Tipo:", ["Todos"] + list(set([s.get('tipo_script', 'consulta') for s in scripts])))
-        
-        with col2:
-            filter_status = st.selectbox("Status:", ["Todos", "ativo", "pausado", "obsoleto"])
-        
-        with col3:
-            search_script = st.text_input("🔍 Buscar script:", placeholder="Nome do script...")
+            filter_priority = st.selectbox("⭐ Prioridade:", ["Todas", "Crítica", "Alta", "Média", "Baixa"])
         
         # Aplicar filtros
-        filtered_scripts = scripts
+        filtered_projects = st.session_state.projects
         
-        if filter_type != "Todos":
-            filtered_scripts = [s for s in filtered_scripts if s.get('tipo_script') == filter_type]
+        if search_project:
+            filtered_projects = [p for p in filtered_projects 
+                               if search_project.lower() in p['name'].lower()]
         
         if filter_status != "Todos":
-            filtered_scripts = [s for s in filtered_scripts if s.get('status') == filter_status]
+            status_map = {"Ativo": "active", "Pausado": "paused", "Concluído": "completed"}
+            filtered_projects = [p for p in filtered_projects 
+                               if p['status'] == status_map.get(filter_status, 'active')]
         
-        if search_script:
-            filtered_scripts = [s for s in filtered_scripts 
-                              if search_script.lower() in s.get('nome', '').lower()]
+        if filter_priority != "Todas":
+            filtered_projects = [p for p in filtered_projects 
+                               if p['priority'] == filter_priority]
         
-        # Lista de scripts
-        for script in filtered_scripts:
-            with st.expander(f"📄 {script['nome']} (v{script.get('versao', 1)})", expanded=False):
-                col1, col2 = st.columns([3, 1])
+        # Exibir projetos
+        if filtered_projects:
+            for project in filtered_projects:
+                # Definir cores baseadas no status e prioridade
+                status_colors = {
+                    'active': '#2E8B57',
+                    'paused': '#FFD700', 
+                    'completed': '#808080'
+                }
+                
+                priority_colors = {
+                    'Crítica': '#FF6347',
+                    'Alta': '#FF8C00',
+                    'Média': '#FFD700',
+                    'Baixa': '#90EE90'
+                }
+                
+                status_color = status_colors.get(project['status'], '#2E8B57')
+                priority_color = priority_colors.get(project['priority'], '#90EE90')
+                
+                with st.expander(f"📁 {project['name']} ({project['scripts']} scripts)", expanded=False):
+                    # Informações do projeto
+                    col1, col2, col3, col4 = st.columns(4)
+                    
+                    with col1:
+                        st.metric("📜 Scripts", project['scripts'])
+                    
+                    with col2:
+                        status_text = {
+                            'active': '🟢 Ativo',
+                            'paused': '🟡 Pausado',
+                            'completed': '⚫ Concluído'
+                        }.get(project['status'], '🟢 Ativo')
+                        
+                        st.markdown(f"**Status:** {status_text}")
+                    
+                    with col3:
+                        st.markdown(f"**Prioridade:** <span style='color: {priority_color}'>⭐ {project['priority']}</span>", 
+                                  unsafe_allow_html=True)
+                    
+                    with col4:
+                        st.metric("👥 Membros", len(project['members']))
+                    
+                    # Descrição e detalhes
+                    st.write(f"**📝 Descrição:** {project['description']}")
+                    st.write(f"**📂 Categoria:** {project['category']}")
+                    st.write(f"**📅 Criado em:** {format_datetime(project['created_at'], 'short')}")
+                    
+                    # Tags
+                    if project.get('tags'):
+                        tags_html = " ".join([f"<span style='background: #E6FFE6; padding: 2px 6px; border-radius: 10px; font-size: 0.8rem; color: #2E8B57;'>#{tag}</span>" for tag in project['tags']])
+                        st.markdown(f"**🏷️ Tags:** {tags_html}", unsafe_allow_html=True)
+                    
+                    # Membros
+                    st.write(f"**👥 Membros:** {', '.join(project['members'])}")
+                    
+                    # Gráfico de atividade do projeto (simulado)
+                    st.markdown("#### 📊 Atividade do Projeto")
+                    
+                    days = list(range(1, 31))
+                    activity_data = [random.randint(0, project['scripts']//5) for _ in days]
+                    
+                    fig = px.line(
+                        x=days,
+                        y=activity_data,
+                        title=f"Execuções de Scripts - {project['name']} (último mês)",
+                        labels={'x': 'Dia', 'y': 'Execuções'}
+                    )
+                    fig.update_traces(line=dict(color='#2E8B57'))
+                    fig.update_layout(height=300, template="plotly_white")
+                    
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Scripts do projeto (simulados)
+                    st.markdown("#### 📜 Scripts Recentes")
+                    
+                    project_scripts = [
+                        {
+                            'name': f'{project["name"].lower().replace(" ", "_")}_query_{i}.sql',
+                            'description': f'Script de {["consulta", "manutenção", "relatório"][i%3]} #{i+1}',
+                            'last_run': datetime.now() - timedelta(days=random.randint(1, 10)),
+                            'executions': random.randint(5, 50)
+                        }
+                        for i in range(min(5, project['scripts']))
+                    ]
+                    
+                    for script in project_scripts:
+                        col1, col2, col3, col4 = st.columns([3, 2, 1, 1])
+                        
+                        with col1:
+                            st.write(f"📄 **{script['name']}**")
+                            st.write(f"<small>{script['description']}</small>", unsafe_allow_html=True)
+                        
+                        with col2:
+                            st.write(f"📅 {format_datetime(script['last_run'], 'short')}")
+                        
+                        with col3:
+                            st.write(f"🔄 {script['executions']}x")
+                        
+                        with col4:
+                            if st.button("▶️", key=f"run_script_{project['id']}_{script['name']}", help="Executar script"):
+                                st.info(f"🚀 Executando {script['name']}...")
+                    
+                    # Ações do projeto
+                    st.markdown("---")
+                    st.markdown("#### ⚙️ Ações do Projeto")
+                    
+                    col1, col2, col3, col4, col5 = st.columns(5)
+                    
+                    with col1:
+                        if st.button(f"📝 Editar", key=f"edit_proj_{project['id']}"):
+                            st.session_state.edit_project_id = project['id']
+                            st.info(f"✏️ Editando projeto {project['name']}...")
+                    
+                    with col2:
+                        if st.button(f"📊 Relatório", key=f"report_proj_{project['id']}"):
+                            # Gerar relatório do projeto
+                            st.info(f"📈 Gerando relatório de {project['name']}...")
+                            
+                            project_report = {
+                                "Nome do Projeto": project['name'],
+                                "Total de Scripts": project['scripts'],
+                                "Execuções no Mês": sum(activity_data),
+                                "Média Diária": round(sum(activity_data)/len(activity_data), 1),
+                                "Status": project['status'],
+                                "Membros Ativos": len(project['members']),
+                                "Dias Desde Criação": (datetime.now() - project['created_at']).days
+                            }
+                            
+                            st.json(project_report)
+                            log_activity("Relatório gerado", f"Projeto: {project['name']}")
+                    
+                    with col3:
+                        # Toggle status
+                        if project['status'] == 'active':
+                            if st.button(f"⏸️ Pausar", key=f"pause_proj_{project['id']}"):
+                                project['status'] = 'paused'
+                                st.success(f"⏸️ Projeto {project['name']} pausado!")
+                                st.rerun()
+                        else:
+                            if st.button(f"▶️ Ativar", key=f"activate_proj_{project['id']}"):
+                                project['status'] = 'active'
+                                st.success(f"▶️ Projeto {project['name']} ativado!")
+                                st.rerun()
+                    
+                    with col4:
+                        if st.button(f"📤 Exportar", key=f"export_proj_{project['id']}"):
+                            # Criar dados para exportação
+                            export_data = {
+                                'projeto': project['name'],
+                                'scripts': project_scripts,
+                                'atividade': activity_data,
+                                'membros': project['members']
+                            }
+                            
+                            export_json = json.dumps(export_data, indent=2, default=str)
+                            st.download_button(
+                                "📥 Download JSON",
+                                export_json,
+                                f"{project['name'].lower().replace(' ', '_')}_export.json",
+                                "application/json",
+                                key=f"download_proj_{project['id']}"
+                            )
+                    
+                    with col5:
+                        if st.button(f"🗑️ Excluir", key=f"del_proj_{project['id']}"):
+                            if st.checkbox(f"Confirmar exclusão de {project['name']}", key=f"confirm_del_{project['id']}"):
+                                st.session_state.projects = [p for p in st.session_state.projects if p['id'] != project['id']]
+                                st.success(f"✅ Projeto {project['name']} excluído!")
+                                log_activity("Projeto excluído", project['name'])
+                                st.rerun()
+        
+        else:
+            st.warning("❌ Nenhum projeto encontrado com os critérios especificados.")
+    
+    with tab2:
+        st.subheader("➕ Criar Novo Projeto")
+        
+        with st.form("new_project_form"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                project_name = st.text_input("📁 Nome do Projeto:", placeholder="Ex: Sistema de Relatórios")
+                project_category = st.selectbox("📂 Categoria:", [
+                    "Desenvolvimento", "Manutenção", "Relatórios", "Backup", "Análise", "Outros"
+                ])
+                project_priority = st.selectbox("⭐ Prioridade:", ["Baixa", "Média", "Alta", "Crítica"])
+            
+            with col2:
+                project_description = st.text_area("📝 Descrição:", placeholder="Descreva o objetivo do projeto...")
+                project_members = st.multiselect("👥 Membros:", [
+                    "admin@petcareai.com", 
+                    "dev@petcareai.com", 
+                    "analyst@petcareai.com",
+                    "dba@petcareai.com"
+                ])
+                project_tags = st.text_input("🏷️ Tags (separadas por vírgula):", 
+                                           placeholder="sql, relatórios, manutenção")
+            
+            # Configurações avançadas
+            st.markdown("#### ⚙️ Configurações Avançadas")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                auto_backup = st.checkbox("💾 Backup automático de scripts", value=True)
+                notifications = st.checkbox("🔔 Notificações de execução", value=False)
+            
+            with col2:
+                schedule_reports = st.checkbox("📊 Relatórios agendados", value=False)
+                version_control = st.checkbox("📝 Controle de versão", value=True)
+            
+            submit_project = st.form_submit_button("🚀 Criar Projeto", type="primary")
+            
+            if submit_project:
+                if project_name and project_description:
+                    # Criar novo projeto
+                    new_project = {
+                        'id': max([p['id'] for p in st.session_state.projects], default=0) + 1,
+                        'name': project_name,
+                        'description': project_description,
+                        'category': project_category,
+                        'priority': project_priority,
+                        'members': project_members,
+                        'tags': [tag.strip() for tag in project_tags.split(',') if tag.strip()],
+                        'scripts': 0,
+                        'status': 'active',
+                        'created_at': datetime.now(),
+                        'settings': {
+                            'auto_backup': auto_backup,
+                            'notifications': notifications,
+                            'schedule_reports': schedule_reports,
+                            'version_control': version_control
+                        }
+                    }
+                    
+                    st.session_state.projects.append(new_project)
+                    log_activity("Projeto criado", project_name)
+                    
+                    st.success(f"✅ Projeto '{project_name}' criado com sucesso!")
+                    
+                    # Mostrar detalhes do projeto criado
+                    with st.expander("📋 Detalhes do Projeto Criado", expanded=True):
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            st.json({
+                                "Nome": project_name,
+                                "Categoria": project_category,
+                                "Prioridade": project_priority,
+                                "Membros": project_members,
+                                "Tags": project_tags
+                            })
+                        
+                        with col2:
+                            st.json({
+                                "Backup Automático": auto_backup,
+                                "Notificações": notifications,
+                                "Relatórios Agendados": schedule_reports,
+                                "Controle de Versão": version_control,
+                                "Data de Criação": format_datetime(datetime.now(), 'full')
+                            })
+                
+                else:
+                    st.error("❌ Nome e descrição são obrigatórios!")
+    
+    with tab3:
+        st.subheader("📊 Estatísticas dos Projetos")
+        
+        if st.session_state.projects:
+            # Métricas gerais
+            total_projects = len(st.session_state.projects)
+            active_projects = len([p for p in st.session_state.projects if p['status'] == 'active'])
+            total_scripts = sum(p['scripts'] for p in st.session_state.projects)
+            total_members = len(set([member for p in st.session_state.projects for member in p['members']]))
+            
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric("📁 Total Projetos", total_projects)
+            
+            with col2:
+                st.metric("🟢 Projetos Ativos", active_projects)
+            
+            with col3:
+                st.metric("📜 Total Scripts", total_scripts)
+            
+            with col4:
+                st.metric("👥 Membros Únicos", total_members)
+            
+            # Gráficos de análise
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("#### 📊 Projetos por Categoria")
+                
+                categories = {}
+                for project in st.session_state.projects:
+                    cat = project['category']
+                    categories[cat] = categories.get(cat, 0) + 1
+                
+                if categories:
+                    fig = px.pie(
+                        values=list(categories.values()),
+                        names=list(categories.keys()),
+                        title="Distribuição por Categoria",
+                        color_discrete_sequence=['#2E8B57', '#90EE90', '#228B22', '#98FB98', '#20B2AA', '#32CD32']
+                    )
+                    fig.update_layout(height=400)
+                    st.plotly_chart(fig, use_container_width=True)
+            
+            with col2:
+                st.markdown("#### ⭐ Projetos por Prioridade")
+                
+                priorities = {}
+                for project in st.session_state.projects:
+                    prio = project['priority']
+                    priorities[prio] = priorities.get(prio, 0) + 1
+                
+                if priorities:
+                    fig = px.bar(
+                        x=list(priorities.keys()),
+                        y=list(priorities.values()),
+                        title="Projetos por Prioridade",
+                        color=list(priorities.values()),
+                        color_continuous_scale=['#90EE90', '#FFD700', '#FF8C00', '#FF6347']
+                    )
+                    fig.update_layout(height=400, template="plotly_white")
+                    st.plotly_chart(fig, use_container_width=True)
+            
+            # Top projetos
+            st.markdown("#### 🏆 Top Projetos por Scripts")
+            
+            sorted_projects = sorted(st.session_state.projects, key=lambda x: x['scripts'], reverse=True)
+            
+            for i, project in enumerate(sorted_projects[:5]):
+                col1, col2, col3, col4 = st.columns([1, 3, 1, 1])
                 
                 with col1:
-                    st.code(script.get('sql_content', ''), language='sql')
+                    medal = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"][i]
+                    st.write(medal)
                 
                 with col2:
-                    st.write(f"**Tipo:** {script.get('tipo_script', 'consulta').title()}")
-                    st.write(f"**Execuções:** {script.get('total_execucoes', 0)}")
-                    st.write(f"**Status:** {script.get('status', 'ativo').title()}")
-                    
-                    # Botões de ação
-                    if st.button("▶️ Executar", key=f"exec_{script['id']}", use_container_width=True):
-                        execute_script_with_feedback(script)
-                    
-                    if st.button("✏️ Editar", key=f"edit_{script['id']}", use_container_width=True):
-                        st.session_state.edit_script_data = script
-                        st.session_state.show_edit_script_form = True
-                        st.rerun()
-                    
-                    if st.button("📊 Histórico", key=f"history_{script['id']}", use_container_width=True):
-                        show_script_execution_history(script) # type: ignore
-                    
-                    if st.button("🗑️ Excluir", key=f"del_script_{script['id']}", use_container_width=True):
-                        if st.checkbox(f"Confirmar exclusão de {script['nome']}", key=f"confirm_script_{script['id']}"):
-                            result = project_manager.delete_script(script['id'])
-                            if result['success']:
-                                st.success("✅ Script excluído!")
-                                st.rerun()
-    else:
-        st.info("📭 Nenhum script encontrado neste projeto.")
+                    st.write(f"**{project['name']}**")
+                    st.write(f"<small>{project['category']} • {project['priority']}</small>", unsafe_allow_html=True)
+                
+                with col3:
+                    st.write(f"📜 {project['scripts']}")
+                
+                with col4:
+                    status_icon = "🟢" if project['status'] == 'active' else "🟡"
+                    st.write(status_icon)
+            
+            # Análise temporal
+            st.markdown("#### 📅 Criação de Projetos ao Longo do Tempo")
+            
+            project_dates = [p['created_at'].date() for p in st.session_state.projects]
+            date_counts = {}
+            
+            for date in project_dates:
+                month_key = date.strftime('%Y-%m')
+                date_counts[month_key] = date_counts.get(month_key, 0) + 1
+            
+            if date_counts:
+                fig = px.line(
+                    x=list(date_counts.keys()),
+                    y=list(date_counts.values()),
+                    title="Projetos Criados por Mês",
+                    markers=True
+                )
+                fig.update_traces(line=dict(color='#2E8B57'))
+                fig.update_layout(height=300, template="plotly_white")
+                st.plotly_chart(fig, use_container_width=True)
         
-        if st.button("➕ Criar Primeiro Script"):
-            st.session_state.new_script_project_id = selected_project_id
-            st.session_state.show_new_script_form = True
-            st.rerun()
-
-def render_execution_history():
-    """Renderiza histórico de execuções"""
-    st.subheader("📊 Histórico de Execuções")
-    
-    # Filtros
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        projects = project_manager.get_projects()
-        project_options = {"Todos": None}
-        project_options.update({p['nome']: p['id'] for p in projects})
-        selected_project = st.selectbox("Projeto:", list(project_options.keys()))
-    
-    with col2:
-        filter_status = st.selectbox("Status Execução:", ["Todos", "sucesso", "erro", "cancelado"])
-    
-    with col3:
-        days_back = st.slider("Últimos dias:", 1, 30, 7)
-    
-    # Buscar histórico
-    project_id = project_options[selected_project] if selected_project != "Todos" else None
-    history = project_manager.get_execution_history(project_id=project_id)
-    
-    # Filtrar por data
-    cutoff_date = datetime.now() - timedelta(days=days_back)
-    history = [h for h in history 
-               if datetime.fromisoformat(h.get('executed_at', '').replace('Z', '+00:00')) > cutoff_date]
-    
-    # Filtrar por status
-    if filter_status != "Todos":
-        history = [h for h in history if h.get('status') == filter_status]
-    
-    if history:
-        # Estatísticas
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            st.metric("Total Execuções", len(history))
-        
-        with col2:
-            success_count = len([h for h in history if h.get('status') == 'sucesso'])
-            st.metric("Sucessos", success_count)
-        
-        with col3:
-            error_count = len([h for h in history if h.get('status') == 'erro'])
-            st.metric("Erros", error_count)
-        
-        with col4:
-            success_rate = (success_count / len(history) * 100) if history else 0
-            st.metric("Taxa Sucesso", f"{success_rate:.1f}%")
-        
-        # Tabela de execuções
-        st.markdown("#### 📋 Detalhes das Execuções")
-        
-        history_data = []
-        for h in history:
-            history_data.append({
-                'Data/Hora': format_datetime(datetime.fromisoformat(h.get('executed_at', '').replace('Z', '+00:00')), 'full'),
-                'Script': h.get('script_nome', f"Script ID {h.get('script_id', 'N/A')}"),
-                'Status': '✅ Sucesso' if h.get('status') == 'sucesso' else '❌ Erro' if h.get('status') == 'erro' else '🟡 Cancelado',
-                'Tempo': h.get('tempo_execucao', 'N/A'),
-                'Registros': h.get('registros_afetados', 0),
-                'Executado por': h.get('executed_by', 'N/A')
-            })
-        
-        df_history = pd.DataFrame(history_data)
-        st.dataframe(df_history, use_container_width=True)
-        
-        # Gráfico de execuções por dia
-        st.markdown("#### 📈 Execuções por Dia")
-        
-        daily_executions = {}
-        for h in history:
-            date_key = datetime.fromisoformat(h.get('executed_at', '').replace('Z', '+00:00')).date()
-            daily_executions[date_key] = daily_executions.get(date_key, 0) + 1
-        
-        if daily_executions:
-            fig = px.line(
-                x=list(daily_executions.keys()),
-                y=list(daily_executions.values()),
-                title="Execuções de Scripts por Dia",
-                labels={'x': 'Data', 'y': 'Número de Execuções'}
-            )
-            fig.update_traces(line=dict(color='#2E8B57'))
-            fig.update_layout(height=400, template="plotly_white")
-            st.plotly_chart(fig, use_container_width=True)
-    
-    else:
-        st.info("📭 Nenhuma execução encontrada nos critérios especificados.")
+        else:
+            st.info("📭 Nenhum projeto encontrado para análise estatística.")
 
 def render_settings():
     """Renderiza página de configurações"""
@@ -7800,3 +6815,240 @@ SELECT AVG(age) as average_pet_age FROM pets WHERE birth_date IS NOT NULL;""",
 # APLICAÇÃO PRINCIPAL
 # =====================================================================
 
+def main():
+    """Função principal da aplicação"""
+    
+    # Configuração da página
+    st.set_page_config(
+        page_title=CONFIG['app_title'],
+        page_icon="🐾",
+        layout="wide",
+        initial_sidebar_state="expanded",
+        menu_items={
+            'Get Help': 'https://github.com/petcareai/dba-admin',
+            'Report a bug': 'mailto:admin@petcareai.com',
+            'About': f'{CONFIG["app_title"]} v{CONFIG["app_version"]} - Sistema de Gerenciamento de Banco de Dados'
+        }
+    )
+    
+    # CSS customizado
+    st.markdown("""
+    <style>
+    /* Estilo geral */
+    .main .block-container {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    
+    /* Cards de métricas */
+    .metric-card {
+        background: linear-gradient(135deg, #F0FFF0, #E6FFE6);
+        padding: 1.5rem;
+        border-radius: 15px;
+        border-left: 5px solid #2E8B57;
+        margin: 0.5rem 0;
+        box-shadow: 0 2px 10px rgba(46, 139, 87, 0.1);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(46, 139, 87, 0.2);
+    }
+    
+    /* Botões */
+    .stButton > button {
+        background: linear-gradient(135deg, #2E8B57, #90EE90);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 0.5rem 1rem;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(46, 139, 87, 0.3);
+        background: linear-gradient(135deg, #228B22, #98FB98);
+    }
+    
+    /* Campos de entrada */
+    .stTextInput > div > div, .stTextArea > div > div, .stSelectbox > div > div {
+        border-radius: 10px;
+        border: 2px solid #E6FFE6;
+        transition: border-color 0.3s ease;
+    }
+    
+    .stTextInput > div > div:focus-within, .stTextArea > div > div:focus-within {
+        border-color: #2E8B57;
+        box-shadow: 0 0 0 2px rgba(46, 139, 87, 0.1);
+    }
+    
+    /* Expanders */
+    .stExpander {
+        border: 2px solid #E6FFE6;
+        border-radius: 10px;
+        margin: 0.5rem 0;
+        transition: all 0.3s ease;
+    }
+    
+    .stExpander:hover {
+        border-color: #90EE90;
+        box-shadow: 0 2px 10px rgba(46, 139, 87, 0.1);
+    }
+    
+    /* DataFrames */
+    .stDataFrame {
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(46, 139, 87, 0.1);
+    }
+    
+    /* Sidebar */
+    .css-1d391kg {
+        background: linear-gradient(180deg, #F0FFF0, #E6FFE6);
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 10px 10px 0 0;
+        background: linear-gradient(135deg, #E6FFE6, #F0FFF0);
+        border: 2px solid #90EE90;
+        color: #2E8B57;
+        font-weight: 500;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #2E8B57, #90EE90);
+        color: white;
+        border-color: #2E8B57;
+    }
+    
+    /* Métricas */
+    [data-testid="metric-container"] {
+        background: linear-gradient(135deg, #F0FFF0, #E6FFE6);
+        border: 2px solid #90EE90;
+        padding: 1rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(46, 139, 87, 0.1);
+    }
+    
+    /* Alerts */
+    .stAlert {
+        border-radius: 10px;
+        border-left: 5px solid #2E8B57;
+    }
+    
+    /* Code blocks */
+    .stCodeBlock {
+        border-radius: 10px;
+        border: 2px solid #E6FFE6;
+    }
+    
+    /* Progress bars */
+    .stProgress > div > div {
+        background: linear-gradient(90deg, #2E8B57, #90EE90);
+        border-radius: 10px;
+    }
+    
+    /* Hiding Streamlit elements */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #2E8B57, #90EE90);
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(180deg, #228B22, #98FB98);
+    }
+    
+    /* Animações */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .main .block-container > div {
+        animation: fadeIn 0.5s ease-out;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Inicializar estado da sessão
+    init_session_state()
+    
+    # Verificar autenticação
+    if not st.session_state.authenticated:
+        render_login_page()
+        return
+    
+    # Renderizar interface principal
+    render_header()
+    render_sidebar()
+    
+    # Renderizar página atual
+    current_page = st.session_state.current_page
+    
+    try:
+        if current_page == "dashboard":
+            render_dashboard()
+        elif current_page == "tables":
+            render_tables()
+        elif current_page == "sql_editor":
+            render_sql_editor()
+        elif current_page == "dba_operations":
+            render_dba_operations()
+        elif current_page == "projects":
+            render_projects()
+        elif current_page == "settings":
+            render_settings()
+        else:
+            render_dashboard()  # Página padrão
+    
+    except Exception as e:
+        st.error(f"❌ Erro ao carregar página: {e}")
+        if CONFIG['debug_mode']:
+            st.exception(e)
+        
+        # Voltar para dashboard em caso de erro
+        st.session_state.current_page = 'dashboard'
+        if st.button("🔄 Recarregar"):
+            st.rerun()
+    
+    # Rodapé
+    st.markdown("---")
+    st.markdown(f"""
+    <div style='text-align: center; color: #228B22; padding: 1rem 0; background: linear-gradient(135deg, #F0FFF0, #E6FFE6); border-radius: 10px; margin-top: 2rem;'>
+        <small>
+            🐾 <strong>{CONFIG['app_title']} v{CONFIG['app_version']}</strong> | 
+            Desenvolvido para PetCareAI | 
+            © 2025 Todos os direitos reservados<br>
+            <span style='color: #2E8B57;'>
+                Status: {'🟢 Conectado' if db_manager.connected else '🟡 Demo'} • 
+                Uptime: 5d 12h 30m • 
+                Última atualização: {datetime.now().strftime('%d/%m/%Y %H:%M')}
+            </span>
+        </small>
+    </div>
+    """, unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    main()
