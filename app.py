@@ -2061,412 +2061,1124 @@ def render_tables():
             st.markdown("💡 **Dica:** Tente limpar os filtros para ver todas as tabelas disponíveis.")
 
 def render_sql_editor():
-    """Renderiza a interface do editor SQL"""
+    """Renderiza a interface do editor SQL com tratamento robusto de erros"""
     try:
         st.markdown("### 🔧 Editor SQL")
         st.markdown("Execute queries SQL diretamente no banco de dados")
         
-        # Verificar se o database manager está disponível
-        if 'db_manager' not in st.session_state:
-            st.error("❌ Conexão com banco não disponível")
+        # Verificar e inicializar database manager
+        db_manager = check_and_reconnect_database()
+        
+        if not db_manager:
+            show_database_connection_error()
             return
         
-        db_manager = st.session_state.db_manager
+        # Verificar status da conexão atual
+        connection_status = verify_database_connection(db_manager)
+        display_connection_status(connection_status, db_manager)
         
-        # Status da conexão
-        if db_manager.connected:
-            st.success(f"✅ Conectado ao {db_manager.connection_info.get('type', 'Banco')}")
-        else:
-            st.warning("⚠️ Modo demonstração ativo")
+        # Inicializar sessões se necessário
+        initialize_sql_session_state()
         
-        # Inicializar histórico de queries
-        if 'sql_history' not in st.session_state:
-            st.session_state.sql_history = []
+        # Layout principal melhorado
+        render_sql_editor_layout(db_manager)
         
-        if 'sql_favorites' not in st.session_state:
-            st.session_state.sql_favorites = []
+    except Exception as e:
+        st.error("❌ Erro crítico no Editor SQL")
         
-        # Layout principal
-        col1, col2 = st.columns([3, 1])
+        with st.expander("🔍 Detalhes do Erro", expanded=False):
+            st.code(f"Tipo: {type(e).__name__}\nMensagem: {str(e)}", language="text")
+            st.exception(e)
         
-        with col2:
-            st.markdown("#### 🛠️ Ferramentas")
-            
-            # Templates de query
-            st.markdown("**📝 Templates**")
-            template_options = {
-                "SELECT Básico": "SELECT * FROM {table_name} LIMIT 10;",
-                "SELECT com WHERE": "SELECT * FROM {table_name} WHERE {column} = '{value}' LIMIT 10;",
-                "COUNT Registros": "SELECT COUNT(*) as total FROM {table_name};",
-                "INSERT Registro": "INSERT INTO {table_name} (column1, column2) VALUES (value1, value2);",
-                "UPDATE Registro": "UPDATE {table_name} SET column1 = value1 WHERE id = 1;",
-                "DELETE Registro": "DELETE FROM {table_name} WHERE id = 1;",
-                "CREATE TABLE": "CREATE TABLE new_table (\n    id SERIAL PRIMARY KEY,\n    name VARCHAR(255) NOT NULL,\n    created_at TIMESTAMP DEFAULT NOW()\n);",
-                "JOIN Tables": "SELECT a.*, b.name \nFROM table_a a \nJOIN table_b b ON a.id = b.table_a_id \nLIMIT 10;",
-                "GROUP BY": "SELECT column, COUNT(*) as count \nFROM {table_name} \nGROUP BY column \nORDER BY count DESC;",
-                "DISTINCT Values": "SELECT DISTINCT column FROM {table_name} ORDER BY column;"
-            }
-            
-            selected_template = st.selectbox(
-                "Escolher template:",
-                options=list(template_options.keys()),
-                index=0
-            )
-            
-            if st.button("📋 Usar Template", use_container_width=True):
-                st.session_state.sql_query = template_options[selected_template]
-                st.rerun()
-            
-            st.markdown("---")
-            
-            # Lista de tabelas para referência
-            st.markdown("**🗄️ Tabelas Disponíveis**")
-            tables = db_manager.get_tables()
-            
-            if tables:
-                for table in tables[:10]:  # Mostrar apenas 10 primeiras
-                    if st.button(f"📊 {table['name']}", use_container_width=True, key=f"table_btn_{table['name']}"):
-                        # Inserir nome da tabela no editor
-                        current_query = st.session_state.get('sql_query', '')
-                        if '{table_name}' in current_query:
-                            st.session_state.sql_query = current_query.replace('{table_name}', table['name'])
-                        else:
-                            st.session_state.sql_query = f"SELECT * FROM {table['name']} LIMIT 10;"
-                        st.rerun()
-                
-                if len(tables) > 10:
-                    st.caption(f"... e mais {len(tables) - 10} tabelas")
-            else:
-                st.info("Nenhuma tabela encontrada")
-            
-            st.markdown("---")
-            
-            # Histórico de queries
-            st.markdown("**🕒 Histórico**")
-            if st.session_state.sql_history:
-                history_options = [f"Query {i+1}: {query[:30]}..." if len(query) > 30 else f"Query {i+1}: {query}" 
-                                 for i, query in enumerate(reversed(st.session_state.sql_history[-10:]))]
-                
-                selected_history = st.selectbox(
-                    "Queries recentes:",
-                    options=range(len(history_options)),
-                    format_func=lambda x: history_options[x] if x < len(history_options) else "",
-                    key="history_select"
-                )
-                
-                if st.button("🔄 Carregar Query", use_container_width=True):
-                    if selected_history < len(st.session_state.sql_history):
-                        query_index = len(st.session_state.sql_history) - 1 - selected_history
-                        st.session_state.sql_query = st.session_state.sql_history[query_index]
-                        st.rerun()
-                
-                if st.button("🗑️ Limpar Histórico", use_container_width=True):
-                    st.session_state.sql_history = []
-                    st.success("✅ Histórico limpo!")
-                    st.rerun()
-            else:
-                st.info("Nenhuma query executada ainda")
+        # Opções de recuperação
+        st.markdown("### 🔧 Opções de Recuperação")
+        col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.markdown("#### ✏️ Editor de Query")
+            if st.button("🔄 Reinicializar Conexão", use_container_width=True):
+                st.session_state.pop('db_manager', None)
+                st.rerun()
+        
+        with col2:
+            if st.button("🧹 Limpar Cache", use_container_width=True):
+                st.cache_data.clear()
+                st.success("✅ Cache limpo!")
+        
+        with col3:
+            if st.button("🏠 Voltar ao Início", use_container_width=True):
+                st.session_state.current_page = "dashboard"
+                st.rerun()
+
+
+def check_and_reconnect_database():
+    """Verifica e reconecta o database manager se necessário"""
+    try:
+        # Usar o database manager global que já foi criado
+        global db_manager
+        
+        # Verificar se db_manager existe e está disponível
+        if db_manager is None:
+            st.info("🔄 Inicializando conexão com banco de dados...")
             
-            # Configurações do editor
-            editor_col1, editor_col2, editor_col3 = st.columns(3)
-            
-            with editor_col1:
-                auto_format = st.checkbox("🎨 Auto-formatação", value=True)
-            
-            with editor_col2:
-                show_line_numbers = st.checkbox("📄 Numeração", value=True)
-            
-            with editor_col3:
-                syntax_highlight = st.checkbox("🌈 Highlight SQL", value=True)
-            
-            # Editor principal
-            default_query = st.session_state.get('sql_query', 'SELECT * FROM users LIMIT 10;')
-            
-            sql_query = st.text_area(
-                "Digite sua query SQL:",
-                value=default_query,
-                height=200,
-                placeholder="-- Digite sua query SQL aqui\nSELECT * FROM sua_tabela LIMIT 10;",
-                help="Use Ctrl+Enter para executar a query rapidamente"
-            )
-            
-            # Salvar query no session state
-            st.session_state.sql_query = sql_query
-            
-            # Botões de ação
-            action_col1, action_col2, action_col3, action_col4 = st.columns(4)
-            
-            with action_col1:
-                execute_button = st.button(
-                    "▶️ Executar",
-                    use_container_width=True,
-                    type="primary",
-                    disabled=not sql_query.strip()
-                )
-            
-            with action_col2:
-                if st.button("🔍 Validar", use_container_width=True):
-                    validation_result = validate_sql_query(sql_query)
-                    if validation_result['valid']:
-                        st.success("✅ Query válida!")
+            # Tentar reinicializar o database manager global
+            try:
+                db_manager = DatabaseManager()
+                
+                if db_manager.connected:
+                    st.session_state.db_manager = db_manager
+                    st.success("✅ Conexão estabelecida com sucesso!")
+                    return db_manager
+                else:
+                    st.warning("⚠️ Conectado em modo demonstração")
+                    st.session_state.db_manager = db_manager
+                    return db_manager
+                    
+            except Exception as e:
+                st.error(f"❌ Erro ao criar DatabaseManager: {e}")
+                return None
+        
+        # Se db_manager global existe, usar ele
+        if 'db_manager' not in st.session_state:
+            st.session_state.db_manager = db_manager
+        
+        # Verificar se ainda está conectado
+        current_db_manager = st.session_state.db_manager
+        
+        if hasattr(current_db_manager, 'connected'):
+            if not current_db_manager.connected:
+                st.warning("⚠️ Conexão perdida. Tentando reconectar...")
+                
+                try:
+                    # Tentar reinicializar
+                    current_db_manager._init_connection()
+                    
+                    if current_db_manager.connected:
+                        st.success("✅ Reconexão bem-sucedida!")
+                        return current_db_manager
                     else:
-                        st.error(f"❌ Erro de sintaxe: {validation_result['error']}")
+                        st.info("ℹ️ Continuando em modo demonstração")
+                        return current_db_manager
+                        
+                except Exception as e:
+                    st.error(f"❌ Erro durante reconexão: {e}")
+                    return current_db_manager  # Retornar mesmo assim para modo demo
+        
+        return current_db_manager
+        
+    except Exception as e:
+        st.error(f"❌ Erro ao verificar conexão: {e}")
+        
+        # Como último recurso, criar um database manager básico
+        try:
+            if 'db_manager' not in globals() or globals()['db_manager'] is None:
+                globals()['db_manager'] = DatabaseManager()
             
-            with action_col3:
-                if st.button("🎨 Formatar", use_container_width=True):
-                    formatted_query = format_sql_query(sql_query)
-                    st.session_state.sql_query = formatted_query
+            st.session_state.db_manager = globals()['db_manager']
+            return globals()['db_manager']
+            
+        except:
+            return None
+
+def show_database_connection_error():
+    """Mostra interface de erro quando não há conexão com banco"""
+    st.error("🚫 **Banco de Dados Indisponível**")
+    
+    st.markdown("""
+    ### 🔧 O que aconteceu?
+    Não foi possível estabelecer conexão com o banco de dados. Isso pode acontecer por:
+    
+    - **Configuração**: Credenciais ou configurações incorretas
+    - **Rede**: Problemas de conectividade com a internet
+    - **Servidor**: O servidor do banco pode estar temporariamente indisponível
+    - **Inicialização**: O sistema ainda não foi configurado corretamente
+    """)
+    
+    st.markdown("### 🛠️ Como resolver?")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        **📋 Passos Básicos:**
+        1. Verifique sua conexão com internet
+        2. Confirme as credenciais do banco
+        3. Teste a conectividade com o servidor
+        4. Reinicie a aplicação se necessário
+        """)
+    
+    with col2:
+        st.markdown("""
+        **⚙️ Configurações:**
+        - Vá para a página de **Configurações**
+        - Verifique as informações de conexão
+        - Teste a conexão antes de prosseguir
+        - Salve as configurações corretas
+        """)
+    
+    # Ações de recuperação
+    st.markdown("### 🚀 Ações Rápidas")
+    action_col1, action_col2, action_col3, action_col4 = st.columns(4)
+    
+    with action_col1:
+        if st.button("⚙️ Ir para Configurações", use_container_width=True):
+            st.session_state.current_page = "settings"
+            st.rerun()
+    
+    with action_col2:
+        if st.button("🔄 Tentar Novamente", use_container_width=True):
+            # Forçar recriação do database manager
+            try:
+                global db_manager
+                db_manager = DatabaseManager()
+                st.session_state.db_manager = db_manager
+                st.success("✅ Nova tentativa de conexão realizada!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ Erro na nova tentativa: {e}")
+    
+    with action_col3:
+        if st.button("🏠 Página Inicial", use_container_width=True):
+            st.session_state.current_page = "dashboard"
+            st.rerun()
+    
+    with action_col4:
+        if st.button("📚 Modo Demo", use_container_width=True):
+            initialize_demo_mode()
+            st.rerun()
+    
+    # Diagnóstico da conexão
+    st.markdown("---")
+    st.markdown("### 🔍 Diagnóstico")
+    
+    with st.expander("🔧 Verificar Configurações", expanded=False):
+        st.markdown("**Configurações Atuais:**")
+        
+        config_info = {
+            "Supabase URL": CONFIG.get('supabase_url', 'Não configurado')[:50] + "..." if CONFIG.get('supabase_url') else 'Não configurado',
+            "Supabase Key": "Configurado" if CONFIG.get('supabase_anon_key') else 'Não configurado',
+            "Bibliotecas": {
+                "Supabase": "✅ Disponível" if SUPABASE_AVAILABLE else "❌ Não instalado",
+                "Pandas": "✅ Disponível",
+                "Plotly": "✅ Disponível"
+            }
+        }
+        
+        st.json(config_info)
+        
+        if not SUPABASE_AVAILABLE:
+            st.error("❌ Biblioteca Supabase não instalada!")
+            st.code("pip install supabase", language="bash")
+    
+    # Mostrar exemplos de queries para o usuário praticar
+    show_example_queries()
+
+def initialize_demo_mode():
+    """Inicializa modo demonstração sem conexão real"""
+    try:
+        # Criar um database manager fictício para demonstração
+        class DemoDataBaseManager:
+            def __init__(self):
+                self.connected = False
+                self.connection_info = {
+                    'type': 'Modo Demonstração',
+                    'url': 'demo.localhost',
+                    'status': 'Modo Demonstração Ativo'
+                }
+                self.demo_tables = [
+                    {'name': 'users', 'rows': 1250, 'size': '2.5 MB', 'schema': 'public', 'has_indexes': True, 'has_rules': False, 'has_triggers': False},
+                    {'name': 'products', 'rows': 850, 'size': '1.8 MB', 'schema': 'public', 'has_indexes': True, 'has_rules': False, 'has_triggers': False},
+                    {'name': 'orders', 'rows': 3200, 'size': '5.2 MB', 'schema': 'public', 'has_indexes': True, 'has_rules': False, 'has_triggers': True},
+                    {'name': 'categories', 'rows': 25, 'size': '12 KB', 'schema': 'public', 'has_indexes': True, 'has_rules': False, 'has_triggers': False},
+                    {'name': 'reviews', 'rows': 4500, 'size': '3.1 MB', 'schema': 'public', 'has_indexes': True, 'has_rules': False, 'has_triggers': False},
+                    {'name': 'customers', 'rows': 890, 'size': '1.2 MB', 'schema': 'public', 'has_indexes': True, 'has_rules': False, 'has_triggers': False}
+                ]
+                self.real_tables = self.demo_tables  # Para compatibilidade
+            
+            def get_tables(self):
+                return self.demo_tables
+            
+            def get_table_info(self, table_name):
+                for table in self.demo_tables:
+                    if table['name'] == table_name:
+                        return {
+                            'rows': table['rows'],
+                            'size': table['size'],
+                            'last_modified': datetime.now().strftime('%Y-%m-%d')
+                        }
+                return {'rows': 0, 'size': '0 KB', 'last_modified': '2025-06-24'}
+            
+            def get_table_columns(self, table_name):
+                # Retornar colunas simuladas baseadas no nome da tabela
+                if table_name == 'users':
+                    return [
+                        {'name': 'id', 'type': 'integer', 'nullable': False, 'default': 'nextval()', 'max_length': None},
+                        {'name': 'name', 'type': 'varchar', 'nullable': False, 'default': None, 'max_length': 100},
+                        {'name': 'email', 'type': 'varchar', 'nullable': False, 'default': None, 'max_length': 255},
+                        {'name': 'created_at', 'type': 'timestamp', 'nullable': False, 'default': 'now()', 'max_length': None}
+                    ]
+                elif table_name == 'products':
+                    return [
+                        {'name': 'id', 'type': 'integer', 'nullable': False, 'default': 'nextval()', 'max_length': None},
+                        {'name': 'name', 'type': 'varchar', 'nullable': False, 'default': None, 'max_length': 200},
+                        {'name': 'price', 'type': 'decimal', 'nullable': False, 'default': None, 'max_length': None},
+                        {'name': 'category_id', 'type': 'integer', 'nullable': True, 'default': None, 'max_length': None}
+                    ]
+                else:
+                    return [
+                        {'name': 'id', 'type': 'integer', 'nullable': False, 'default': 'nextval()', 'max_length': None},
+                        {'name': 'name', 'type': 'varchar', 'nullable': False, 'default': None, 'max_length': 100}
+                    ]
+            
+            def execute_query(self, query):
+                # Simular execução de query
+                import time
+                time.sleep(0.5)  # Simular tempo de processamento
+                
+                query_upper = query.upper().strip()
+                
+                # Dados de exemplo baseados na query
+                if 'SELECT' in query_upper:
+                    if 'users' in query.lower():
+                        demo_data = [
+                            {'id': 1, 'name': 'João Silva', 'email': 'joao@email.com', 'created_at': '2025-06-20T10:00:00Z'},
+                            {'id': 2, 'name': 'Maria Santos', 'email': 'maria@email.com', 'created_at': '2025-06-21T11:00:00Z'},
+                            {'id': 3, 'name': 'Pedro Costa', 'email': 'pedro@email.com', 'created_at': '2025-06-22T12:00:00Z'},
+                            {'id': 4, 'name': 'Ana Lima', 'email': 'ana@email.com', 'created_at': '2025-06-23T09:00:00Z'},
+                            {'id': 5, 'name': 'Carlos Pereira', 'email': 'carlos@email.com', 'created_at': '2025-06-24T14:00:00Z'}
+                        ]
+                    elif 'products' in query.lower():
+                        demo_data = [
+                            {'id': 1, 'name': 'Smartphone', 'price': 999.99, 'category_id': 1},
+                            {'id': 2, 'name': 'Laptop', 'price': 1999.99, 'category_id': 1},
+                            {'id': 3, 'name': 'Tablet', 'price': 599.99, 'category_id': 1},
+                            {'id': 4, 'name': 'Headphones', 'price': 199.99, 'category_id': 2},
+                            {'id': 5, 'name': 'Mouse', 'price': 49.99, 'category_id': 2}
+                        ]
+                    elif 'orders' in query.lower():
+                        demo_data = [
+                            {'id': 1, 'user_id': 1, 'total': 1199.98, 'status': 'completed', 'created_at': '2025-06-24T10:00:00Z'},
+                            {'id': 2, 'user_id': 2, 'total': 599.99, 'status': 'pending', 'created_at': '2025-06-24T11:00:00Z'},
+                            {'id': 3, 'user_id': 3, 'total': 249.98, 'status': 'completed', 'created_at': '2025-06-24T12:00:00Z'}
+                        ]
+                    else:
+                        demo_data = [
+                            {'id': 1, 'name': 'Exemplo 1', 'value': 100, 'status': 'active'},
+                            {'id': 2, 'name': 'Exemplo 2', 'value': 200, 'status': 'inactive'},
+                            {'id': 3, 'name': 'Exemplo 3', 'value': 300, 'status': 'active'}
+                        ]
+                    
+                    return {
+                        'success': True,
+                        'data': demo_data,
+                        'execution_time': '0.5s',
+                        'rows_affected': len(demo_data),
+                        'message': 'Query executada no modo demonstração'
+                    }
+                else:
+                    return {
+                        'success': True,
+                        'data': [],
+                        'execution_time': '0.3s',
+                        'rows_affected': random.randint(1, 5),
+                        'message': 'Operação simulada no modo demonstração'
+                    }
+            
+            def get_database_metrics(self):
+                return {
+                    'total_size': '12.8 MB',
+                    'connection_count': 1,
+                    'table_count': len(self.demo_tables),
+                    'index_count': len(self.demo_tables) * 2,
+                    'cpu_usage': random.randint(20, 40),
+                    'memory_usage': random.randint(30, 50),
+                    'disk_usage': random.randint(15, 35),
+                    'cache_hit_ratio': random.randint(80, 95)
+                }
+            
+            def refresh_tables(self):
+                st.info("🎯 Em modo demonstração - lista de tabelas é fixa")
+                return self.demo_tables
+            
+            def backup_table(self, table_name):
+                return {
+                    'success': True,
+                    'backup_name': f"{table_name}_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                    'message': f'Backup simulado da tabela {table_name}'
+                }
+            
+            def optimize_table(self, table_name):
+                return {
+                    'success': True,
+                    'message': f'Tabela {table_name} otimizada (simulado)'
+                }
+        
+        # Substituir o database manager global
+        demo_manager = DemoDataBaseManager()
+        st.session_state.db_manager = demo_manager
+        
+        # Também atualizar a variável global se existir
+        try:
+            global db_manager
+            db_manager = demo_manager
+        except:
+            pass
+        
+        st.success("✅ Modo demonstração ativado com sucesso!")
+        st.info("🎯 Agora você pode testar todas as funcionalidades com dados simulados")
+        
+    except Exception as e:
+        st.error(f"❌ Erro ao inicializar modo demo: {e}")
+
+def verify_database_connection(db_manager):
+    """Verifica status detalhado da conexão"""
+    try:
+        status = {
+            'connected': False,
+            'response_time': None,
+            'last_error': None,
+            'tables_count': 0,
+            'database_type': 'Desconhecido'
+        }
+        
+        if not db_manager:
+            status['last_error'] = 'Database manager não disponível'
+            return status
+        
+        # Verificar conexão básica
+        if hasattr(db_manager, 'connected'):
+            status['connected'] = db_manager.connected
+        
+        # Verificar tipo de banco
+        if hasattr(db_manager, 'connection_info'):
+            status['database_type'] = db_manager.connection_info.get('type', 'Desconhecido')
+        
+        # Testar resposta do banco
+        if status['connected']:
+            try:
+                import time
+                start_time = time.time()
+                
+                # Tentar buscar tabelas para verificar conectividade
+                tables = db_manager.get_tables()
+                
+                end_time = time.time()
+                status['response_time'] = f"{(end_time - start_time):.2f}s"
+                status['tables_count'] = len(tables) if tables else 0
+                
+            except Exception as e:
+                status['last_error'] = str(e)
+                status['connected'] = False
+        
+        return status
+        
+    except Exception as e:
+        return {
+            'connected': False,
+            'response_time': None,
+            'last_error': f'Erro na verificação: {str(e)}',
+            'tables_count': 0,
+            'database_type': 'Erro'
+        }
+
+
+def display_connection_status(status, db_manager):
+    """Exibe status da conexão de forma detalhada"""
+    if status['connected']:
+        # Status positivo
+        st.success(f"✅ Conectado ao {status['database_type']}")
+        
+        # Métricas de performance
+        metrics_col1, metrics_col2, metrics_col3 = st.columns(3)
+        
+        with metrics_col1:
+            st.metric("🚀 Tempo de Resposta", status['response_time'] or 'N/A')
+        
+        with metrics_col2:
+            st.metric("🗄️ Tabelas Encontradas", status['tables_count'])
+        
+        with metrics_col3:
+            connection_quality = "Excelente" if status['response_time'] and float(status['response_time'][:-1]) < 1.0 else "Boa"
+            st.metric("📊 Qualidade", connection_quality)
+    
+    else:
+        # Status negativo com detalhes
+        if 'demo' in status['database_type'].lower():
+            st.warning("⚠️ Modo Demonstração Ativo")
+            st.info("💡 Execute queries de exemplo para testar a funcionalidade")
+        else:
+            st.error("❌ Conexão com Banco Indisponível")
+            
+            if status['last_error']:
+                with st.expander("🔍 Detalhes do Erro", expanded=False):
+                    st.code(status['last_error'], language='text')
+            
+            # Botão para tentar reconectar
+            if st.button("🔄 Tentar Reconectar", use_container_width=True):
+                with st.spinner("Reconectando..."):
+                    new_db_manager = check_and_reconnect_database()
+                    if new_db_manager:
+                        st.success("✅ Reconexão bem-sucedida!")
+                        st.rerun()
+
+
+def initialize_sql_session_state():
+    """Inicializa todas as variáveis de sessão necessárias"""
+    session_defaults = {
+        'sql_history': [],
+        'sql_favorites': [],
+        'sql_query': 'SELECT * FROM users LIMIT 10;',
+        'last_execution_result': None,
+        'sql_editor_preferences': {
+            'auto_format': True,
+            'show_line_numbers': True,
+            'syntax_highlight': True,
+            'max_rows_display': 100
+        }
+    }
+    
+    for key, default_value in session_defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = default_value
+
+
+def render_sql_editor_layout(db_manager):
+    """Renderiza o layout principal do editor SQL"""
+    # Layout em colunas
+    col1, col2 = st.columns([3, 1])
+    
+    with col2:
+        render_sql_tools_sidebar(db_manager)
+    
+    with col1:
+        render_main_sql_editor(db_manager)
+    
+    # Seção de resultados (largura total)
+    render_sql_results_section()
+    
+    # Seção de favoritos
+    render_favorites_section()
+
+
+def render_sql_tools_sidebar(db_manager):
+    """Renderiza barra lateral com ferramentas SQL"""
+    st.markdown("#### 🛠️ Ferramentas")
+    
+    # Templates de query
+    render_query_templates()
+    
+    st.markdown("---")
+    
+    # Lista de tabelas
+    render_tables_list(db_manager)
+    
+    st.markdown("---")
+    
+    # Histórico de queries
+    render_query_history()
+    
+    st.markdown("---")
+    
+    # Configurações do editor
+    render_editor_settings()
+
+
+def render_query_templates():
+    """Renderiza seção de templates de query"""
+    st.markdown("**📝 Templates**")
+    
+    template_options = {
+        "SELECT Básico": "SELECT * FROM {table_name} LIMIT 10;",
+        "SELECT com WHERE": "SELECT * FROM {table_name} WHERE {column} = '{value}' LIMIT 10;",
+        "COUNT Registros": "SELECT COUNT(*) as total FROM {table_name};",
+        "INSERT Registro": "INSERT INTO {table_name} (column1, column2) VALUES (value1, value2);",
+        "UPDATE Registro": "UPDATE {table_name} SET column1 = value1 WHERE id = 1;",
+        "DELETE Registro": "DELETE FROM {table_name} WHERE id = 1;",
+        "CREATE TABLE": "CREATE TABLE new_table (\n    id SERIAL PRIMARY KEY,\n    name VARCHAR(255) NOT NULL,\n    created_at TIMESTAMP DEFAULT NOW()\n);",
+        "JOIN Tables": "SELECT a.*, b.name \nFROM table_a a \nJOIN table_b b ON a.id = b.table_a_id \nLIMIT 10;",
+        "GROUP BY": "SELECT column, COUNT(*) as count \nFROM {table_name} \nGROUP BY column \nORDER BY count DESC;",
+        "DISTINCT Values": "SELECT DISTINCT column FROM {table_name} ORDER BY column;",
+        "SUBQUERY": "SELECT * FROM {table_name} \nWHERE id IN (\n    SELECT user_id FROM orders WHERE total > 100\n);",
+        "UNION": "SELECT name FROM customers \nUNION \nSELECT name FROM suppliers \nORDER BY name;",
+        "WINDOW FUNCTION": "SELECT name, salary,\n    ROW_NUMBER() OVER (ORDER BY salary DESC) as rank\nFROM employees;"
+    }
+    
+    selected_template = st.selectbox(
+        "Escolher template:",
+        options=list(template_options.keys()),
+        index=0,
+        help="Selecione um template para começar rapidamente"
+    )
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("📋 Usar", use_container_width=True):
+            st.session_state.sql_query = template_options[selected_template]
+            st.rerun()
+    
+    with col2:
+        if st.button("👁️ Ver", use_container_width=True):
+            st.code(template_options[selected_template], language='sql')
+
+
+def render_tables_list(db_manager):
+    """Renderiza lista de tabelas disponíveis"""
+    st.markdown("**🗄️ Tabelas Disponíveis**")
+    
+    try:
+        tables = db_manager.get_tables()
+        
+        if tables:
+            # Filtro de busca
+            search_term = st.text_input("🔍 Buscar tabela:", placeholder="Digite para filtrar...")
+            
+            # Filtrar tabelas se há termo de busca
+            if search_term:
+                filtered_tables = [t for t in tables if search_term.lower() in t['name'].lower()]
+            else:
+                filtered_tables = tables
+            
+            # Mostrar informações gerais
+            st.caption(f"📊 {len(filtered_tables)} de {len(tables)} tabelas")
+            
+            # Lista de tabelas (limitada para performance)
+            display_tables = filtered_tables[:15] if not search_term else filtered_tables[:50]
+            
+            for table in display_tables:
+                # Criar botão para cada tabela com informações
+                table_info = f"📊 {table['name']}"
+                if 'rows' in table:
+                    table_info += f" ({table['rows']} registros)"
+                
+                if st.button(table_info, use_container_width=True, key=f"table_btn_{table['name']}"):
+                    # Inserir nome da tabela no editor
+                    current_query = st.session_state.get('sql_query', '')
+                    if '{table_name}' in current_query:
+                        st.session_state.sql_query = current_query.replace('{table_name}', table['name'])
+                    else:
+                        st.session_state.sql_query = f"SELECT * FROM {table['name']} LIMIT 10;"
                     st.rerun()
             
-            with action_col4:
-                if st.button("⭐ Favoritar", use_container_width=True):
-                    if sql_query.strip() and sql_query not in st.session_state.sql_favorites:
-                        st.session_state.sql_favorites.append(sql_query)
-                        st.success("✅ Query adicionada aos favoritos!")
-                    elif sql_query in st.session_state.sql_favorites:
-                        st.info("ℹ️ Query já está nos favoritos")
-                    else:
-                        st.warning("⚠️ Digite uma query para favoritar")
+            if len(filtered_tables) > 15 and not search_term:
+                st.caption(f"... e mais {len(filtered_tables) - 15} tabelas. Use a busca para encontrar específicas.")
             
-            # Informações da query
-            if sql_query.strip():
-                query_info_col1, query_info_col2, query_info_col3 = st.columns(3)
-                
-                with query_info_col1:
-                    query_type = get_query_type(sql_query)
-                    st.metric("Tipo de Query", query_type)
-                
-                with query_info_col2:
-                    char_count = len(sql_query)
-                    st.metric("Caracteres", char_count)
-                
-                with query_info_col3:
-                    line_count = len(sql_query.split('\n'))
-                    st.metric("Linhas", line_count)
-        
-        # Execução da query
-        if execute_button and sql_query.strip():
-            with st.spinner("⏳ Executando query..."):
-                # Adicionar ao histórico
-                if sql_query not in st.session_state.sql_history:
-                    st.session_state.sql_history.append(sql_query)
-                    # Manter apenas as últimas 50 queries
-                    if len(st.session_state.sql_history) > 50:
-                        st.session_state.sql_history = st.session_state.sql_history[-50:]
-                
-                # Executar query
-                result = db_manager.execute_query(sql_query)
-                
-                # Exibir resultados
-                st.markdown("---")
-                st.markdown("#### 📊 Resultados da Query")
-                
-                if result['success']:
-                    # Métricas de execução
-                    metrics_col1, metrics_col2, metrics_col3, metrics_col4 = st.columns(4)
-                    
-                    with metrics_col1:
-                        st.metric("✅ Status", "Sucesso")
-                    
-                    with metrics_col2:
-                        st.metric("⏱️ Tempo", result['execution_time'])
-                    
-                    with metrics_col3:
-                        st.metric("📝 Registros", result['rows_affected'])
-                    
-                    with metrics_col4:
-                        st.metric("💾 Tamanho", f"{len(str(result['data']))} chars")
-                    
-                    # Mostrar dados se existirem
-                    if result['data'] and len(result['data']) > 0:
-                        st.markdown("**📋 Dados Retornados:**")
-                        
-                        # Converter para DataFrame
-                        try:
-                            df_result = pd.DataFrame(result['data'])
-                            
-                            # Controles de visualização
-                            view_col1, view_col2, view_col3 = st.columns(3)
-                            
-                            with view_col1:
-                                show_index = st.checkbox("📄 Mostrar índice", value=False)
-                            
-                            with view_col2:
-                                max_rows = st.number_input("📊 Máx. linhas", min_value=5, max_value=1000, value=100)
-                            
-                            with view_col3:
-                                use_container_width = st.checkbox("📏 Largura total", value=True)
-                            
-                            # Exibir DataFrame
-                            st.dataframe(
-                                df_result.head(max_rows),
-                                use_container_width=use_container_width,
-                                hide_index=not show_index
-                            )
-                            
-                            # Estatísticas do DataFrame
-                            if len(df_result) > 0:
-                                st.markdown("**📈 Estatísticas dos Dados:**")
-                                stats_col1, stats_col2, stats_col3 = st.columns(3)
-                                
-                                with stats_col1:
-                                    st.metric("📊 Total de Linhas", len(df_result))
-                                
-                                with stats_col2:
-                                    st.metric("📋 Total de Colunas", len(df_result.columns))
-                                
-                                with stats_col3:
-                                    memory_usage = df_result.memory_usage(deep=True).sum()
-                                    st.metric("💾 Uso de Memória", f"{memory_usage / 1024:.1f} KB")
-                                
-                                # Mostrar tipos de dados
-                                with st.expander("🔍 Informações das Colunas", expanded=False):
-                                    col_info = pd.DataFrame({
-                                        'Coluna': df_result.columns,
-                                        'Tipo': [str(dtype) for dtype in df_result.dtypes],
-                                        'Não Nulos': [df_result[col].count() for col in df_result.columns],
-                                        'Nulos': [df_result[col].isnull().sum() for col in df_result.columns],
-                                        'Únicos': [df_result[col].nunique() for col in df_result.columns]
-                                    })
-                                    st.dataframe(col_info, use_container_width=True, hide_index=True)
-                            
-                            # Opções de exportação
-                            if len(df_result) > 0:
-                                st.markdown("**📤 Exportar Resultados:**")
-                                export_col1, export_col2, export_col3, export_col4 = st.columns(4)
-                                
-                                with export_col1:
-                                    if st.button("📄 Exportar CSV", use_container_width=True):
-                                        csv_buffer = df_result.to_csv(index=False)
-                                        st.download_button(
-                                            label="💾 Download CSV",
-                                            data=csv_buffer,
-                                            file_name=f"query_result_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                                            mime="text/csv",
-                                            use_container_width=True
-                                        )
-                                
-                                with export_col2:
-                                    if st.button("📊 Exportar Excel", use_container_width=True):
-                                        try:
-                                            # Criar buffer em memória para Excel
-                                            excel_buffer = BytesIO()
-                                            
-                                            # Escrever DataFrame no buffer
-                                            with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-                                                df_result.to_excel(writer, index=False, sheet_name='Query_Result')
-                                            
-                                            # Voltar ao início do buffer
-                                            excel_buffer.seek(0)
-                                            
-                                            st.download_button(
-                                                label="💾 Download Excel",
-                                                data=excel_buffer.getvalue(),
-                                                file_name=f"query_result_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-                                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                                use_container_width=True
-                                            )
-                                        except Exception as e:
-                                            st.error(f"❌ Erro ao gerar Excel: {e}")
-                                
-                                with export_col3:
-                                    if st.button("📋 Copiar JSON", use_container_width=True):
-                                        json_data = df_result.to_json(orient='records', indent=2)
-                                        st.text_area(
-                                            "JSON dos resultados:",
-                                            value=json_data,
-                                            height=200,
-                                            help="Use Ctrl+A e Ctrl+C para copiar todo o conteúdo"
-                                        )
-                                
-                                with export_col4:
-                                    if st.button("🔗 Gerar Link", use_container_width=True):
-                                        # Criar um ID único para os dados
-                                        data_id = hashlib.md5(sql_query.encode()).hexdigest()[:8]
-                                        st.info(f"🔗 ID dos dados: `{data_id}`")
-                                        st.caption("Use este ID para referenciar estes resultados")
-                        
-                        except Exception as e:
-                            st.error(f"❌ Erro ao processar resultados: {e}")
-                            st.json(result['data'])
-                    
-                    else:
-                        st.info("✅ Query executada com sucesso, mas não retornou dados")
-                        if result.get('message'):
-                            st.success(result['message'])
-                
-                else:
-                    # Exibir erro
-                    st.error(f"❌ Erro na execução da query:")
-                    st.code(result.get('error', 'Erro desconhecido'), language='text')
-                    
-                    if result.get('message'):
-                        st.info(f"ℹ️ {result['message']}")
-                    
-                    # Sugestões de correção
-                    error_msg = result.get('error', '').lower()
-                    if 'syntax' in error_msg or 'sintaxe' in error_msg:
-                        st.markdown("**💡 Sugestões:**")
-                        st.markdown("- Verifique a sintaxe SQL")
-                        st.markdown("- Use o botão 'Validar' antes de executar")
-                        st.markdown("- Consulte os templates disponíveis")
-                    elif 'table' in error_msg or 'tabela' in error_msg:
-                        st.markdown("**💡 Sugestões:**")
-                        st.markdown("- Verifique se a tabela existe")
-                        st.markdown("- Consulte a lista de tabelas disponíveis")
-                        st.markdown("- Use o botão de uma tabela para inserir automaticamente")
-        
-        # Seção de favoritos
-        if st.session_state.sql_favorites:
-            st.markdown("---")
-            st.markdown("#### ⭐ Queries Favoritas")
-            
-            for i, fav_query in enumerate(st.session_state.sql_favorites):
-                with st.expander(f"⭐ Favorita {i+1}: {fav_query[:50]}...", expanded=False):
-                    st.code(fav_query, language='sql')
-                    
-                    fav_col1, fav_col2 = st.columns(2)
-                    
-                    with fav_col1:
-                        if st.button("🔄 Carregar", key=f"load_fav_{i}", use_container_width=True):
-                            st.session_state.sql_query = fav_query
-                            st.rerun()
-                    
-                    with fav_col2:
-                        if st.button("🗑️ Remover", key=f"remove_fav_{i}", use_container_width=True):
-                            st.session_state.sql_favorites.pop(i)
-                            st.success("✅ Favorito removido!")
-                            st.rerun()
+            # Botão para atualizar lista
+            if st.button("🔄 Atualizar Lista", use_container_width=True):
+                if hasattr(db_manager, 'refresh_tables'):
+                    with st.spinner("Atualizando..."):
+                        db_manager.refresh_tables()
+                        st.success("✅ Lista atualizada!")
+                        st.rerun()
+        else:
+            st.info("Nenhuma tabela encontrada")
+            if st.button("🔍 Redescobrir Tabelas", use_container_width=True):
+                if hasattr(db_manager, '_discover_real_tables'):
+                    with st.spinner("Descobrindo tabelas..."):
+                        db_manager._discover_real_tables()
+                        st.rerun()
     
     except Exception as e:
-        st.error(f"❌ Erro ao carregar editor SQL: {e}")
-        st.exception(e)
+        st.error(f"❌ Erro ao carregar tabelas: {e}")
 
 
+def render_query_history():
+    """Renderiza histórico de queries"""
+    st.markdown("**🕒 Histórico**")
+    
+    if st.session_state.sql_history:
+        # Limitar histórico exibido
+        recent_history = st.session_state.sql_history[-10:]
+        history_options = [
+            f"Query {len(st.session_state.sql_history) - i}: {query[:30]}..." 
+            if len(query) > 30 else f"Query {len(st.session_state.sql_history) - i}: {query}"
+            for i, query in enumerate(reversed(recent_history))
+        ]
+        
+        selected_history = st.selectbox(
+            "Queries recentes:",
+            options=range(len(history_options)),
+            format_func=lambda x: history_options[x] if x < len(history_options) else "",
+            key="history_select"
+        )
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🔄 Carregar", use_container_width=True):
+                if selected_history < len(recent_history):
+                    query_index = len(st.session_state.sql_history) - 1 - selected_history
+                    st.session_state.sql_query = st.session_state.sql_history[query_index]
+                    st.rerun()
+        
+        with col2:
+            if st.button("🗑️ Limpar", use_container_width=True):
+                st.session_state.sql_history = []
+                st.success("✅ Histórico limpo!")
+                st.rerun()
+        
+        # Mostrar estatísticas do histórico
+        st.caption(f"📈 Total de queries executadas: {len(st.session_state.sql_history)}")
+    else:
+        st.info("Nenhuma query executada ainda")
+
+
+def render_editor_settings():
+    """Renderiza configurações do editor"""
+    st.markdown("**⚙️ Configurações**")
+    
+    prefs = st.session_state.sql_editor_preferences
+    
+    prefs['auto_format'] = st.checkbox("🎨 Auto-formatação", value=prefs['auto_format'])
+    prefs['show_line_numbers'] = st.checkbox("📄 Numeração", value=prefs['show_line_numbers'])
+    prefs['syntax_highlight'] = st.checkbox("🌈 Highlight SQL", value=prefs['syntax_highlight'])
+    
+    prefs['max_rows_display'] = st.number_input(
+        "📊 Máx. linhas exibição:",
+        min_value=10,
+        max_value=1000,
+        value=prefs['max_rows_display'],
+        step=10
+    )
+
+
+def render_main_sql_editor(db_manager):
+    """Renderiza editor principal de SQL"""
+    st.markdown("#### ✏️ Editor de Query")
+    
+    # Editor principal
+    default_query = st.session_state.get('sql_query', 'SELECT * FROM users LIMIT 10;')
+    
+    sql_query = st.text_area(
+        "Digite sua query SQL:",
+        value=default_query,
+        height=200,
+        placeholder="-- Digite sua query SQL aqui\nSELECT * FROM sua_tabela LIMIT 10;",
+        help="Use Ctrl+Enter para executar rapidamente. Use {table_name} nos templates para substituição automática."
+    )
+    
+    # Salvar query no session state
+    st.session_state.sql_query = sql_query
+    
+    # Botões de ação
+    render_editor_action_buttons(sql_query, db_manager)
+    
+    # Informações da query
+    if sql_query.strip():
+        render_query_info(sql_query)
+
+
+def render_editor_action_buttons(sql_query, db_manager):
+    """Renderiza botões de ação do editor"""
+    action_col1, action_col2, action_col3, action_col4 = st.columns(4)
+    
+    with action_col1:
+        execute_button = st.button(
+            "▶️ Executar",
+            use_container_width=True,
+            type="primary",
+            disabled=not sql_query.strip(),
+            help="Execute a query SQL (Ctrl+Enter)"
+        )
+    
+    with action_col2:
+        if st.button("🔍 Validar", use_container_width=True, help="Validar sintaxe da query"):
+            validation_result = validate_sql_query(sql_query)
+            if validation_result['valid']:
+                st.success("✅ Query válida!")
+            else:
+                st.error(f"❌ Erro de sintaxe: {validation_result['error']}")
+    
+    with action_col3:
+        if st.button("🎨 Formatar", use_container_width=True, help="Formatar e organizar código SQL"):
+            formatted_query = format_sql_query(sql_query)
+            st.session_state.sql_query = formatted_query
+            st.rerun()
+    
+    with action_col4:
+        if st.button("⭐ Favoritar", use_container_width=True, help="Adicionar aos favoritos"):
+            if sql_query.strip() and sql_query not in st.session_state.sql_favorites:
+                st.session_state.sql_favorites.append(sql_query)
+                st.success("✅ Query adicionada aos favoritos!")
+            elif sql_query in st.session_state.sql_favorites:
+                st.info("ℹ️ Query já está nos favoritos")
+            else:
+                st.warning("⚠️ Digite uma query para favoritar")
+    
+    # Executar query se botão foi pressionado
+    if execute_button and sql_query.strip():
+        execute_sql_query(sql_query, db_manager)
+
+
+def render_query_info(sql_query):
+    """Renderiza informações sobre a query atual"""
+    query_info_col1, query_info_col2, query_info_col3, query_info_col4 = st.columns(4)
+    
+    with query_info_col1:
+        query_type = get_query_type(sql_query)
+        st.metric("Tipo de Query", query_type)
+    
+    with query_info_col2:
+        char_count = len(sql_query)
+        st.metric("Caracteres", char_count)
+    
+    with query_info_col3:
+        line_count = len(sql_query.split('\n'))
+        st.metric("Linhas", line_count)
+    
+    with query_info_col4:
+        word_count = len(sql_query.split())
+        st.metric("Palavras", word_count)
+
+
+def execute_sql_query(sql_query, db_manager):
+    """Executa uma query SQL e gerencia resultados"""
+    with st.spinner("⏳ Executando query..."):
+        # Adicionar ao histórico
+        if sql_query not in st.session_state.sql_history:
+            st.session_state.sql_history.append(sql_query)
+            # Manter apenas as últimas 100 queries
+            if len(st.session_state.sql_history) > 100:
+                st.session_state.sql_history = st.session_state.sql_history[-100:]
+        
+        # Executar query
+        try:
+            result = db_manager.execute_query(sql_query)
+            st.session_state.last_execution_result = result
+            
+            # Exibir resultados
+            display_query_results(result, sql_query)
+            
+        except Exception as e:
+            st.error(f"❌ Erro durante execução: {e}")
+            with st.expander("🔍 Detalhes do Erro", expanded=False):
+                st.exception(e)
+
+
+def render_sql_results_section():
+    """Renderiza seção de resultados da última query"""
+    if st.session_state.last_execution_result:
+        st.markdown("---")
+        st.markdown("#### 📊 Resultados da Query")
+        display_query_results(st.session_state.last_execution_result, st.session_state.sql_query)
+
+
+def display_query_results(result, sql_query):
+    """Exibe resultados de uma query SQL executada"""
+    if result['success']:
+        # Métricas de execução
+        metrics_col1, metrics_col2, metrics_col3, metrics_col4 = st.columns(4)
+        
+        with metrics_col1:
+            st.metric("✅ Status", "Sucesso", delta="Query executada")
+        
+        with metrics_col2:
+            st.metric("⏱️ Tempo", result.get('execution_time', 'N/A'))
+        
+        with metrics_col3:
+            st.metric("📝 Registros", result.get('rows_affected', 0))
+        
+        with metrics_col4:
+            data_size = len(str(result.get('data', [])))
+            st.metric("💾 Tamanho", f"{data_size} chars")
+        
+        # Mostrar dados se existirem
+        if result.get('data') and len(result['data']) > 0:
+            st.markdown("**📋 Dados Retornados:**")
+            
+            try:
+                df_result = pd.DataFrame(result['data'])
+                
+                # Controles de visualização
+                view_col1, view_col2, view_col3, view_col4 = st.columns(4)
+                
+                with view_col1:
+                    show_index = st.checkbox("📄 Mostrar índice", value=False)
+                
+                with view_col2:
+                    max_rows = st.number_input(
+                        "📊 Máx. linhas", 
+                        min_value=5, 
+                        max_value=1000, 
+                        value=st.session_state.sql_editor_preferences['max_rows_display']
+                    )
+                
+                with view_col3:
+                    use_container_width = st.checkbox("📏 Largura total", value=True)
+                
+                with view_col4:
+                    if st.button("📊 Análise Rápida", help="Mostra estatísticas descritivas"):
+                        with st.expander("📈 Análise Estatística", expanded=True):
+                            st.write("**Informações Gerais:**")
+                            st.write(df_result.describe(include='all'))
+                            
+                            if len(df_result.select_dtypes(include=[np.number]).columns) > 0: # type: ignore
+                                st.write("**Correlações (apenas colunas numéricas):**")
+                                st.write(df_result.corr())
+                
+                # Exibir DataFrame
+                st.dataframe(
+                    df_result.head(max_rows),
+                    use_container_width=use_container_width,
+                    hide_index=not show_index
+                )
+                
+                # Estatísticas do DataFrame
+                if len(df_result) > 0:
+                    render_data_statistics(df_result)
+                
+                # Opções de exportação
+                render_export_options(df_result, sql_query)
+                
+            except Exception as e:
+                st.error(f"❌ Erro ao processar resultados: {e}")
+                st.json(result['data'])
+        
+        else:
+            st.info("✅ Query executada com sucesso, mas não retornou dados")
+            if result.get('message'):
+                st.success(result['message'])
+    
+    else:
+        # Exibir erro
+        st.error(f"❌ Erro na execução da query:")
+        
+        error_msg = result.get('error', 'Erro desconhecido')
+        st.code(error_msg, language='text')
+        
+        if result.get('message'):
+            st.info(f"ℹ️ {result['message']}")
+        
+        # Sugestões de correção baseadas no erro
+        provide_error_suggestions(error_msg, sql_query)
+
+
+def render_data_statistics(df_result):
+    """Renderiza estatísticas dos dados retornados"""
+    st.markdown("**📈 Estatísticas dos Dados:**")
+    stats_col1, stats_col2, stats_col3, stats_col4 = st.columns(4)
+    
+    with stats_col1:
+        st.metric("📊 Total de Linhas", len(df_result))
+    
+    with stats_col2:
+        st.metric("📋 Total de Colunas", len(df_result.columns))
+    
+    with stats_col3:
+        memory_usage = df_result.memory_usage(deep=True).sum()
+        st.metric("💾 Uso de Memória", f"{memory_usage / 1024:.1f} KB")
+    
+    with stats_col4:
+        null_count = df_result.isnull().sum().sum()
+        st.metric("❌ Valores Nulos", null_count)
+    
+    # Informações detalhadas das colunas
+    with st.expander("🔍 Informações das Colunas", expanded=False):
+        col_info = pd.DataFrame({
+            'Coluna': df_result.columns,
+            'Tipo': [str(dtype) for dtype in df_result.dtypes],
+            'Não Nulos': [df_result[col].count() for col in df_result.columns],
+            'Nulos': [df_result[col].isnull().sum() for col in df_result.columns],
+            'Únicos': [df_result[col].nunique() for col in df_result.columns],
+            '% Únicos': [f"{(df_result[col].nunique() / len(df_result) * 100):.1f}%" for col in df_result.columns]
+        })
+        st.dataframe(col_info, use_container_width=True, hide_index=True)
+
+
+def render_export_options(df_result, sql_query):
+    """Renderiza opções de exportação dos resultados"""
+    if len(df_result) > 0:
+        st.markdown("**📤 Exportar Resultados:**")
+        export_col1, export_col2, export_col3, export_col4 = st.columns(4)
+        
+        with export_col1:
+            if st.button("📄 CSV", use_container_width=True, help="Exportar como CSV"):
+                csv_buffer = df_result.to_csv(index=False)
+                st.download_button(
+                    label="💾 Download CSV",
+                    data=csv_buffer,
+                    file_name=f"query_result_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
+        
+        with export_col2:
+            if st.button("📊 Excel", use_container_width=True, help="Exportar como Excel"):
+                try:
+                    excel_buffer = BytesIO()
+                    with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+                        df_result.to_excel(writer, index=False, sheet_name='Query_Result')
+                    excel_buffer.seek(0)
+                    
+                    st.download_button(
+                        label="💾 Download Excel",
+                        data=excel_buffer.getvalue(),
+                        file_name=f"query_result_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=True
+                    )
+                except Exception as e:
+                    st.error(f"❌ Erro ao gerar Excel: {e}")
+        
+        with export_col3:
+            if st.button("📋 JSON", use_container_width=True, help="Visualizar como JSON"):
+                json_data = df_result.to_json(orient='records', indent=2)
+                st.text_area(
+                    "JSON dos resultados:",
+                    value=json_data,
+                    height=200,
+                    help="Use Ctrl+A e Ctrl+C para copiar todo o conteúdo"
+                )
+        
+        with export_col4:
+            if st.button("🔗 Compartilhar", use_container_width=True, help="Gerar link para compartilhar"):
+                data_id = hashlib.md5(sql_query.encode()).hexdigest()[:8]
+                st.info(f"🔗 ID dos dados: `{data_id}`")
+                st.caption("Use este ID para referenciar estes resultados")
+
+
+def provide_error_suggestions(error_msg, sql_query):
+    """Fornece sugestões baseadas no tipo de erro"""
+    error_lower = error_msg.lower()
+    
+    st.markdown("**💡 Sugestões de Correção:**")
+    
+    if any(word in error_lower for word in ['syntax', 'sintaxe', 'near']):
+        st.markdown("""
+        **Erro de Sintaxe:**
+        - ✅ Verifique pontos e vírgulas
+        - ✅ Confirme parênteses balanceados
+        - ✅ Use o botão 'Validar' antes de executar
+        - ✅ Consulte os templates disponíveis
+        """)
+    
+    elif any(word in error_lower for word in ['table', 'tabela', 'relation']):
+        st.markdown("""
+        **Tabela Não Encontrada:**
+        - ✅ Verifique se a tabela existe na lista lateral
+        - ✅ Confirme o nome correto da tabela
+        - ✅ Use o botão de uma tabela para inserir automaticamente
+        - ✅ Verifique permissões de acesso
+        """)
+    
+    elif any(word in error_lower for word in ['column', 'coluna', 'field']):
+        st.markdown("""
+        **Coluna Não Encontrada:**
+        - ✅ Verifique se a coluna existe na tabela
+        - ✅ Use SELECT * para ver todas as colunas
+        - ✅ Confirme a grafia correta
+        """)
+    
+    elif any(word in error_lower for word in ['permission', 'access', 'denied']):
+        st.markdown("""
+        **Erro de Permissão:**
+        - ✅ Verifique suas credenciais de acesso
+        - ✅ Confirme permissões para esta operação
+        - ✅ Entre em contato com o administrador
+        """)
+    
+    else:
+        st.markdown("""
+        **Erro Geral:**
+        - ✅ Revise a sintaxe SQL
+        - ✅ Teste com uma query mais simples
+        - ✅ Verifique a conexão com o banco
+        - ✅ Consulte a documentação SQL
+        """)
+
+
+def render_favorites_section():
+    """Renderiza seção de queries favoritas"""
+    if st.session_state.sql_favorites:
+        st.markdown("---")
+        st.markdown("#### ⭐ Queries Favoritas")
+        
+        # Opção para pesquisar favoritos
+        if len(st.session_state.sql_favorites) > 5:
+            search_favorites = st.text_input("🔍 Buscar nos favoritos:", placeholder="Digite para filtrar...")
+            filtered_favorites = [
+                fav for fav in st.session_state.sql_favorites 
+                if not search_favorites or search_favorites.lower() in fav.lower()
+            ]
+        else:
+            filtered_favorites = st.session_state.sql_favorites
+        
+        for i, fav_query in enumerate(filtered_favorites):
+            original_index = st.session_state.sql_favorites.index(fav_query)
+            
+            with st.expander(f"⭐ Favorita {original_index + 1}: {fav_query[:50]}...", expanded=False):
+                st.code(fav_query, language='sql')
+                
+                fav_col1, fav_col2, fav_col3 = st.columns(3)
+                
+                with fav_col1:
+                    if st.button("🔄 Carregar", key=f"load_fav_{original_index}", use_container_width=True):
+                        st.session_state.sql_query = fav_query
+                        st.rerun()
+                
+                with fav_col2:
+                    if st.button("📋 Copiar", key=f"copy_fav_{original_index}", use_container_width=True):
+                        st.text_area("Query copiada:", value=fav_query, height=100, key=f"copy_area_{original_index}")
+                
+                with fav_col3:
+                    if st.button("🗑️ Remover", key=f"remove_fav_{original_index}", use_container_width=True):
+                        st.session_state.sql_favorites.pop(original_index)
+                        st.success("✅ Favorito removido!")
+                        st.rerun()
+
+
+def show_example_queries():
+    """Mostra queries de exemplo quando não há conexão"""
+    st.markdown("---")
+    st.markdown("### 📚 Queries de Exemplo")
+    st.markdown("Pratique com estas queries enquanto configura sua conexão:")
+    
+    examples = {
+        "Consultas Básicas": {
+            "Selecionar usuários": "SELECT id, name, email FROM users WHERE active = true ORDER BY name;",
+            "Contar registros": "SELECT COUNT(*) as total_users FROM users;",
+            "Buscar por padrão": "SELECT * FROM products WHERE name LIKE '%smartphone%';"
+        },
+        "Consultas Intermediárias": {
+            "JOIN com duas tabelas": "SELECT u.name, p.title FROM users u JOIN posts p ON u.id = p.user_id;",
+            "GROUP BY com agregação": "SELECT category, COUNT(*) as count, AVG(price) as avg_price FROM products GROUP BY category;",
+            "Subconsulta": "SELECT * FROM orders WHERE user_id IN (SELECT id FROM users WHERE country = 'Brazil');"
+        },
+        "Consultas Avançadas": {
+            "Window function": "SELECT name, salary, ROW_NUMBER() OVER (ORDER BY salary DESC) as rank FROM employees;",
+            "CTE (Common Table Expression)": "WITH top_users AS (SELECT user_id FROM orders GROUP BY user_id HAVING COUNT(*) > 5) SELECT u.name FROM users u JOIN top_users t ON u.id = t.user_id;",
+            "CASE statement": "SELECT name, CASE WHEN age < 18 THEN 'Menor' WHEN age < 65 THEN 'Adulto' ELSE 'Idoso' END as category FROM users;"
+        }
+    }
+    
+    for category, queries in examples.items():
+        with st.expander(f"📖 {category}", expanded=False):
+            for title, query in queries.items():
+                st.markdown(f"**{title}:**")
+                st.code(query, language='sql')
+                if st.button(f"📋 Usar {title}", key=f"example_{title.replace(' ', '_')}"):
+                    st.session_state.sql_query = query
+                    st.success(f"✅ Query '{title}' carregada no editor!")
+                st.markdown("---")
+
+
+# Funções auxiliares para validação e formatação já definidas anteriormente
 def validate_sql_query(query: str) -> Dict:
     """Valida sintaxe básica de uma query SQL"""
     try:
         query_clean = query.strip().upper()
         
-        # Verificações básicas
         if not query_clean:
             return {'valid': False, 'error': 'Query vazia'}
         
-        # Verificar palavras-chave SQL básicas
-        sql_keywords = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER']
+        sql_keywords = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER', 'WITH']
         starts_with_keyword = any(query_clean.startswith(keyword) for keyword in sql_keywords)
         
         if not starts_with_keyword:
             return {'valid': False, 'error': 'Query deve começar com uma palavra-chave SQL válida'}
         
-        # Verificar parênteses balanceados
         if query_clean.count('(') != query_clean.count(')'):
             return {'valid': False, 'error': 'Parênteses não balanceados'}
         
-        # Verificar aspas balanceadas
         single_quotes = query_clean.count("'")
         double_quotes = query_clean.count('"')
         
@@ -2476,14 +3188,13 @@ def validate_sql_query(query: str) -> Dict:
         if double_quotes % 2 != 0:
             return {'valid': False, 'error': 'Aspas duplas não balanceadas'}
         
-        # Verificações específicas por tipo
         if query_clean.startswith('SELECT'):
-            if 'FROM' not in query_clean:
-                return {'valid': False, 'error': 'SELECT deve conter FROM'}
+            if 'FROM' not in query_clean and 'DUAL' not in query_clean:
+                return {'valid': False, 'error': 'SELECT deve conter FROM ou ser uma consulta específica'}
         
         elif query_clean.startswith('INSERT'):
-            if 'INTO' not in query_clean or 'VALUES' not in query_clean:
-                return {'valid': False, 'error': 'INSERT deve conter INTO e VALUES'}
+            if 'INTO' not in query_clean:
+                return {'valid': False, 'error': 'INSERT deve conter INTO'}
         
         elif query_clean.startswith('UPDATE'):
             if 'SET' not in query_clean:
@@ -2502,7 +3213,8 @@ def validate_sql_query(query: str) -> Dict:
 def format_sql_query(query: str) -> str:
     """Formata uma query SQL para melhor legibilidade"""
     try:
-        # Palavras-chave para colocar em maiúscula
+        import re
+        
         keywords = [
             'SELECT', 'FROM', 'WHERE', 'ORDER BY', 'GROUP BY', 'HAVING',
             'INSERT', 'INTO', 'VALUES', 'UPDATE', 'SET', 'DELETE',
@@ -2513,19 +3225,16 @@ def format_sql_query(query: str) -> str:
             'AND', 'OR', 'NOT', 'IN', 'EXISTS', 'BETWEEN',
             'LIKE', 'IS', 'NULL', 'TRUE', 'FALSE',
             'COUNT', 'SUM', 'AVG', 'MIN', 'MAX',
-            'LIMIT', 'OFFSET', 'ASC', 'DESC'
+            'LIMIT', 'OFFSET', 'ASC', 'DESC', 'WITH'
         ]
         
         formatted = query
         
-        # Substituir palavras-chave por versão em maiúscula
         for keyword in keywords:
-            # Usar regex para substituir apenas palavras completas
-            import re
             pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
             formatted = re.sub(pattern, keyword, formatted, flags=re.IGNORECASE)
         
-        # Adicionar quebras de linha em pontos estratégicos
+        # Adicionar quebras de linha
         formatted = re.sub(r'\bFROM\b', '\nFROM', formatted)
         formatted = re.sub(r'\bWHERE\b', '\nWHERE', formatted)
         formatted = re.sub(r'\bORDER BY\b', '\nORDER BY', formatted)
@@ -2533,6 +3242,7 @@ def format_sql_query(query: str) -> str:
         formatted = re.sub(r'\bHAVING\b', '\nHAVING', formatted)
         formatted = re.sub(r'\bJOIN\b', '\nJOIN', formatted)
         formatted = re.sub(r'\bUNION\b', '\nUNION', formatted)
+        formatted = re.sub(r'\bWITH\b', '\nWITH', formatted)
         
         # Limpar linhas vazias extras
         lines = [line.strip() for line in formatted.split('\n') if line.strip()]
@@ -2541,33 +3251,31 @@ def format_sql_query(query: str) -> str:
         return formatted
     
     except Exception:
-        return query  # Retornar query original se der erro
+        return query
 
 
 def get_query_type(query: str) -> str:
     """Identifica o tipo de uma query SQL"""
     query_upper = query.strip().upper()
     
-    if query_upper.startswith('SELECT'):
-        return 'SELECT'
-    elif query_upper.startswith('INSERT'):
-        return 'INSERT'
-    elif query_upper.startswith('UPDATE'):
-        return 'UPDATE'
-    elif query_upper.startswith('DELETE'):
-        return 'DELETE'
-    elif query_upper.startswith('CREATE'):
-        return 'CREATE'
-    elif query_upper.startswith('DROP'):
-        return 'DROP'
-    elif query_upper.startswith('ALTER'):
-        return 'ALTER'
-    elif query_upper.startswith('EXPLAIN'):
-        return 'EXPLAIN'
-    elif query_upper.startswith('SHOW'):
-        return 'SHOW'
-    else:
-        return 'OTHER'
+    type_mapping = {
+        'SELECT': 'SELECT',
+        'INSERT': 'INSERT',
+        'UPDATE': 'UPDATE',
+        'DELETE': 'DELETE',
+        'CREATE': 'CREATE',
+        'DROP': 'DROP',
+        'ALTER': 'ALTER',
+        'EXPLAIN': 'EXPLAIN',
+        'SHOW': 'SHOW',
+        'WITH': 'CTE'
+    }
+    
+    for keyword, query_type in type_mapping.items():
+        if query_upper.startswith(keyword):
+            return query_type
+    
+    return 'OTHER'
 
 def render_dba_operations():
     """Renderiza página de operações de DBA"""
