@@ -1162,6 +1162,529 @@ def render_sidebar():
 # PÁGINAS DO SISTEMA
 # =====================================================================
 
+def get_table_policies(db_manager, table_name):
+    """Busca as políticas RLS de uma tabela específica"""
+    try:
+        if not db_manager.connected:
+            # Retornar políticas de exemplo para modo demo
+            return get_demo_table_policies(table_name)
+        
+        # Query para buscar políticas do Supabase/PostgreSQL
+        policies_query = f"""
+        SELECT 
+            p.policyname as policy_name,
+            p.permissive as is_permissive,
+            p.roles as roles,
+            p.cmd as command,
+            p.qual as using_expression,
+            p.with_check as with_check_expression,
+            c.relname as table_name,
+            n.nspname as schema_name
+        FROM pg_policies p
+        JOIN pg_class c ON p.tablename = c.relname
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relname = '{table_name}'
+        AND n.nspname = 'public'
+        ORDER BY p.policyname;
+        """
+        
+        result = db_manager.execute_query(policies_query)
+        
+        if result['success'] and result['data']:
+            return {
+                'success': True,
+                'policies': result['data'],
+                'rls_enabled': True
+            }
+        else:
+            # Verificar se RLS está habilitado na tabela
+            rls_query = f"""
+            SELECT 
+                c.relname as table_name,
+                c.relrowsecurity as rls_enabled,
+                c.relforcerowsecurity as rls_forced
+            FROM pg_class c
+            JOIN pg_namespace n ON c.relnamespace = n.oid
+            WHERE c.relname = '{table_name}'
+            AND n.nspname = 'public';
+            """
+            
+            rls_result = db_manager.execute_query(rls_query)
+            
+            return {
+                'success': True,
+                'policies': [],
+                'rls_enabled': rls_result['data'][0]['rls_enabled'] if rls_result['success'] and rls_result['data'] else False,
+                'rls_forced': rls_result['data'][0]['rls_forced'] if rls_result['success'] and rls_result['data'] else False
+            }
+    
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e),
+            'policies': [],
+            'rls_enabled': False
+        }
+
+
+def get_demo_table_policies(table_name):
+    """Retorna políticas de exemplo para modo demonstração"""
+    demo_policies = {
+        'users': [
+            {
+                'policy_name': 'Users can view own profile',
+                'command': 'SELECT',
+                'is_permissive': True,
+                'roles': ['authenticated'],
+                'using_expression': '(auth.uid() = id)',
+                'with_check_expression': None,
+                'table_name': 'users',
+                'schema_name': 'public'
+            },
+            {
+                'policy_name': 'Users can update own profile',
+                'command': 'UPDATE',
+                'is_permissive': True,
+                'roles': ['authenticated'],
+                'using_expression': '(auth.uid() = id)',
+                'with_check_expression': '(auth.uid() = id)',
+                'table_name': 'users',
+                'schema_name': 'public'
+            }
+        ],
+        'products': [
+            {
+                'policy_name': 'Anyone can view products',
+                'command': 'SELECT',
+                'is_permissive': True,
+                'roles': ['anon', 'authenticated'],
+                'using_expression': 'true',
+                'with_check_expression': None,
+                'table_name': 'products',
+                'schema_name': 'public'
+            },
+            {
+                'policy_name': 'Only admins can manage products',
+                'command': 'ALL',
+                'is_permissive': True,
+                'roles': ['authenticated'],
+                'using_expression': '(auth.jwt() ->> \'role\' = \'admin\')',
+                'with_check_expression': '(auth.jwt() ->> \'role\' = \'admin\')',
+                'table_name': 'products',
+                'schema_name': 'public'
+            }
+        ],
+        'orders': [
+            {
+                'policy_name': 'Users can view own orders',
+                'command': 'SELECT',
+                'is_permissive': True,
+                'roles': ['authenticated'],
+                'using_expression': '(auth.uid() = user_id)',
+                'with_check_expression': None,
+                'table_name': 'orders',
+                'schema_name': 'public'
+            },
+            {
+                'policy_name': 'Users can create own orders',
+                'command': 'INSERT',
+                'is_permissive': True,
+                'roles': ['authenticated'],
+                'using_expression': None,
+                'with_check_expression': '(auth.uid() = user_id)',
+                'table_name': 'orders',
+                'schema_name': 'public'
+            }
+        ]
+    }
+    
+    return {
+        'success': True,
+        'policies': demo_policies.get(table_name, []),
+        'rls_enabled': True
+    }
+
+def render_table_policies(table_name, db_manager):
+    """Renderiza as políticas RLS de uma tabela"""
+    st.markdown(f"#### 🛡️ Políticas RLS - Tabela: **{table_name}**")
+    
+    with st.spinner(f"🔍 Carregando políticas da tabela {table_name}..."):
+        policies_result = get_table_policies(db_manager, table_name)
+    
+    if not policies_result['success']:
+        st.error(f"❌ Erro ao carregar políticas: {policies_result.get('error', 'Erro desconhecido')}")
+        return
+    
+    # Status do RLS
+    rls_enabled = policies_result.get('rls_enabled', False)
+    policies = policies_result.get('policies', [])
+    
+    # Header com status RLS
+    status_col1, status_col2, status_col3 = st.columns(3)
+    
+    with status_col1:
+        if rls_enabled:
+            st.success("🟢 RLS Habilitado")
+        else:
+            st.error("🔴 RLS Desabilitado")
+    
+    with status_col2:
+        st.metric("📋 Total de Políticas", len(policies))
+    
+    with status_col3:
+        if policies:
+            commands = [p['command'] for p in policies]
+            unique_commands = len(set(commands))
+            st.metric("⚙️ Tipos de Comando", unique_commands)
+        else:
+            st.metric("⚙️ Tipos de Comando", 0)
+    
+    # Aviso se RLS está desabilitado
+    if not rls_enabled:
+        st.warning("""
+        ⚠️ **Atenção**: Row Level Security (RLS) não está habilitado nesta tabela.
+        Isso significa que todos os usuários autenticados podem acessar todos os dados da tabela.
+        """)
+        
+        st.markdown("**Para habilitar RLS:**")
+        st.code(f"ALTER TABLE {table_name} ENABLE ROW LEVEL SECURITY;", language='sql')
+    
+    # Exibir políticas se existirem
+    if policies:
+        st.markdown("---")
+        st.markdown("### 📜 Políticas Configuradas")
+        
+        for i, policy in enumerate(policies):
+            with st.expander(f"🛡️ {policy['policy_name']}", expanded=False):
+                # Informações básicas da política
+                info_col1, info_col2 = st.columns(2)
+                
+                with info_col1:
+                    st.markdown(f"**Comando:** `{policy['command']}`")
+                    st.markdown(f"**Tipo:** {'Permissiva' if policy['is_permissive'] else 'Restritiva'}")
+                
+                with info_col2:
+                    roles = policy['roles']
+                    if isinstance(roles, list):
+                        roles_str = ', '.join(roles)
+                    else:
+                        roles_str = str(roles)
+                    st.markdown(f"**Roles:** `{roles_str}`")
+                
+                # Expressões da política
+                st.markdown("**🔍 Condições:**")
+                
+                # USING expression (para SELECT, UPDATE, DELETE)
+                if policy['using_expression']:
+                    st.markdown("*Expressão USING (quando a linha pode ser acessada):*")
+                    st.code(policy['using_expression'], language='sql')
+                
+                # WITH CHECK expression (para INSERT, UPDATE)
+                if policy['with_check_expression']:
+                    st.markdown("*Expressão WITH CHECK (validação para inserção/atualização):*")
+                    st.code(policy['with_check_expression'], language='sql')
+                
+                if not policy['using_expression'] and not policy['with_check_expression']:
+                    st.info("ℹ️ Esta política não possui condições específicas")
+                
+                # Análise da política
+                analyze_policy_security(policy)
+    
+    else:
+        st.info("ℹ️ Nenhuma política RLS configurada para esta tabela")
+        
+        if rls_enabled:
+            st.warning("""
+            ⚠️ **Atenção**: RLS está habilitado mas não há políticas configuradas.
+            Isso significa que **nenhum usuário** pode acessar os dados desta tabela!
+            """)
+        
+        # Sugestões de políticas comuns
+        show_policy_suggestions(table_name)
+    
+    # Botões de ação
+    st.markdown("---")
+    action_col1, action_col2, action_col3, action_col4 = st.columns(4)
+    
+    with action_col1:
+        if st.button("🔄 Atualizar Políticas", use_container_width=True):
+            st.rerun()
+    
+    with action_col2:
+        if st.button("📋 Gerar SQL", use_container_width=True):
+            generate_policies_sql(table_name, policies, rls_enabled)
+    
+    with action_col3:
+        if st.button("📊 Testar Acesso", use_container_width=True):
+            test_table_access(table_name, db_manager)
+    
+    with action_col4:
+        if st.button("📚 Documentação", use_container_width=True):
+            show_rls_documentation()
+
+
+def analyze_policy_security(policy):
+    """Analisa a segurança de uma política e fornece feedback"""
+    st.markdown("**🔒 Análise de Segurança:**")
+    
+    analysis = []
+    
+    # Verificar se a política é muito permissiva
+    if policy['using_expression'] == 'true' or policy['with_check_expression'] == 'true':
+        analysis.append({
+            'type': 'warning',
+            'message': '⚠️ Política muito permissiva - permite acesso a todos os dados'
+        })
+    
+    # Verificar se usa autenticação
+    using_expr = policy.get('using_expression', '').lower()
+    check_expr = policy.get('with_check_expression', '').lower()
+    
+    if 'auth.uid()' in using_expr or 'auth.uid()' in check_expr:
+        analysis.append({
+            'type': 'success',
+            'message': '✅ Usa autenticação de usuário (auth.uid())'
+        })
+    
+    if 'auth.jwt()' in using_expr or 'auth.jwt()' in check_expr:
+        analysis.append({
+            'type': 'info',
+            'message': 'ℹ️ Usa claims do JWT para controle de acesso'
+        })
+    
+    # Verificar roles
+    roles = policy.get('roles', [])
+    if isinstance(roles, list):
+        if 'anon' in roles:
+            analysis.append({
+                'type': 'warning',
+                'message': '⚠️ Permite acesso a usuários anônimos'
+            })
+        if 'authenticated' in roles:
+            analysis.append({
+                'type': 'info',
+                'message': 'ℹ️ Requer usuário autenticado'
+            })
+    
+    # Exibir análise
+    for item in analysis:
+        if item['type'] == 'success':
+            st.success(item['message'])
+        elif item['type'] == 'warning':
+            st.warning(item['message'])
+        else:
+            st.info(item['message'])
+    
+    if not analysis:
+        st.info("ℹ️ Política padrão - revise se atende aos requisitos de segurança")
+
+
+def show_policy_suggestions(table_name):
+    """Mostra sugestões de políticas comuns"""
+    st.markdown("### 💡 Sugestões de Políticas")
+    
+    suggestions = {
+        'users': [
+            {
+                'name': 'Usuários veem apenas próprio perfil',
+                'sql': f"""CREATE POLICY "users_select_own" ON {table_name}
+FOR SELECT TO authenticated
+USING (auth.uid() = id);"""
+            },
+            {
+                'name': 'Usuários editam apenas próprio perfil',
+                'sql': f"""CREATE POLICY "users_update_own" ON {table_name}
+FOR UPDATE TO authenticated
+USING (auth.uid() = id)
+WITH CHECK (auth.uid() = id);"""
+            }
+        ],
+        'orders': [
+            {
+                'name': 'Usuários veem apenas próprios pedidos',
+                'sql': f"""CREATE POLICY "orders_select_own" ON {table_name}
+FOR SELECT TO authenticated
+USING (auth.uid() = user_id);"""
+            },
+            {
+                'name': 'Usuários criam pedidos para si mesmos',
+                'sql': f"""CREATE POLICY "orders_insert_own" ON {table_name}
+FOR INSERT TO authenticated
+WITH CHECK (auth.uid() = user_id);"""
+            }
+        ],
+        'products': [
+            {
+                'name': 'Todos podem visualizar produtos',
+                'sql': f"""CREATE POLICY "products_select_all" ON {table_name}
+FOR SELECT TO anon, authenticated
+USING (true);"""
+            },
+            {
+                'name': 'Apenas admins gerenciam produtos',
+                'sql': f"""CREATE POLICY "products_admin_all" ON {table_name}
+FOR ALL TO authenticated
+USING (auth.jwt() ->> 'role' = 'admin')
+WITH CHECK (auth.jwt() ->> 'role' = 'admin');"""
+            }
+        ]
+    }
+    
+    table_suggestions = suggestions.get(table_name, [
+        {
+            'name': 'Política baseada em usuário',
+            'sql': f"""CREATE POLICY "user_access" ON {table_name}
+FOR SELECT TO authenticated
+USING (auth.uid() = user_id);"""
+        }
+    ])
+    
+    for suggestion in table_suggestions:
+        with st.expander(f"📝 {suggestion['name']}", expanded=False):
+            st.code(suggestion['sql'], language='sql')
+            if st.button(f"📋 Copiar", key=f"copy_suggestion_{suggestion['name']}"):
+                st.text_area("SQL copiado:", value=suggestion['sql'], height=100)
+
+
+def generate_policies_sql(table_name, policies, rls_enabled):
+    """Gera SQL para recriar as políticas atuais"""
+    st.markdown("### 📄 SQL para Recriar Políticas")
+    
+    sql_commands = []
+    
+    # Comando para habilitar RLS se necessário
+    if rls_enabled:
+        sql_commands.append(f"-- Habilitar Row Level Security")
+        sql_commands.append(f"ALTER TABLE {table_name} ENABLE ROW LEVEL SECURITY;")
+        sql_commands.append("")
+    
+    # Comandos para cada política
+    for policy in policies:
+        sql_commands.append(f"-- Política: {policy['policy_name']}")
+        
+        sql = f"CREATE POLICY \"{policy['policy_name']}\" ON {table_name}"
+        sql += f"\nFOR {policy['command']} TO {', '.join(policy['roles']) if isinstance(policy['roles'], list) else policy['roles']}"
+        
+        if policy['using_expression']:
+            sql += f"\nUSING ({policy['using_expression']})"
+        
+        if policy['with_check_expression']:
+            sql += f"\nWITH CHECK ({policy['with_check_expression']})"
+        
+        sql += ";"
+        sql_commands.append(sql)
+        sql_commands.append("")
+    
+    if sql_commands:
+        full_sql = "\n".join(sql_commands)
+        st.code(full_sql, language='sql')
+        
+        st.download_button(
+            label="💾 Baixar SQL",
+            data=full_sql,
+            file_name=f"{table_name}_policies_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sql",
+            mime="text/sql",
+            use_container_width=True
+        )
+    else:
+        st.info("ℹ️ Nenhuma política para gerar SQL")
+
+
+def test_table_access(table_name, db_manager):
+    """Testa o acesso à tabela com diferentes contextos"""
+    st.markdown("### 🧪 Teste de Acesso")
+    
+    test_queries = [
+        {
+            'name': 'SELECT básico',
+            'query': f"SELECT COUNT(*) as total FROM {table_name};",
+            'description': 'Conta total de registros na tabela'
+        },
+        {
+            'name': 'SELECT com LIMIT',
+            'query': f"SELECT * FROM {table_name} LIMIT 1;",
+            'description': 'Busca primeiro registro disponível'
+        }
+    ]
+    
+    for test in test_queries:
+        with st.expander(f"🔍 {test['name']}", expanded=False):
+            st.markdown(f"**Descrição:** {test['description']}")
+            st.code(test['query'], language='sql')
+            
+            if st.button(f"▶️ Executar {test['name']}", key=f"test_{test['name']}"):
+                with st.spinner(f"Executando {test['name']}..."):
+                    result = db_manager.execute_query(test['query'])
+                    
+                    if result['success']:
+                        st.success(f"✅ {test['name']} executado com sucesso!")
+                        if result['data']:
+                            st.json(result['data'])
+                    else:
+                        st.error(f"❌ Erro: {result.get('error', 'Erro desconhecido')}")
+
+
+def show_rls_documentation():
+    """Mostra documentação sobre RLS"""
+    st.markdown("### 📚 Documentação - Row Level Security (RLS)")
+    
+    with st.expander("🔒 O que é RLS?", expanded=True):
+        st.markdown("""
+        **Row Level Security (RLS)** é um recurso do PostgreSQL que permite controlar o acesso a linhas individuais de uma tabela com base em políticas definidas.
+        
+        **Principais conceitos:**
+        - **Política**: Regra que define quais linhas um usuário pode acessar
+        - **USING**: Condição que determina quais linhas são visíveis
+        - **WITH CHECK**: Condição para validar inserções/atualizações
+        - **Roles**: Papéis de usuário aos quais a política se aplica
+        """)
+    
+    with st.expander("⚙️ Comandos Básicos", expanded=False):
+        st.markdown("""
+        **Habilitar RLS:**
+        ```sql
+        ALTER TABLE tabela ENABLE ROW LEVEL SECURITY;
+        ```
+        
+        **Criar política SELECT:**
+        ```sql
+        CREATE POLICY "policy_name" ON tabela
+        FOR SELECT TO authenticated
+        USING (auth.uid() = user_id);
+        ```
+        
+        **Criar política INSERT:**
+        ```sql
+        CREATE POLICY "policy_name" ON tabela
+        FOR INSERT TO authenticated
+        WITH CHECK (auth.uid() = user_id);
+        ```
+        
+        **Remover política:**
+        ```sql
+        DROP POLICY "policy_name" ON tabela;
+        ```
+        """)
+    
+    with st.expander("🎯 Boas Práticas", expanded=False):
+        st.markdown("""
+        **Segurança:**
+        - Sempre teste suas políticas após criá-las
+        - Use o princípio do menor privilégio
+        - Evite políticas muito permissivas (USING true)
+        - Valide dados de entrada com WITH CHECK
+        
+        **Performance:**
+        - Crie índices para colunas usadas nas políticas
+        - Mantenha expressões simples quando possível
+        - Monitore o desempenho das queries
+        
+        **Manutenção:**
+        - Documente o propósito de cada política
+        - Revise políticas regularmente
+        - Teste com diferentes tipos de usuário
+        """)
+
 def render_dashboard():
     """Renderiza página do dashboard"""
     st.markdown("""
@@ -2281,136 +2804,763 @@ def initialize_demo_mode():
                 self.connected = False
                 self.connection_info = {
                     'type': 'Modo Demonstração',
-                    'url': 'demo.localhost',
-                    'status': 'Modo Demonstração Ativo'
+                    'url': 'demo.localhost:5432',
+                    'database': 'demo_database',
+                    'user': 'demo_user',
+                    'status': 'Modo Demonstração Ativo',
+                    'version': 'PostgreSQL 15.0 (Demo)',
+                    'host': 'localhost',
+                    'port': 5432
                 }
+                
+                # Definir tabelas de demonstração com informações completas
                 self.demo_tables = [
-                    {'name': 'users', 'rows': 1250, 'size': '2.5 MB', 'schema': 'public', 'has_indexes': True, 'has_rules': False, 'has_triggers': False},
-                    {'name': 'products', 'rows': 850, 'size': '1.8 MB', 'schema': 'public', 'has_indexes': True, 'has_rules': False, 'has_triggers': False},
-                    {'name': 'orders', 'rows': 3200, 'size': '5.2 MB', 'schema': 'public', 'has_indexes': True, 'has_rules': False, 'has_triggers': True},
-                    {'name': 'categories', 'rows': 25, 'size': '12 KB', 'schema': 'public', 'has_indexes': True, 'has_rules': False, 'has_triggers': False},
-                    {'name': 'reviews', 'rows': 4500, 'size': '3.1 MB', 'schema': 'public', 'has_indexes': True, 'has_rules': False, 'has_triggers': False},
-                    {'name': 'customers', 'rows': 890, 'size': '1.2 MB', 'schema': 'public', 'has_indexes': True, 'has_rules': False, 'has_triggers': False}
+                    {
+                        'name': 'users',
+                        'rows': 1250,
+                        'size': '2.5 MB',
+                        'schema': 'public',
+                        'has_indexes': True,
+                        'has_rules': False,
+                        'has_triggers': True,
+                        'created_at': '2024-01-15T10:00:00Z',
+                        'owner': 'postgres',
+                        'tablespace': 'pg_default',
+                        'description': 'Tabela de usuários do sistema'
+                    },
+                    {
+                        'name': 'products',
+                        'rows': 850,
+                        'size': '1.8 MB',
+                        'schema': 'public',
+                        'has_indexes': True,
+                        'has_rules': False,
+                        'has_triggers': False,
+                        'created_at': '2024-01-20T14:30:00Z',
+                        'owner': 'postgres',
+                        'tablespace': 'pg_default',
+                        'description': 'Catálogo de produtos'
+                    },
+                    {
+                        'name': 'orders',
+                        'rows': 3200,
+                        'size': '5.2 MB',
+                        'schema': 'public',
+                        'has_indexes': True,
+                        'has_rules': False,
+                        'has_triggers': True,
+                        'created_at': '2024-01-25T09:15:00Z',
+                        'owner': 'postgres',
+                        'tablespace': 'pg_default',
+                        'description': 'Pedidos realizados pelos usuários'
+                    },
+                    {
+                        'name': 'categories',
+                        'rows': 25,
+                        'size': '12 KB',
+                        'schema': 'public',
+                        'has_indexes': True,
+                        'has_rules': False,
+                        'has_triggers': False,
+                        'created_at': '2024-01-10T16:45:00Z',
+                        'owner': 'postgres',
+                        'tablespace': 'pg_default',
+                        'description': 'Categorias de produtos'
+                    },
+                    {
+                        'name': 'reviews',
+                        'rows': 4500,
+                        'size': '3.1 MB',
+                        'schema': 'public',
+                        'has_indexes': True,
+                        'has_rules': False,
+                        'has_triggers': False,
+                        'created_at': '2024-02-01T11:20:00Z',
+                        'owner': 'postgres',
+                        'tablespace': 'pg_default',
+                        'description': 'Avaliações e comentários dos produtos'
+                    },
+                    {
+                        'name': 'customers',
+                        'rows': 890,
+                        'size': '1.2 MB',
+                        'schema': 'public',
+                        'has_indexes': True,
+                        'has_rules': False,
+                        'has_triggers': False,
+                        'created_at': '2024-01-30T13:10:00Z',
+                        'owner': 'postgres',
+                        'tablespace': 'pg_default',
+                        'description': 'Informações detalhadas dos clientes'
+                    },
+                    {
+                        'name': 'inventory',
+                        'rows': 1200,
+                        'size': '800 KB',
+                        'schema': 'public',
+                        'has_indexes': True,
+                        'has_rules': False,
+                        'has_triggers': True,
+                        'created_at': '2024-02-05T08:30:00Z',
+                        'owner': 'postgres',
+                        'tablespace': 'pg_default',
+                        'description': 'Controle de estoque dos produtos'
+                    },
+                    {
+                        'name': 'payments',
+                        'rows': 2800,
+                        'size': '2.8 MB',
+                        'schema': 'public',
+                        'has_indexes': True,
+                        'has_rules': False,
+                        'has_triggers': True,
+                        'created_at': '2024-02-10T15:45:00Z',
+                        'owner': 'postgres',
+                        'tablespace': 'pg_default',
+                        'description': 'Histórico de pagamentos'
+                    }
                 ]
-                self.real_tables = self.demo_tables  # Para compatibilidade
+                
+                # Para compatibilidade
+                self.real_tables = self.demo_tables
+                
+                # Definir colunas para cada tabela
+                self.table_columns = {
+                    'users': [
+                        {'name': 'id', 'type': 'integer', 'nullable': False, 'default': 'nextval(\'users_id_seq\'::regclass)', 'max_length': None, 'is_primary_key': True, 'is_foreign_key': False},
+                        {'name': 'name', 'type': 'varchar', 'nullable': False, 'default': None, 'max_length': 100, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'email', 'type': 'varchar', 'nullable': False, 'default': None, 'max_length': 255, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'password_hash', 'type': 'varchar', 'nullable': False, 'default': None, 'max_length': 255, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'role', 'type': 'varchar', 'nullable': True, 'default': '\'user\'::character varying', 'max_length': 50, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'is_active', 'type': 'boolean', 'nullable': False, 'default': 'true', 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'created_at', 'type': 'timestamp', 'nullable': False, 'default': 'CURRENT_TIMESTAMP', 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'updated_at', 'type': 'timestamp', 'nullable': True, 'default': None, 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False}
+                    ],
+                    'products': [
+                        {'name': 'id', 'type': 'integer', 'nullable': False, 'default': 'nextval(\'products_id_seq\'::regclass)', 'max_length': None, 'is_primary_key': True, 'is_foreign_key': False},
+                        {'name': 'name', 'type': 'varchar', 'nullable': False, 'default': None, 'max_length': 200, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'description', 'type': 'text', 'nullable': True, 'default': None, 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'price', 'type': 'decimal', 'nullable': False, 'default': None, 'max_length': '10,2', 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'category_id', 'type': 'integer', 'nullable': True, 'default': None, 'max_length': None, 'is_primary_key': False, 'is_foreign_key': True},
+                        {'name': 'stock_quantity', 'type': 'integer', 'nullable': False, 'default': '0', 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'is_active', 'type': 'boolean', 'nullable': False, 'default': 'true', 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'created_at', 'type': 'timestamp', 'nullable': False, 'default': 'CURRENT_TIMESTAMP', 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False}
+                    ],
+                    'orders': [
+                        {'name': 'id', 'type': 'integer', 'nullable': False, 'default': 'nextval(\'orders_id_seq\'::regclass)', 'max_length': None, 'is_primary_key': True, 'is_foreign_key': False},
+                        {'name': 'user_id', 'type': 'integer', 'nullable': False, 'default': None, 'max_length': None, 'is_primary_key': False, 'is_foreign_key': True},
+                        {'name': 'total_amount', 'type': 'decimal', 'nullable': False, 'default': None, 'max_length': '10,2', 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'status', 'type': 'varchar', 'nullable': False, 'default': '\'pending\'::character varying', 'max_length': 50, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'shipping_address', 'type': 'text', 'nullable': True, 'default': None, 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'created_at', 'type': 'timestamp', 'nullable': False, 'default': 'CURRENT_TIMESTAMP', 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'updated_at', 'type': 'timestamp', 'nullable': True, 'default': None, 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False}
+                    ],
+                    'categories': [
+                        {'name': 'id', 'type': 'integer', 'nullable': False, 'default': 'nextval(\'categories_id_seq\'::regclass)', 'max_length': None, 'is_primary_key': True, 'is_foreign_key': False},
+                        {'name': 'name', 'type': 'varchar', 'nullable': False, 'default': None, 'max_length': 100, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'description', 'type': 'text', 'nullable': True, 'default': None, 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'parent_id', 'type': 'integer', 'nullable': True, 'default': None, 'max_length': None, 'is_primary_key': False, 'is_foreign_key': True},
+                        {'name': 'is_active', 'type': 'boolean', 'nullable': False, 'default': 'true', 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'created_at', 'type': 'timestamp', 'nullable': False, 'default': 'CURRENT_TIMESTAMP', 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False}
+                    ],
+                    'reviews': [
+                        {'name': 'id', 'type': 'integer', 'nullable': False, 'default': 'nextval(\'reviews_id_seq\'::regclass)', 'max_length': None, 'is_primary_key': True, 'is_foreign_key': False},
+                        {'name': 'product_id', 'type': 'integer', 'nullable': False, 'default': None, 'max_length': None, 'is_primary_key': False, 'is_foreign_key': True},
+                        {'name': 'user_id', 'type': 'integer', 'nullable': False, 'default': None, 'max_length': None, 'is_primary_key': False, 'is_foreign_key': True},
+                        {'name': 'rating', 'type': 'integer', 'nullable': False, 'default': None, 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'comment', 'type': 'text', 'nullable': True, 'default': None, 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'is_verified', 'type': 'boolean', 'nullable': False, 'default': 'false', 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'created_at', 'type': 'timestamp', 'nullable': False, 'default': 'CURRENT_TIMESTAMP', 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False}
+                    ],
+                    'customers': [
+                        {'name': 'id', 'type': 'integer', 'nullable': False, 'default': 'nextval(\'customers_id_seq\'::regclass)', 'max_length': None, 'is_primary_key': True, 'is_foreign_key': False},
+                        {'name': 'user_id', 'type': 'integer', 'nullable': False, 'default': None, 'max_length': None, 'is_primary_key': False, 'is_foreign_key': True},
+                        {'name': 'first_name', 'type': 'varchar', 'nullable': False, 'default': None, 'max_length': 50, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'last_name', 'type': 'varchar', 'nullable': False, 'default': None, 'max_length': 50, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'phone', 'type': 'varchar', 'nullable': True, 'default': None, 'max_length': 20, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'birth_date', 'type': 'date', 'nullable': True, 'default': None, 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'gender', 'type': 'varchar', 'nullable': True, 'default': None, 'max_length': 10, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'address', 'type': 'text', 'nullable': True, 'default': None, 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False}
+                    ],
+                    'inventory': [
+                        {'name': 'id', 'type': 'integer', 'nullable': False, 'default': 'nextval(\'inventory_id_seq\'::regclass)', 'max_length': None, 'is_primary_key': True, 'is_foreign_key': False},
+                        {'name': 'product_id', 'type': 'integer', 'nullable': False, 'default': None, 'max_length': None, 'is_primary_key': False, 'is_foreign_key': True},
+                        {'name': 'quantity', 'type': 'integer', 'nullable': False, 'default': '0', 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'reserved_quantity', 'type': 'integer', 'nullable': False, 'default': '0', 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'minimum_stock', 'type': 'integer', 'nullable': False, 'default': '10', 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'warehouse_location', 'type': 'varchar', 'nullable': True, 'default': None, 'max_length': 100, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'last_updated', 'type': 'timestamp', 'nullable': False, 'default': 'CURRENT_TIMESTAMP', 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False}
+                    ],
+                    'payments': [
+                        {'name': 'id', 'type': 'integer', 'nullable': False, 'default': 'nextval(\'payments_id_seq\'::regclass)', 'max_length': None, 'is_primary_key': True, 'is_foreign_key': False},
+                        {'name': 'order_id', 'type': 'integer', 'nullable': False, 'default': None, 'max_length': None, 'is_primary_key': False, 'is_foreign_key': True},
+                        {'name': 'amount', 'type': 'decimal', 'nullable': False, 'default': None, 'max_length': '10,2', 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'payment_method', 'type': 'varchar', 'nullable': False, 'default': None, 'max_length': 50, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'payment_status', 'type': 'varchar', 'nullable': False, 'default': '\'pending\'::character varying', 'max_length': 50, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'transaction_id', 'type': 'varchar', 'nullable': True, 'default': None, 'max_length': 100, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'processed_at', 'type': 'timestamp', 'nullable': True, 'default': None, 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False},
+                        {'name': 'created_at', 'type': 'timestamp', 'nullable': False, 'default': 'CURRENT_TIMESTAMP', 'max_length': None, 'is_primary_key': False, 'is_foreign_key': False}
+                    ]
+                }
+                
+                # Políticas RLS de demonstração
+                self.demo_policies = {
+                    'users': [
+                        {
+                            'policy_name': 'Users can view own profile',
+                            'command': 'SELECT',
+                            'is_permissive': True,
+                            'roles': ['authenticated'],
+                            'using_expression': '(auth.uid() = id)',
+                            'with_check_expression': None,
+                            'table_name': 'users',
+                            'schema_name': 'public'
+                        },
+                        {
+                            'policy_name': 'Users can update own profile',
+                            'command': 'UPDATE',
+                            'is_permissive': True,
+                            'roles': ['authenticated'],
+                            'using_expression': '(auth.uid() = id)',
+                            'with_check_expression': '(auth.uid() = id)',
+                            'table_name': 'users',
+                            'schema_name': 'public'
+                        },
+                        {
+                            'policy_name': 'Admins can view all users',
+                            'command': 'SELECT',
+                            'is_permissive': True,
+                            'roles': ['authenticated'],
+                            'using_expression': '(auth.jwt() ->> \'role\' = \'admin\')',
+                            'with_check_expression': None,
+                            'table_name': 'users',
+                            'schema_name': 'public'
+                        }
+                    ],
+                    'products': [
+                        {
+                            'policy_name': 'Anyone can view active products',
+                            'command': 'SELECT',
+                            'is_permissive': True,
+                            'roles': ['anon', 'authenticated'],
+                            'using_expression': '(is_active = true)',
+                            'with_check_expression': None,
+                            'table_name': 'products',
+                            'schema_name': 'public'
+                        },
+                        {
+                            'policy_name': 'Only admins can manage products',
+                            'command': 'ALL',
+                            'is_permissive': True,
+                            'roles': ['authenticated'],
+                            'using_expression': '(auth.jwt() ->> \'role\' = \'admin\')',
+                            'with_check_expression': '(auth.jwt() ->> \'role\' = \'admin\')',
+                            'table_name': 'products',
+                            'schema_name': 'public'
+                        }
+                    ],
+                    'orders': [
+                        {
+                            'policy_name': 'Users can view own orders',
+                            'command': 'SELECT',
+                            'is_permissive': True,
+                            'roles': ['authenticated'],
+                            'using_expression': '(auth.uid() = user_id)',
+                            'with_check_expression': None,
+                            'table_name': 'orders',
+                            'schema_name': 'public'
+                        },
+                        {
+                            'policy_name': 'Users can create own orders',
+                            'command': 'INSERT',
+                            'is_permissive': True,
+                            'roles': ['authenticated'],
+                            'using_expression': None,
+                            'with_check_expression': '(auth.uid() = user_id)',
+                            'table_name': 'orders',
+                            'schema_name': 'public'
+                        },
+                        {
+                            'policy_name': 'Users can update own pending orders',
+                            'command': 'UPDATE',
+                            'is_permissive': True,
+                            'roles': ['authenticated'],
+                            'using_expression': '(auth.uid() = user_id AND status = \'pending\')',
+                            'with_check_expression': '(auth.uid() = user_id)',
+                            'table_name': 'orders',
+                            'schema_name': 'public'
+                        }
+                    ],
+                    'categories': [
+                        {
+                            'policy_name': 'Anyone can view active categories',
+                            'command': 'SELECT',
+                            'is_permissive': True,
+                            'roles': ['anon', 'authenticated'],
+                            'using_expression': '(is_active = true)',
+                            'with_check_expression': None,
+                            'table_name': 'categories',
+                            'schema_name': 'public'
+                        }
+                    ],
+                    'reviews': [
+                        {
+                            'policy_name': 'Anyone can view reviews',
+                            'command': 'SELECT',
+                            'is_permissive': True,
+                            'roles': ['anon', 'authenticated'],
+                            'using_expression': 'true',
+                            'with_check_expression': None,
+                            'table_name': 'reviews',
+                            'schema_name': 'public'
+                        },
+                        {
+                            'policy_name': 'Users can create reviews',
+                            'command': 'INSERT',
+                            'is_permissive': True,
+                            'roles': ['authenticated'],
+                            'using_expression': None,
+                            'with_check_expression': '(auth.uid() = user_id)',
+                            'table_name': 'reviews',
+                            'schema_name': 'public'
+                        },
+                        {
+                            'policy_name': 'Users can update own reviews',
+                            'command': 'UPDATE',
+                            'is_permissive': True,
+                            'roles': ['authenticated'],
+                            'using_expression': '(auth.uid() = user_id)',
+                            'with_check_expression': '(auth.uid() = user_id)',
+                            'table_name': 'reviews',
+                            'schema_name': 'public'
+                        }
+                    ],
+                    'customers': [
+                        {
+                            'policy_name': 'Users can view own customer data',
+                            'command': 'SELECT',
+                            'is_permissive': True,
+                            'roles': ['authenticated'],
+                            'using_expression': '(auth.uid() = user_id)',
+                            'with_check_expression': None,
+                            'table_name': 'customers',
+                            'schema_name': 'public'
+                        }
+                    ],
+                    'inventory': [
+                        {
+                            'policy_name': 'Only staff can view inventory',
+                            'command': 'SELECT',
+                            'is_permissive': True,
+                            'roles': ['authenticated'],
+                            'using_expression': '(auth.jwt() ->> \'role\' IN (\'admin\', \'staff\'))',
+                            'with_check_expression': None,
+                            'table_name': 'inventory',
+                            'schema_name': 'public'
+                        }
+                    ],
+                    'payments': [
+                        {
+                            'policy_name': 'Users can view own payments',
+                            'command': 'SELECT',
+                            'is_permissive': True,
+                            'roles': ['authenticated'],
+                            'using_expression': '(auth.uid() = (SELECT user_id FROM orders WHERE id = order_id))',
+                            'with_check_expression': None,
+                            'table_name': 'payments',
+                            'schema_name': 'public'
+                        }
+                    ]
+                }
+                
+                # Índices de demonstração
+                self.demo_indexes = {
+                    'users': [
+                        {'name': 'users_pkey', 'type': 'PRIMARY KEY', 'columns': ['id'], 'is_unique': True},
+                        {'name': 'users_email_key', 'type': 'UNIQUE', 'columns': ['email'], 'is_unique': True},
+                        {'name': 'idx_users_role', 'type': 'BTREE', 'columns': ['role'], 'is_unique': False},
+                        {'name': 'idx_users_created_at', 'type': 'BTREE', 'columns': ['created_at'], 'is_unique': False}
+                    ],
+                    'products': [
+                        {'name': 'products_pkey', 'type': 'PRIMARY KEY', 'columns': ['id'], 'is_unique': True},
+                        {'name': 'idx_products_category', 'type': 'BTREE', 'columns': ['category_id'], 'is_unique': False},
+                        {'name': 'idx_products_name', 'type': 'BTREE', 'columns': ['name'], 'is_unique': False},
+                        {'name': 'idx_products_price', 'type': 'BTREE', 'columns': ['price'], 'is_unique': False}
+                    ],
+                    'orders': [
+                        {'name': 'orders_pkey', 'type': 'PRIMARY KEY', 'columns': ['id'], 'is_unique': True},
+                        {'name': 'idx_orders_user_id', 'type': 'BTREE', 'columns': ['user_id'], 'is_unique': False},
+                        {'name': 'idx_orders_status', 'type': 'BTREE', 'columns': ['status'], 'is_unique': False},
+                        {'name': 'idx_orders_created_at', 'type': 'BTREE', 'columns': ['created_at'], 'is_unique': False}
+                    ]
+                }
             
             def get_tables(self):
+                """Retorna lista de tabelas disponíveis"""
                 return self.demo_tables
             
             def get_table_info(self, table_name):
+                """Retorna informações básicas de uma tabela"""
                 for table in self.demo_tables:
                     if table['name'] == table_name:
                         return {
                             'rows': table['rows'],
                             'size': table['size'],
-                            'last_modified': datetime.now().strftime('%Y-%m-%d')
+                            'last_modified': datetime.now().strftime('%Y-%m-%d'),
+                            'created': table.get('created_at', '2024-01-01'),
+                            'owner': table.get('owner', 'postgres'),
+                            'schema': table.get('schema', 'public'),
+                            'tablespace': table.get('tablespace', 'pg_default'),
+                            'description': table.get('description', f'Tabela {table_name}'),
+                            'has_indexes': table.get('has_indexes', False),
+                            'has_triggers': table.get('has_triggers', False),
+                            'has_rules': table.get('has_rules', False)
                         }
-                return {'rows': 0, 'size': '0 KB', 'last_modified': '2025-06-24'}
+                return {
+                    'rows': 0, 
+                    'size': '0 KB', 
+                    'last_modified': '2025-06-24',
+                    'created': '2024-01-01',
+                    'owner': 'postgres',
+                    'schema': 'public'
+                }
             
             def get_table_columns(self, table_name):
-                # Retornar colunas simuladas baseadas no nome da tabela
-                if table_name == 'users':
-                    return [
-                        {'name': 'id', 'type': 'integer', 'nullable': False, 'default': 'nextval()', 'max_length': None},
-                        {'name': 'name', 'type': 'varchar', 'nullable': False, 'default': None, 'max_length': 100},
-                        {'name': 'email', 'type': 'varchar', 'nullable': False, 'default': None, 'max_length': 255},
-                        {'name': 'created_at', 'type': 'timestamp', 'nullable': False, 'default': 'now()', 'max_length': None}
-                    ]
-                elif table_name == 'products':
-                    return [
-                        {'name': 'id', 'type': 'integer', 'nullable': False, 'default': 'nextval()', 'max_length': None},
-                        {'name': 'name', 'type': 'varchar', 'nullable': False, 'default': None, 'max_length': 200},
-                        {'name': 'price', 'type': 'decimal', 'nullable': False, 'default': None, 'max_length': None},
-                        {'name': 'category_id', 'type': 'integer', 'nullable': True, 'default': None, 'max_length': None}
-                    ]
-                else:
-                    return [
-                        {'name': 'id', 'type': 'integer', 'nullable': False, 'default': 'nextval()', 'max_length': None},
-                        {'name': 'name', 'type': 'varchar', 'nullable': False, 'default': None, 'max_length': 100}
-                    ]
+                """Retorna colunas de uma tabela"""
+                return self.table_columns.get(table_name, [
+                    {'name': 'id', 'type': 'integer', 'nullable': False, 'default': 'nextval()', 'max_length': None, 'is_primary_key': True, 'is_foreign_key': False},
+                    {'name': 'name', 'type': 'varchar', 'nullable': False, 'default': None, 'max_length': 100, 'is_primary_key': False, 'is_foreign_key': False}
+                ])
+            
+            def get_table_indexes(self, table_name):
+                """Retorna índices de uma tabela"""
+                return self.demo_indexes.get(table_name, [
+                    {'name': f'{table_name}_pkey', 'type': 'PRIMARY KEY', 'columns': ['id'], 'is_unique': True}
+                ])
+            
+            def get_table_policies(self, table_name):
+                """Retorna políticas RLS de uma tabela"""
+                return {
+                    'success': True,
+                    'policies': self.demo_policies.get(table_name, []),
+                    'rls_enabled': True
+                }
             
             def execute_query(self, query):
-                # Simular execução de query
+                """Simula execução de query"""
                 import time
-                time.sleep(0.5)  # Simular tempo de processamento
+                import random
+                
+                time.sleep(random.uniform(0.3, 0.8))  # Simular tempo de processamento
                 
                 query_upper = query.upper().strip()
+                query_lower = query.lower().strip()
                 
-                # Dados de exemplo baseados na query
-                if 'SELECT' in query_upper:
-                    if 'users' in query.lower():
-                        demo_data = [
-                            {'id': 1, 'name': 'João Silva', 'email': 'joao@email.com', 'created_at': '2025-06-20T10:00:00Z'},
-                            {'id': 2, 'name': 'Maria Santos', 'email': 'maria@email.com', 'created_at': '2025-06-21T11:00:00Z'},
-                            {'id': 3, 'name': 'Pedro Costa', 'email': 'pedro@email.com', 'created_at': '2025-06-22T12:00:00Z'},
-                            {'id': 4, 'name': 'Ana Lima', 'email': 'ana@email.com', 'created_at': '2025-06-23T09:00:00Z'},
-                            {'id': 5, 'name': 'Carlos Pereira', 'email': 'carlos@email.com', 'created_at': '2025-06-24T14:00:00Z'}
-                        ]
-                    elif 'products' in query.lower():
-                        demo_data = [
-                            {'id': 1, 'name': 'Smartphone', 'price': 999.99, 'category_id': 1},
-                            {'id': 2, 'name': 'Laptop', 'price': 1999.99, 'category_id': 1},
-                            {'id': 3, 'name': 'Tablet', 'price': 599.99, 'category_id': 1},
-                            {'id': 4, 'name': 'Headphones', 'price': 199.99, 'category_id': 2},
-                            {'id': 5, 'name': 'Mouse', 'price': 49.99, 'category_id': 2}
-                        ]
-                    elif 'orders' in query.lower():
-                        demo_data = [
-                            {'id': 1, 'user_id': 1, 'total': 1199.98, 'status': 'completed', 'created_at': '2025-06-24T10:00:00Z'},
-                            {'id': 2, 'user_id': 2, 'total': 599.99, 'status': 'pending', 'created_at': '2025-06-24T11:00:00Z'},
-                            {'id': 3, 'user_id': 3, 'total': 249.98, 'status': 'completed', 'created_at': '2025-06-24T12:00:00Z'}
-                        ]
+                try:
+                    # Análise da query para retornar dados apropriados
+                    if 'SELECT' in query_upper:
+                        return self._simulate_select_query(query_lower)
+                    elif any(cmd in query_upper for cmd in ['INSERT', 'UPDATE', 'DELETE']):
+                        return self._simulate_modify_query(query_upper)
+                    elif 'CREATE' in query_upper:
+                        return self._simulate_create_query(query_upper)
+                    elif 'DROP' in query_upper:
+                        return self._simulate_drop_query(query_upper)
+                    elif 'ALTER' in query_upper:
+                        return self._simulate_alter_query(query_upper)
                     else:
-                        demo_data = [
-                            {'id': 1, 'name': 'Exemplo 1', 'value': 100, 'status': 'active'},
-                            {'id': 2, 'name': 'Exemplo 2', 'value': 200, 'status': 'inactive'},
-                            {'id': 3, 'name': 'Exemplo 3', 'value': 300, 'status': 'active'}
-                        ]
-                    
+                        return {
+                            'success': True,
+                            'data': [],
+                            'execution_time': f'{random.uniform(0.1, 0.5):.2f}s',
+                            'rows_affected': 0,
+                            'message': 'Query executada no modo demonstração'
+                        }
+                
+                except Exception as e:
                     return {
-                        'success': True,
-                        'data': demo_data,
-                        'execution_time': '0.5s',
-                        'rows_affected': len(demo_data),
-                        'message': 'Query executada no modo demonstração'
-                    }
-                else:
-                    return {
-                        'success': True,
+                        'success': False,
+                        'error': f'Erro simulado: {str(e)}',
                         'data': [],
-                        'execution_time': '0.3s',
-                        'rows_affected': random.randint(1, 5),
-                        'message': 'Operação simulada no modo demonstração'
+                        'execution_time': '0.0s',
+                        'rows_affected': 0
                     }
             
-            def get_database_metrics(self):
+            def _simulate_select_query(self, query):
+                """Simula resultados de queries SELECT"""
+                import random
+                
+                if 'users' in query:
+                    demo_data = [
+                        {'id': 1, 'name': 'João Silva', 'email': 'joao@email.com', 'role': 'user', 'is_active': True, 'created_at': '2025-06-20T10:00:00Z'},
+                        {'id': 2, 'name': 'Maria Santos', 'email': 'maria@email.com', 'role': 'admin', 'is_active': True, 'created_at': '2025-06-21T11:00:00Z'},
+                        {'id': 3, 'name': 'Pedro Costa', 'email': 'pedro@email.com', 'role': 'user', 'is_active': False, 'created_at': '2025-06-22T12:00:00Z'},
+                        {'id': 4, 'name': 'Ana Lima', 'email': 'ana@email.com', 'role': 'user', 'is_active': True, 'created_at': '2025-06-23T09:00:00Z'},
+                        {'id': 5, 'name': 'Carlos Pereira', 'email': 'carlos@email.com', 'role': 'staff', 'is_active': True, 'created_at': '2025-06-24T14:00:00Z'}
+                    ]
+                elif 'products' in query:
+                    demo_data = [
+                        {'id': 1, 'name': 'Smartphone Samsung Galaxy', 'price': 999.99, 'category_id': 1, 'stock_quantity': 50, 'is_active': True},
+                        {'id': 2, 'name': 'Laptop Dell Inspiron', 'price': 1999.99, 'category_id': 1, 'stock_quantity': 25, 'is_active': True},
+                        {'id': 3, 'name': 'Tablet iPad Air', 'price': 599.99, 'category_id': 1, 'stock_quantity': 30, 'is_active': True},
+                        {'id': 4, 'name': 'Fone Bluetooth Sony', 'price': 199.99, 'category_id': 2, 'stock_quantity': 100, 'is_active': True},
+                        {'id': 5, 'name': 'Mouse Logitech MX', 'price': 49.99, 'category_id': 2, 'stock_quantity': 200, 'is_active': True}
+                    ]
+                elif 'orders' in query:
+                    demo_data = [
+                        {'id': 1, 'user_id': 1, 'total_amount': 1199.98, 'status': 'completed', 'created_at': '2025-06-24T10:00:00Z'},
+                        {'id': 2, 'user_id': 2, 'total_amount': 599.99, 'status': 'pending', 'created_at': '2025-06-24T11:00:00Z'},
+                        {'id': 3, 'user_id': 3, 'total_amount': 249.98, 'status': 'shipped', 'created_at': '2025-06-24T12:00:00Z'},
+                        {'id': 4, 'user_id': 1, 'total_amount': 999.99, 'status': 'processing', 'created_at': '2025-06-24T13:00:00Z'}
+                    ]
+                elif 'categories' in query:
+                    demo_data = [
+                        {'id': 1, 'name': 'Eletrônicos', 'description': 'Produtos eletrônicos em geral', 'parent_id': None, 'is_active': True},
+                        {'id': 2, 'name': 'Acessórios', 'description': 'Acessórios para eletrônicos', 'parent_id': 1, 'is_active': True},
+                        {'id': 3, 'name': 'Casa e Jardim', 'description': 'Produtos para casa e jardim', 'parent_id': None, 'is_active': True}
+                    ]
+                elif 'reviews' in query:
+                    demo_data = [
+                        {'id': 1, 'product_id': 1, 'user_id': 1, 'rating': 5, 'comment': 'Excelente produto!', 'is_verified': True, 'created_at': '2025-06-24T10:00:00Z'},
+                        {'id': 2, 'product_id': 1, 'user_id': 2, 'rating': 4, 'comment': 'Muito bom, recomendo.', 'is_verified': True, 'created_at': '2025-06-24T11:00:00Z'},
+                        {'id': 3, 'product_id': 2, 'user_id': 3, 'rating': 5, 'comment': 'Perfeito para trabalho!', 'is_verified': False, 'created_at': '2025-06-24T12:00:00Z'}
+                    ]
+                elif 'customers' in query:
+                    demo_data = [
+                        {'id': 1, 'user_id': 1, 'first_name': 'João', 'last_name': 'Silva', 'phone': '(11) 99999-9999', 'birth_date': '1990-01-15'},
+                        {'id': 2, 'user_id': 2, 'first_name': 'Maria', 'last_name': 'Santos', 'phone': '(11) 88888-8888', 'birth_date': '1985-05-20'}
+                    ]
+                elif 'inventory' in query:
+                    demo_data = [
+                        {'id': 1, 'product_id': 1, 'quantity': 50, 'reserved_quantity': 5, 'minimum_stock': 10, 'warehouse_location': 'A1-001'},
+                        {'id': 2, 'product_id': 2, 'quantity': 25, 'reserved_quantity': 2, 'minimum_stock': 5, 'warehouse_location': 'A1-002'}
+                    ]
+                elif 'payments' in query:
+                    demo_data = [
+                        {'id': 1, 'order_id': 1, 'amount': 1199.98, 'payment_method': 'credit_card', 'payment_status': 'completed', 'transaction_id': 'TXN123456'},
+                        {'id': 2, 'order_id': 2, 'amount': 599.99, 'payment_method': 'pix', 'payment_status': 'pending', 'transaction_id': None}
+                    ]
+                elif 'count' in query:
+                    # Queries de contagem
+                    table_counts = {
+                        'users': 1250,
+                        'products': 850,
+                        'orders': 3200,
+                        'categories': 25,
+                        'reviews': 4500,
+                        'customers': 890,
+                        'inventory': 1200,
+                        'payments': 2800
+                    }
+                    
+                    for table_name, count in table_counts.items():
+                        if table_name in query:
+                            demo_data = [{'count': count, 'total': count}]
+                            break
+                    else:
+                        demo_data = [{'count': random.randint(100, 1000)}]
+                else:
+                    # Dados genéricos
+                    demo_data = [
+                        {'id': 1, 'name': 'Exemplo 1', 'value': random.randint(100, 1000), 'status': 'active', 'created_at': '2025-06-24T10:00:00Z'},
+                        {'id': 2, 'name': 'Exemplo 2', 'value': random.randint(100, 1000), 'status': 'inactive', 'created_at': '2025-06-24T11:00:00Z'},
+                        {'id': 3, 'name': 'Exemplo 3', 'value': random.randint(100, 1000), 'status': 'active', 'created_at': '2025-06-24T12:00:00Z'}
+                    ]
+                
+                # Aplicar LIMIT se presente na query
+                if 'limit' in query:
+                    try:
+                        limit_match = re.search(r'limit\s+(\d+)', query)
+                        if limit_match:
+                            limit_value = int(limit_match.group(1))
+                            demo_data = demo_data[:limit_value]
+                    except:
+                        pass
+                
                 return {
-                    'total_size': '12.8 MB',
-                    'connection_count': 1,
+                    'success': True,
+                    'data': demo_data,
+                    'execution_time': f'{random.uniform(0.2, 0.8):.2f}s',
+                    'rows_affected': len(demo_data),
+                    'message': 'Query SELECT executada no modo demonstração'
+                }
+            
+            def _simulate_modify_query(self, query):
+                """Simula queries de modificação (INSERT, UPDATE, DELETE)"""
+                import random
+                
+                rows_affected = random.randint(1, 5)
+                
+                if 'INSERT' in query:
+                    message = f'{rows_affected} registro(s) inserido(s) com sucesso'
+                elif 'UPDATE' in query:
+                    message = f'{rows_affected} registro(s) atualizado(s) com sucesso'
+                elif 'DELETE' in query:
+                    message = f'{rows_affected} registro(s) removido(s) com sucesso'
+                else:
+                    message = 'Operação executada com sucesso'
+                
+                return {
+                    'success': True,
+                    'data': [],
+                    'execution_time': f'{random.uniform(0.1, 0.5):.2f}s',
+                    'rows_affected': rows_affected,
+                    'message': f'{message} (simulado)'
+                }
+            
+            def _simulate_create_query(self, query):
+                """Simula queries CREATE"""
+                return {
+                    'success': True,
+                    'data': [],
+                    'execution_time': '0.2s',
+                    'rows_affected': 0,
+                    'message': 'Objeto criado com sucesso (simulado)'
+                }
+            
+            def _simulate_drop_query(self, query):
+                """Simula queries DROP"""
+                return {
+                    'success': True,
+                    'data': [],
+                    'execution_time': '0.1s',
+                    'rows_affected': 0,
+                    'message': 'Objeto removido com sucesso (simulado)'
+                }
+            
+            def _simulate_alter_query(self, query):
+                """Simula queries ALTER"""
+                return {
+                    'success': True,
+                    'data': [],
+                    'execution_time': '0.3s',
+                    'rows_affected': 0,
+                    'message': 'Objeto alterado com sucesso (simulado)'
+                }
+            
+            def get_database_metrics(self):
+                """Retorna métricas do banco de dados"""
+                import random
+                
+                return {
+                    'total_size': '18.3 MB',
+                    'connection_count': random.randint(1, 5),
                     'table_count': len(self.demo_tables),
-                    'index_count': len(self.demo_tables) * 2,
-                    'cpu_usage': random.randint(20, 40),
-                    'memory_usage': random.randint(30, 50),
-                    'disk_usage': random.randint(15, 35),
-                    'cache_hit_ratio': random.randint(80, 95)
+                    'index_count': sum(len(indexes) for indexes in self.demo_indexes.values()),
+                    'cpu_usage': random.randint(15, 45),
+                    'memory_usage': random.randint(25, 60),
+                    'disk_usage': random.randint(10, 40),
+                    'cache_hit_ratio': random.randint(75, 98),
+                    'active_connections': random.randint(1, 3),
+                    'total_queries': random.randint(1000, 5000),
+                    'slow_queries': random.randint(0, 10),
+                    'uptime': '7 dias, 14 horas'
                 }
             
             def refresh_tables(self):
+                """Simula atualização da lista de tabelas"""
                 st.info("🎯 Em modo demonstração - lista de tabelas é fixa")
                 return self.demo_tables
             
             def backup_table(self, table_name):
+                """Simula backup de tabela"""
                 return {
                     'success': True,
                     'backup_name': f"{table_name}_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-                    'message': f'Backup simulado da tabela {table_name}'
+                    'message': f'Backup simulado da tabela {table_name} criado com sucesso',
+                    'size': '2.5 MB',
+                    'location': f'/backups/{table_name}_backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.sql'
                 }
             
             def optimize_table(self, table_name):
+                """Simula otimização de tabela"""
+                import random
+                
                 return {
                     'success': True,
-                    'message': f'Tabela {table_name} otimizada (simulado)'
+                    'message': f'Tabela {table_name} otimizada com sucesso (simulado)',
+                    'space_saved': f'{random.randint(50, 500)} KB',
+                    'time_taken': f'{random.uniform(0.5, 2.0):.1f}s'
                 }
+            
+            def analyze_table(self, table_name):
+                """Simula análise de tabela"""
+                import random
+                
+                table_info = self.get_table_info(table_name)
+                columns = self.get_table_columns(table_name)
+                
+                return {
+                    'success': True,
+                    'table_name': table_name,
+                    'row_count': table_info['rows'],
+                    'size': table_info['size'],
+                    'column_count': len(columns),
+                    'null_percentage': random.randint(5, 25),
+                    'duplicate_rows': random.randint(0, 10),
+                    'fragmentation': random.randint(0, 15),
+                    'recommendations': [
+                        'Considere criar índice na coluna created_at para melhorar performance de queries temporais',
+                        'A coluna email tem alta cardinalidade - bom para queries de busca',
+                        'Verificar se há necessidade de otimização de espaço'
+                    ]
+                }
+            
+            def get_table_relationships(self, table_name):
+                """Retorna relacionamentos de uma tabela"""
+                relationships = {
+                    'users': {
+                        'references': [],  # Esta tabela não referencia outras
+                        'referenced_by': [
+                            {'table': 'orders', 'column': 'user_id', 'references': 'id'},
+                            {'table': 'reviews', 'column': 'user_id', 'references': 'id'},
+                            {'table': 'customers', 'column': 'user_id', 'references': 'id'}
+                        ]
+                    },
+                    'products': {
+                        'references': [
+                            {'table': 'categories', 'column': 'category_id', 'references': 'id'}
+                        ],
+                        'referenced_by': [
+                            {'table': 'reviews', 'column': 'product_id', 'references': 'id'},
+                            {'table': 'inventory', 'column': 'product_id', 'references': 'id'}
+                        ]
+                    },
+                    'orders': {
+                        'references': [
+                            {'table': 'users', 'column': 'user_id', 'references': 'id'}
+                        ],
+                        'referenced_by': [
+                            {'table': 'payments', 'column': 'order_id', 'references': 'id'}
+                        ]
+                    }
+                }
+                
+                return relationships.get(table_name, {'references': [], 'referenced_by': []})
+            
+            def test_connection(self):
+                """Testa a conexão (sempre retorna sucesso em modo demo)"""
+                return {
+                    'success': True,
+                    'message': 'Conexão testada com sucesso (modo demonstração)',
+                    'response_time': '0.1s',
+                    'server_version': 'PostgreSQL 15.0 (Demo)'
+                }
+            
+            def _init_connection(self):
+                """Simula inicialização da conexão"""
+                self.connected = True
+                return True
+            
+            def reconnect(self):
+                """Simula reconexão"""
+                self.connected = True
+                return True
+            
+            def close_connection(self):
+                """Simula fechamento da conexão"""
+                self.connected = False
+                return True
         
         # Substituir o database manager global
         demo_manager = DemoDataBaseManager()
@@ -2426,8 +3576,33 @@ def initialize_demo_mode():
         st.success("✅ Modo demonstração ativado com sucesso!")
         st.info("🎯 Agora você pode testar todas as funcionalidades com dados simulados")
         
+        # Mostrar resumo das funcionalidades disponíveis
+        with st.expander("📋 Funcionalidades Disponíveis no Modo Demo", expanded=False):
+            st.markdown("""
+            **🗄️ Tabelas Simuladas:**
+            - Users (1.250 registros)
+            - Products (850 registros)  
+            - Orders (3.200 registros)
+            - Categories (25 registros)
+            - Reviews (4.500 registros)
+            - Customers (890 registros)
+            - Inventory (1.200 registros)
+            - Payments (2.800 registros)
+            
+            **🛡️ Recursos Disponíveis:**
+            - Visualização de políticas RLS
+            - Informações detalhadas das tabelas
+            - Estrutura de colunas e índices
+            - Simulação de queries SQL
+            - Métricas do banco de dados
+            - Análise de relacionamentos
+            - Backup e otimização simulados
+            """)
+        
     except Exception as e:
         st.error(f"❌ Erro ao inicializar modo demo: {e}")
+        with st.expander("🔍 Detalhes do Erro", expanded=False):
+            st.exception(e)
 
 def verify_database_connection(db_manager):
     """Verifica status detalhado da conexão"""
@@ -2620,9 +3795,8 @@ def render_query_templates():
         if st.button("👁️ Ver", use_container_width=True):
             st.code(template_options[selected_template], language='sql')
 
-
 def render_tables_list(db_manager):
-    """Renderiza lista de tabelas disponíveis"""
+    """Renderiza lista de tabelas disponíveis com opção para ver políticas"""
     st.markdown("**🗄️ Tabelas Disponíveis**")
     
     try:
@@ -2645,19 +3819,41 @@ def render_tables_list(db_manager):
             display_tables = filtered_tables[:15] if not search_term else filtered_tables[:50]
             
             for table in display_tables:
-                # Criar botão para cada tabela com informações
-                table_info = f"📊 {table['name']}"
-                if 'rows' in table:
-                    table_info += f" ({table['rows']} registros)"
+                # Container para cada tabela
+                table_container = st.container()
                 
-                if st.button(table_info, use_container_width=True, key=f"table_btn_{table['name']}"):
-                    # Inserir nome da tabela no editor
-                    current_query = st.session_state.get('sql_query', '')
-                    if '{table_name}' in current_query:
-                        st.session_state.sql_query = current_query.replace('{table_name}', table['name'])
-                    else:
-                        st.session_state.sql_query = f"SELECT * FROM {table['name']} LIMIT 10;"
-                    st.rerun()
+                with table_container:
+                    # Informações da tabela
+                    table_info = f"📊 **{table['name']}**"
+                    if 'rows' in table:
+                        table_info += f" ({table['rows']} registros)"
+                    
+                    st.markdown(table_info)
+                    
+                    # Botões de ação para a tabela
+                    btn_col1, btn_col2, btn_col3 = st.columns(3)
+                    
+                    with btn_col1:
+                        if st.button("📝 Usar", key=f"use_table_{table['name']}", use_container_width=True):
+                            # Inserir nome da tabela no editor
+                            current_query = st.session_state.get('sql_query', '')
+                            if '{table_name}' in current_query:
+                                st.session_state.sql_query = current_query.replace('{table_name}', table['name'])
+                            else:
+                                st.session_state.sql_query = f"SELECT * FROM {table['name']} LIMIT 10;"
+                            st.rerun()
+                    
+                    with btn_col2:
+                        if st.button("🛡️ Políticas", key=f"policies_{table['name']}", use_container_width=True):
+                            # Usar session state para controlar qual tabela mostrar políticas
+                            st.session_state.show_policies_for_table = table['name']
+                            st.rerun()
+                    
+                    with btn_col3:
+                        if st.button("ℹ️ Info", key=f"info_{table['name']}", use_container_width=True):
+                            show_table_detailed_info(table['name'], db_manager)
+                    
+                    st.markdown("---")
             
             if len(filtered_tables) > 15 and not search_term:
                 st.caption(f"... e mais {len(filtered_tables) - 15} tabelas. Use a busca para encontrar específicas.")
@@ -2680,6 +3876,63 @@ def render_tables_list(db_manager):
     except Exception as e:
         st.error(f"❌ Erro ao carregar tabelas: {e}")
 
+    # Verificar se deve mostrar políticas de alguma tabela
+    if 'show_policies_for_table' in st.session_state:
+        table_name = st.session_state.show_policies_for_table
+        
+        # Criar nova seção para políticas
+        st.markdown("---")
+        
+        # Botão para fechar a visualização de políticas
+        if st.button("❌ Fechar Políticas", use_container_width=True):
+            del st.session_state.show_policies_for_table
+            st.rerun()
+        
+        # Mostrar políticas da tabela
+        render_table_policies(table_name, db_manager)
+
+
+def show_table_detailed_info(table_name, db_manager):
+    """Mostra informações detalhadas de uma tabela"""
+    st.markdown(f"### 📊 Informações Detalhadas - {table_name}")
+    
+    try:
+        # Buscar informações básicas
+        if hasattr(db_manager, 'get_table_info'):
+            table_info = db_manager.get_table_info(table_name)
+        else:
+            table_info = {'rows': 'N/A', 'size': 'N/A', 'last_modified': 'N/A'}
+        
+        # Buscar colunas
+        if hasattr(db_manager, 'get_table_columns'):
+            columns = db_manager.get_table_columns(table_name)
+        else:
+            columns = []
+        
+        # Exibir informações básicas
+        info_col1, info_col2, info_col3 = st.columns(3)
+        
+        with info_col1:
+            st.metric("📝 Registros", table_info.get('rows', 'N/A'))
+        
+        with info_col2:
+            st.metric("💾 Tamanho", table_info.get('size', 'N/A'))
+        
+        with info_col3:
+            st.metric("🗓️ Última Modificação", table_info.get('last_modified', 'N/A'))
+        
+        # Exibir colunas se disponíveis
+        if columns:
+            st.markdown("**📋 Estrutura das Colunas:**")
+            
+            columns_df = pd.DataFrame(columns)
+            st.dataframe(columns_df, use_container_width=True, hide_index=True)
+        
+        else:
+            st.info("ℹ️ Informações de colunas não disponíveis")
+    
+    except Exception as e:
+        st.error(f"❌ Erro ao carregar informações da tabela: {e}")
 
 def render_query_history():
     """Renderiza histórico de queries"""
