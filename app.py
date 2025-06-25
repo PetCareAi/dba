@@ -179,6 +179,29 @@ class DatabaseManager:
         except Exception as e:
             st.error(f"❌ Erro ao descobrir tabelas: {e}")
             self.real_tables = []
+
+    def get_table_with_policies_info(self, table_name):
+        """Obtém informações completas de uma tabela incluindo políticas RLS"""
+        try:
+            # Informações básicas da tabela
+            table_info = self.get_table_info(table_name)
+            
+            # Políticas RLS
+            policies_info = self.get_table_policies(table_name)
+            
+            # Combinar informações
+            complete_info = {
+                **table_info,
+                'policies_count': len(policies_info.get('policies', [])),
+                'rls_enabled': policies_info.get('rls_enabled', False),
+                'policies': policies_info.get('policies', [])
+            }
+            
+            return complete_info
+            
+        except Exception as e:
+            st.error(f"❌ Erro ao buscar informações completas de {table_name}: {e}")
+            return table_info if 'table_info' in locals() else {}
             
     def _discover_via_information_schema(self):
         """Método 1: Descobrir tabelas via information_schema"""
@@ -1162,63 +1185,87 @@ def render_sidebar():
 # PÁGINAS DO SISTEMA
 # =====================================================================
 
-def get_table_policies(db_manager, table_name):
-    """Busca as políticas RLS de uma tabela específica"""
+def get_table_policies(self, table_name):
+    """Busca as políticas RLS de uma tabela específica do Supabase"""
     try:
-        if not db_manager.connected:
+        if not self.connected:
             # Retornar políticas de exemplo para modo demo
-            return get_demo_table_policies(table_name)
+            return self._get_demo_table_policies(table_name)
         
-        # Query para buscar políticas do Supabase/PostgreSQL
-        policies_query = f"""
-        SELECT 
-            p.policyname as policy_name,
-            p.permissive as is_permissive,
-            p.roles as roles,
-            p.cmd as command,
-            p.qual as using_expression,
-            p.with_check as with_check_expression,
-            c.relname as table_name,
-            n.nspname as schema_name
-        FROM pg_policies p
-        JOIN pg_class c ON p.tablename = c.relname
-        JOIN pg_namespace n ON c.relnamespace = n.oid
-        WHERE c.relname = '{table_name}'
-        AND n.nspname = 'public'
-        ORDER BY p.policyname;
-        """
+        # Para Supabase, usar a API REST para buscar políticas
+        import requests
         
-        result = db_manager.execute_query(policies_query)
-        
-        if result['success'] and result['data']:
-            return {
-                'success': True,
-                'policies': result['data'],
-                'rls_enabled': True
+        # Tentar buscar políticas via função RPC do Supabase
+        try:
+            # URL para buscar políticas RLS
+            policies_url = f"{CONFIG['supabase_url']}/rest/v1/rpc/get_table_policies"
+            
+            headers = {
+                'apikey': CONFIG['supabase_service_key'],
+                'Authorization': f"Bearer {CONFIG['supabase_service_key']}",
+                'Content-Type': 'application/json'
             }
-        else:
-            # Verificar se RLS está habilitado na tabela
-            rls_query = f"""
+            
+            # Payload com nome da tabela
+            payload = {'table_name_param': table_name}
+            
+            response = requests.post(policies_url, headers=headers, json=payload, timeout=10)
+            
+            if response.status_code == 200:
+                policies_data = response.json()
+                return {
+                    'success': True,
+                    'policies': policies_data,
+                    'rls_enabled': True
+                }
+        except Exception as e:
+            st.warning(f"⚠️ Não foi possível buscar políticas via RPC: {e}")
+        
+        # Fallback: tentar consulta direta ao pg_policies via REST API
+        try:
+            # Query SQL para buscar políticas
+            sql_query = f"""
             SELECT 
+                p.policyname as policy_name,
+                p.permissive::text as is_permissive,
+                p.roles::text as roles,
+                p.cmd as command,
+                p.qual as using_expression,
+                p.with_check as with_check_expression,
                 c.relname as table_name,
-                c.relrowsecurity as rls_enabled,
-                c.relforcerowsecurity as rls_forced
-            FROM pg_class c
+                n.nspname as schema_name
+            FROM pg_policies p
+            JOIN pg_class c ON p.tablename = c.relname
             JOIN pg_namespace n ON c.relnamespace = n.oid
             WHERE c.relname = '{table_name}'
-            AND n.nspname = 'public';
+            AND n.nspname = 'public'
+            ORDER BY p.policyname;
             """
             
-            rls_result = db_manager.execute_query(rls_query)
+            # Executar via função rpc/sql
+            sql_url = f"{CONFIG['supabase_url']}/rest/v1/rpc/execute_sql"
             
-            return {
-                'success': True,
-                'policies': [],
-                'rls_enabled': rls_result['data'][0]['rls_enabled'] if rls_result['success'] and rls_result['data'] else False,
-                'rls_forced': rls_result['data'][0]['rls_forced'] if rls_result['success'] and rls_result['data'] else False
-            }
-    
+            payload = {'sql_query': sql_query}
+            
+            response = requests.post(sql_url, headers=headers, json=payload, timeout=10)
+            
+            if response.status_code == 200:
+                result_data = response.json()
+                
+                return {
+                    'success': True,
+                    'policies': result_data if isinstance(result_data, list) else [],
+                    'rls_enabled': True
+                }
+        
+        except Exception as e:
+            st.warning(f"⚠️ Consulta direta às políticas falhou: {e}")
+        
+        # Se chegou aqui, retornar dados demo para a tabela
+        return self._get_demo_table_policies(table_name)
+        
     except Exception as e:
+        st.error(f"❌ Erro ao buscar políticas de {table_name}: {e}")
         return {
             'success': False,
             'error': str(e),
@@ -1226,16 +1273,15 @@ def get_table_policies(db_manager, table_name):
             'rls_enabled': False
         }
 
-
-def get_demo_table_policies(table_name):
-    """Retorna políticas de exemplo para modo demonstração"""
+def _get_demo_table_policies(self, table_name):
+    """Retorna políticas de exemplo baseadas no nome da tabela"""
     demo_policies = {
         'users': [
             {
                 'policy_name': 'Users can view own profile',
                 'command': 'SELECT',
-                'is_permissive': True,
-                'roles': ['authenticated'],
+                'is_permissive': 'PERMISSIVE',
+                'roles': 'authenticated',
                 'using_expression': '(auth.uid() = id)',
                 'with_check_expression': None,
                 'table_name': 'users',
@@ -1244,21 +1290,31 @@ def get_demo_table_policies(table_name):
             {
                 'policy_name': 'Users can update own profile',
                 'command': 'UPDATE',
-                'is_permissive': True,
-                'roles': ['authenticated'],
+                'is_permissive': 'PERMISSIVE',
+                'roles': 'authenticated',
                 'using_expression': '(auth.uid() = id)',
                 'with_check_expression': '(auth.uid() = id)',
+                'table_name': 'users',
+                'schema_name': 'public'
+            },
+            {
+                'policy_name': 'Admins can view all users',
+                'command': 'SELECT',
+                'is_permissive': 'PERMISSIVE',
+                'roles': 'authenticated',
+                'using_expression': '(auth.jwt() ->> \'role\' = \'admin\')',
+                'with_check_expression': None,
                 'table_name': 'users',
                 'schema_name': 'public'
             }
         ],
         'products': [
             {
-                'policy_name': 'Anyone can view products',
+                'policy_name': 'Anyone can view active products',
                 'command': 'SELECT',
-                'is_permissive': True,
-                'roles': ['anon', 'authenticated'],
-                'using_expression': 'true',
+                'is_permissive': 'PERMISSIVE',
+                'roles': 'anon,authenticated',
+                'using_expression': '(is_active = true)',
                 'with_check_expression': None,
                 'table_name': 'products',
                 'schema_name': 'public'
@@ -1266,8 +1322,8 @@ def get_demo_table_policies(table_name):
             {
                 'policy_name': 'Only admins can manage products',
                 'command': 'ALL',
-                'is_permissive': True,
-                'roles': ['authenticated'],
+                'is_permissive': 'PERMISSIVE',
+                'roles': 'authenticated',
                 'using_expression': '(auth.jwt() ->> \'role\' = \'admin\')',
                 'with_check_expression': '(auth.jwt() ->> \'role\' = \'admin\')',
                 'table_name': 'products',
@@ -1278,8 +1334,8 @@ def get_demo_table_policies(table_name):
             {
                 'policy_name': 'Users can view own orders',
                 'command': 'SELECT',
-                'is_permissive': True,
-                'roles': ['authenticated'],
+                'is_permissive': 'PERMISSIVE',
+                'roles': 'authenticated',
                 'using_expression': '(auth.uid() = user_id)',
                 'with_check_expression': None,
                 'table_name': 'orders',
@@ -1288,8 +1344,8 @@ def get_demo_table_policies(table_name):
             {
                 'policy_name': 'Users can create own orders',
                 'command': 'INSERT',
-                'is_permissive': True,
-                'roles': ['authenticated'],
+                'is_permissive': 'PERMISSIVE',
+                'roles': 'authenticated',
                 'using_expression': None,
                 'with_check_expression': '(auth.uid() = user_id)',
                 'table_name': 'orders',
@@ -1298,22 +1354,41 @@ def get_demo_table_policies(table_name):
         ]
     }
     
+    # Retornar políticas específicas da tabela ou uma política genérica
+    table_policies = demo_policies.get(table_name, [
+        {
+            'policy_name': f'Default policy for {table_name}',
+            'command': 'SELECT',
+            'is_permissive': 'PERMISSIVE',
+            'roles': 'authenticated',
+            'using_expression': 'true',
+            'with_check_expression': None,
+            'table_name': table_name,
+            'schema_name': 'public'
+        }
+    ])
+    
     return {
         'success': True,
-        'policies': demo_policies.get(table_name, []),
+        'policies': table_policies,
         'rls_enabled': True
     }
 
 def render_table_policies(table_name, db_manager):
-    """Renderiza as políticas RLS de uma tabela"""
+    """Renderiza as políticas RLS de uma tabela com melhor tratamento de erros"""
     st.markdown(f"#### 🛡️ Políticas RLS - Tabela: **{table_name}**")
     
     with st.spinner(f"🔍 Carregando políticas da tabela {table_name}..."):
-        policies_result = get_table_policies(db_manager, table_name)
+        policies_result = db_manager.get_table_policies(table_name)
     
     if not policies_result['success']:
         st.error(f"❌ Erro ao carregar políticas: {policies_result.get('error', 'Erro desconhecido')}")
-        return
+        
+        # Mostrar opção para usar dados de demonstração
+        if st.button(f"🎯 Mostrar Políticas de Exemplo para {table_name}", key=f"demo_policies_{table_name}"):
+            policies_result = db_manager._get_demo_table_policies(table_name)
+        else:
+            return
     
     # Status do RLS
     rls_enabled = policies_result.get('rls_enabled', False)
@@ -1333,9 +1408,12 @@ def render_table_policies(table_name, db_manager):
     
     with status_col3:
         if policies:
-            commands = [p['command'] for p in policies]
-            unique_commands = len(set(commands))
-            st.metric("⚙️ Tipos de Comando", unique_commands)
+            commands = []
+            for p in policies:
+                cmd = p.get('command', 'UNKNOWN')
+                if cmd not in commands:
+                    commands.append(cmd)
+            st.metric("⚙️ Tipos de Comando", len(commands))
         else:
             st.metric("⚙️ Tipos de Comando", 0)
     
@@ -1355,16 +1433,20 @@ def render_table_policies(table_name, db_manager):
         st.markdown("### 📜 Políticas Configuradas")
         
         for i, policy in enumerate(policies):
-            with st.expander(f"🛡️ {policy['policy_name']}", expanded=False):
+            policy_name = policy.get('policy_name', f'Política {i+1}')
+            
+            with st.expander(f"🛡️ {policy_name}", expanded=False):
                 # Informações básicas da política
                 info_col1, info_col2 = st.columns(2)
                 
                 with info_col1:
-                    st.markdown(f"**Comando:** `{policy['command']}`")
-                    st.markdown(f"**Tipo:** {'Permissiva' if policy['is_permissive'] else 'Restritiva'}")
+                    st.markdown(f"**Comando:** `{policy.get('command', 'N/A')}`")
+                    is_permissive = policy.get('is_permissive', 'PERMISSIVE')
+                    permissive_text = 'Permissiva' if 'PERMISSIVE' in str(is_permissive).upper() else 'Restritiva'
+                    st.markdown(f"**Tipo:** {permissive_text}")
                 
                 with info_col2:
-                    roles = policy['roles']
+                    roles = policy.get('roles', 'N/A')
                     if isinstance(roles, list):
                         roles_str = ', '.join(roles)
                     else:
@@ -1374,17 +1456,19 @@ def render_table_policies(table_name, db_manager):
                 # Expressões da política
                 st.markdown("**🔍 Condições:**")
                 
-                # USING expression (para SELECT, UPDATE, DELETE)
-                if policy['using_expression']:
+                # USING expression
+                using_expr = policy.get('using_expression')
+                if using_expr and using_expr.strip():
                     st.markdown("*Expressão USING (quando a linha pode ser acessada):*")
-                    st.code(policy['using_expression'], language='sql')
+                    st.code(using_expr, language='sql')
                 
-                # WITH CHECK expression (para INSERT, UPDATE)
-                if policy['with_check_expression']:
+                # WITH CHECK expression
+                check_expr = policy.get('with_check_expression')
+                if check_expr and check_expr.strip():
                     st.markdown("*Expressão WITH CHECK (validação para inserção/atualização):*")
-                    st.code(policy['with_check_expression'], language='sql')
+                    st.code(check_expr, language='sql')
                 
-                if not policy['using_expression'] and not policy['with_check_expression']:
+                if not using_expr and not check_expr:
                     st.info("ℹ️ Esta política não possui condições específicas")
                 
                 # Análise da política
@@ -1407,21 +1491,20 @@ def render_table_policies(table_name, db_manager):
     action_col1, action_col2, action_col3, action_col4 = st.columns(4)
     
     with action_col1:
-        if st.button("🔄 Atualizar Políticas", use_container_width=True):
+        if st.button("🔄 Atualizar Políticas", key=f"refresh_policies_{table_name}", use_container_width=True):
             st.rerun()
     
     with action_col2:
-        if st.button("📋 Gerar SQL", use_container_width=True):
+        if st.button("📋 Gerar SQL", key=f"generate_sql_{table_name}", use_container_width=True):
             generate_policies_sql(table_name, policies, rls_enabled)
     
     with action_col3:
-        if st.button("📊 Testar Acesso", use_container_width=True):
+        if st.button("📊 Testar Acesso", key=f"test_access_{table_name}", use_container_width=True):
             test_table_access(table_name, db_manager)
     
     with action_col4:
-        if st.button("📚 Documentação", use_container_width=True):
+        if st.button("📚 Documentação", key=f"docs_{table_name}", use_container_width=True):
             show_rls_documentation()
-
 
 def analyze_policy_security(policy):
     """Analisa a segurança de uma política e fornece feedback"""
@@ -5411,39 +5494,71 @@ def render_settings():
             st.markdown("#### 🎨 Interface")
             
             # Configurações de tema
-            theme_preset = st.selectbox("Tema:", ["PetCare Verde", "Escuro", "Claro", "Personalizado"])
+            theme_preset = st.selectbox("Tema:", 
+                                       ["PetCare Verde", "Escuro", "Claro", "Personalizado"],
+                                       key="system_theme_preset")
             
             if theme_preset == "Personalizado":
-                primary_color = st.color_picker("Cor Primária:", CONFIG['theme']['primary_color'])
-                secondary_color = st.color_picker("Cor Secundária:", CONFIG['theme']['secondary_color'])
+                primary_color = st.color_picker("Cor Primária:", 
+                                               CONFIG['theme']['primary_color'],
+                                               key="system_primary_color")
+                secondary_color = st.color_picker("Cor Secundária:", 
+                                                CONFIG['theme']['secondary_color'],
+                                                key="system_secondary_color")
             
             # Configurações de layout
-            sidebar_default = st.checkbox("Sidebar aberta por padrão", value=True)
-            compact_mode = st.checkbox("Modo compacto", value=False)
-            show_tooltips = st.checkbox("Mostrar dicas de ferramentas", value=True)
+            sidebar_default = st.checkbox("Sidebar aberta por padrão", 
+                                        value=True,
+                                        key="system_sidebar_default")
+            compact_mode = st.checkbox("Modo compacto", 
+                                     value=False,
+                                     key="system_compact_mode")
+            show_tooltips = st.checkbox("Mostrar dicas de ferramentas", 
+                                      value=True,
+                                      key="system_show_tooltips")
             
             st.markdown("#### 📱 Responsividade")
             
-            mobile_optimized = st.checkbox("Otimização mobile", value=True)
-            auto_scale = st.checkbox("Escala automática", value=True)
+            mobile_optimized = st.checkbox("Otimização mobile", 
+                                         value=True,
+                                         key="system_mobile_optimized")
+            auto_scale = st.checkbox("Escala automática", 
+                                   value=True,
+                                   key="system_auto_scale")
         
         with col2:
             st.markdown("#### ⚡ Performance")
             
             # Configurações de cache
-            enable_cache = st.checkbox("Ativar cache", value=True)
-            cache_duration = st.slider("Duração do cache (minutos):", 1, 60, 15)
-            auto_refresh_interval = st.slider("Auto-refresh (segundos):", 10, 300, 30)
+            enable_cache = st.checkbox("Ativar cache", 
+                                     value=True,
+                                     key="system_enable_cache")
+            cache_duration = st.slider("Duração do cache (minutos):", 
+                                     1, 60, 15,
+                                     key="system_cache_duration")
+            auto_refresh_interval = st.slider("Auto-refresh (segundos):", 
+                                            10, 300, 30,
+                                            key="system_auto_refresh_interval")
             
             # Configurações de dados
-            max_records_display = st.number_input("Máx. registros por página:", 10, 1000, 50)
-            query_timeout = st.number_input("Timeout de query (segundos):", 5, 300, 30)
+            max_records_display = st.number_input("Máx. registros por página:", 
+                                                10, 1000, 50,
+                                                key="system_max_records_display")
+            query_timeout = st.number_input("Timeout de query (segundos):", 
+                                          5, 300, 30,
+                                          key="system_query_timeout")
             
             st.markdown("#### 🔔 Notificações")
             
-            enable_notifications = st.checkbox("Ativar notificações", value=True)
-            sound_notifications = st.checkbox("Notificações sonoras", value=False)
-            browser_notifications = st.checkbox("Notificações do navegador", value=False)
+            enable_notifications = st.checkbox("Ativar notificações", 
+                                             value=True,
+                                             key="system_enable_notifications")
+            sound_notifications = st.checkbox("Notificações sonoras", 
+                                            value=False,
+                                            key="system_sound_notifications")
+            browser_notifications = st.checkbox("Notificações do navegador", 
+                                               value=False,
+                                               key="system_browser_notifications")
         
         # Configurações avançadas
         st.markdown("#### 🛠️ Configurações Avançadas")
@@ -5451,18 +5566,32 @@ def render_settings():
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            debug_mode = st.checkbox("Modo debug", value=CONFIG['debug_mode'])
-            verbose_logging = st.checkbox("Log detalhado", value=False)
+            debug_mode = st.checkbox("Modo debug", 
+                                   value=CONFIG['debug_mode'],
+                                   key="system_debug_mode")
+            verbose_logging = st.checkbox("Log detalhado", 
+                                        value=False,
+                                        key="system_verbose_logging")
         
         with col2:
-            auto_backup_settings = st.checkbox("Backup automático configurações", value=True)
-            export_logs = st.checkbox("Exportar logs automaticamente", value=False)
+            auto_backup_settings = st.checkbox("Backup automático configurações", 
+                                             value=True,
+                                             key="system_auto_backup_settings")
+            export_logs = st.checkbox("Exportar logs automaticamente", 
+                                    value=False,
+                                    key="system_export_logs")
         
         with col3:
-            maintenance_mode = st.checkbox("Modo manutenção", value=False)
-            read_only_mode = st.checkbox("Modo somente leitura", value=False)
+            maintenance_mode = st.checkbox("Modo manutenção", 
+                                         value=False,
+                                         key="system_maintenance_mode")
+            read_only_mode = st.checkbox("Modo somente leitura", 
+                                       value=False,
+                                       key="system_read_only_mode")
         
-        if st.button("💾 Salvar Configurações do Sistema", type="primary"):
+        if st.button("💾 Salvar Configurações do Sistema", 
+                    type="primary",
+                    key="save_system_settings"):
             # Simular salvamento das configurações
             updated_config = {
                 'theme_preset': theme_preset,
@@ -5490,18 +5619,31 @@ def render_settings():
             st.markdown("#### 📝 Perfil")
             
             # Informações do perfil
-            username = st.text_input("Nome de usuário:", value=CONFIG['admin_username'], disabled=True)
-            email = st.text_input("Email:", value=CONFIG['admin_email'])
-            full_name = st.text_input("Nome completo:", value="Administrador PetCare")
-            role = st.selectbox("Função:", ["Administrador", "DBA", "Desenvolvedor", "Analista"])
+            username = st.text_input("Nome de usuário:", 
+                                    value=CONFIG['admin_username'], 
+                                    disabled=True,
+                                    key="user_username")
+            email = st.text_input("Email:", 
+                                 value=CONFIG['admin_email'],
+                                 key="user_email")
+            full_name = st.text_input("Nome completo:", 
+                                    value="Administrador PetCare",
+                                    key="user_full_name")
+            role = st.selectbox("Função:", 
+                              ["Administrador", "DBA", "Desenvolvedor", "Analista"],
+                              key="user_role")
             
             st.markdown("#### 🌍 Localização")
             
-            language = st.selectbox("Idioma:", ["Português (BR)", "English", "Español"])
+            language = st.selectbox("Idioma:", 
+                                   ["Português (BR)", "English", "Español"],
+                                   key="user_language")
             timezone = st.selectbox("Fuso horário:", [
                 "America/Sao_Paulo", "UTC", "America/New_York", "Europe/London"
-            ])
-            date_format = st.selectbox("Formato de data:", ["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"])
+            ], key="user_timezone")
+            date_format = st.selectbox("Formato de data:", 
+                                     ["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"],
+                                     key="user_date_format")
         
         with col2:
             st.markdown("#### 🎯 Preferências")
@@ -5509,24 +5651,40 @@ def render_settings():
             # Preferências de interface
             default_page = st.selectbox("Página inicial:", [
                 "Dashboard", "Tabelas", "Editor SQL", "Operações DBA", "Projetos"
-            ])
+            ], key="user_default_page")
             
-            items_per_page = st.slider("Itens por página:", 10, 100, 25)
-            auto_save_queries = st.checkbox("Auto-salvar consultas", value=True)
+            items_per_page = st.slider("Itens por página:", 
+                                     10, 100, 25,
+                                     key="user_items_per_page")
+            auto_save_queries = st.checkbox("Auto-salvar consultas", 
+                                          value=True,
+                                          key="user_auto_save_queries")
             
             st.markdown("#### 📊 Dashboard")
             
-            dashboard_auto_refresh = st.slider("Auto-refresh dashboard (seg):", 10, 300, 60)
-            show_advanced_metrics = st.checkbox("Mostrar métricas avançadas", value=True)
-            chart_animations = st.checkbox("Animações em gráficos", value=True)
+            dashboard_auto_refresh = st.slider("Auto-refresh dashboard (seg):", 
+                                              10, 300, 60,
+                                              key="user_dashboard_auto_refresh")
+            show_advanced_metrics = st.checkbox("Mostrar métricas avançadas", 
+                                              value=True,
+                                              key="user_show_advanced_metrics")
+            chart_animations = st.checkbox("Animações em gráficos", 
+                                         value=True,
+                                         key="user_chart_animations")
             
             st.markdown("#### 🔔 Alertas Pessoais")
             
-            email_alerts = st.checkbox("Alertas por email", value=False)
-            if email_alerts:
-                alert_frequency = st.selectbox("Frequência:", ["Imediato", "Diário", "Semanal"])
+            email_alerts_user = st.checkbox("Alertas por email", 
+                                           value=False,
+                                           key="user_email_alerts")
+            if email_alerts_user:
+                alert_frequency = st.selectbox("Frequência:", 
+                                              ["Imediato", "Diário", "Semanal"],
+                                              key="user_alert_frequency")
             
-            critical_alerts_only = st.checkbox("Apenas alertas críticos", value=True)
+            critical_alerts_only = st.checkbox("Apenas alertas críticos", 
+                                             value=True,
+                                             key="user_critical_alerts")
         
         # Alteração de senha
         st.markdown("#### 🔑 Segurança da Conta")
@@ -5534,11 +5692,17 @@ def render_settings():
         col1, col2 = st.columns(2)
         
         with col1:
-            current_password = st.text_input("Senha atual:", type="password")
-            new_password = st.text_input("Nova senha:", type="password")
-            confirm_password = st.text_input("Confirmar nova senha:", type="password")
+            current_password = st.text_input("Senha atual:", 
+                                           type="password",
+                                           key="user_current_password")
+            new_password = st.text_input("Nova senha:", 
+                                       type="password",
+                                       key="user_new_password")
+            confirm_password = st.text_input("Confirmar nova senha:", 
+                                           type="password",
+                                           key="user_confirm_password")
             
-            if st.button("🔄 Alterar Senha"):
+            if st.button("🔄 Alterar Senha", key="user_change_password"):
                 if new_password and new_password == confirm_password:
                     if len(new_password) >= 8:
                         st.success("✅ Senha alterada com sucesso!")
@@ -5551,14 +5715,22 @@ def render_settings():
         with col2:
             st.markdown("#### 🔐 Autenticação")
             
-            enable_2fa = st.checkbox("Autenticação de dois fatores", value=False)
-            session_timeout = st.slider("Timeout da sessão (minutos):", 15, 480, 60)
-            remember_login = st.checkbox("Lembrar login", value=False)
+            enable_2fa = st.checkbox("Autenticação de dois fatores", 
+                                   value=False,
+                                   key="user_enable_2fa")
+            session_timeout = st.slider("Timeout da sessão (minutos):", 
+                                       15, 480, 60,
+                                       key="user_session_timeout")
+            remember_login = st.checkbox("Lembrar login", 
+                                       value=False,
+                                       key="user_remember_login")
             
             if enable_2fa:
                 st.info("📱 Configure seu app autenticador (Google Authenticator, Authy, etc.)")
         
-        if st.button("💾 Salvar Perfil do Usuário", type="primary"):
+        if st.button("💾 Salvar Perfil do Usuário", 
+                    type="primary",
+                    key="save_user_profile"):
             user_settings = {
                 'email': email,
                 'full_name': full_name,
@@ -5601,43 +5773,82 @@ def render_settings():
         with col1:
             st.markdown("#### 🔧 Conexão Principal")
             
-            db_type = st.selectbox("Tipo de banco:", ["Supabase", "PostgreSQL", "MySQL", "SQLite"])
+            db_type = st.selectbox("Tipo de banco:", 
+                                 ["Supabase", "PostgreSQL", "MySQL", "SQLite"],
+                                 key="db_type")
             
             if db_type == "Supabase":
-                supabase_url = st.text_input("Supabase URL:", value=CONFIG.get('supabase_url', ''))
-                supabase_key = st.text_input("Supabase Key:", type="password", value=CONFIG.get('supabase_anon_key', ''))
+                supabase_url = st.text_input("Supabase URL:", 
+                                            value=CONFIG.get('supabase_url', ''),
+                                            key="db_supabase_url")
+                supabase_key = st.text_input("Supabase Key:", 
+                                           type="password", 
+                                           value=CONFIG.get('supabase_anon_key', ''),
+                                           key="db_supabase_key")
             
             elif db_type == "PostgreSQL":
-                pg_host = st.text_input("Host:", value="localhost")
-                pg_port = st.number_input("Porta:", value=5432)
-                pg_database = st.text_input("Database:", value="petcareai")
-                pg_username = st.text_input("Usuário:", value="postgres")
-                pg_password = st.text_input("Senha:", type="password")
+                pg_host = st.text_input("Host:", 
+                                       value="localhost",
+                                       key="db_pg_host")
+                pg_port = st.number_input("Porta:", 
+                                        value=5432,
+                                        key="db_pg_port")
+                pg_database = st.text_input("Database:", 
+                                          value="petcareai",
+                                          key="db_pg_database")
+                pg_username = st.text_input("Usuário:", 
+                                          value="postgres",
+                                          key="db_pg_username")
+                pg_password = st.text_input("Senha:", 
+                                          type="password",
+                                          key="db_pg_password")
             
             # SSL e segurança
             st.markdown("#### 🔐 Segurança")
             
-            ssl_enabled = st.checkbox("SSL habilitado", value=True)
-            ssl_verify = st.checkbox("Verificar certificado SSL", value=True)
-            encrypt_connection = st.checkbox("Criptografar conexão", value=True)
+            ssl_enabled = st.checkbox("SSL habilitado", 
+                                    value=True,
+                                    key="db_ssl_enabled")
+            ssl_verify = st.checkbox("Verificar certificado SSL", 
+                                   value=True,
+                                   key="db_ssl_verify")
+            encrypt_connection = st.checkbox("Criptografar conexão", 
+                                           value=True,
+                                           key="db_encrypt_connection")
         
         with col2:
             st.markdown("#### ⚡ Performance")
             
             # Pool de conexões
-            connection_pool_size = st.slider("Tamanho do pool:", 5, 50, 20)
-            max_connections = st.slider("Máx. conexões simultâneas:", 10, 200, 100)
-            connection_timeout = st.slider("Timeout de conexão (seg):", 5, 60, 30)
-            query_timeout = st.slider("Timeout de query (seg):", 5, 300, 60)
+            connection_pool_size = st.slider("Tamanho do pool:", 
+                                            5, 50, 20,
+                                            key="db_connection_pool_size")
+            max_connections = st.slider("Máx. conexões simultâneas:", 
+                                      10, 200, 100,
+                                      key="db_max_connections")
+            connection_timeout = st.slider("Timeout de conexão (seg):", 
+                                         5, 60, 30,
+                                         key="db_connection_timeout")
+            query_timeout_db = st.slider("Timeout de query (seg):", 
+                                        5, 300, 60,
+                                        key="db_query_timeout")
             
             st.markdown("#### 📊 Monitoramento")
             
-            log_slow_queries = st.checkbox("Log de queries lentas", value=True)
+            log_slow_queries = st.checkbox("Log de queries lentas", 
+                                         value=True,
+                                         key="db_log_slow_queries")
             if log_slow_queries:
-                slow_query_threshold = st.slider("Threshold query lenta (seg):", 1, 30, 5)
+                slow_query_threshold = st.slider("Threshold query lenta (seg):", 
+                                                1, 30, 5,
+                                                key="db_slow_query_threshold")
             
-            log_connections = st.checkbox("Log de conexões", value=True)
-            monitor_locks = st.checkbox("Monitorar locks", value=True)
+            log_connections = st.checkbox("Log de conexões", 
+                                        value=True,
+                                        key="db_log_connections")
+            monitor_locks = st.checkbox("Monitorar locks", 
+                                      value=True,
+                                      key="db_monitor_locks")
         
         # Teste de conexão
         st.markdown("#### 🔍 Teste de Conexão")
@@ -5645,7 +5856,9 @@ def render_settings():
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            if st.button("🔍 Testar Conexão", use_container_width=True):
+            if st.button("🔍 Testar Conexão", 
+                        use_container_width=True,
+                        key="db_test_connection"):
                 with st.spinner("🔄 Testando conexão..."):
                     time.sleep(2)
                 
@@ -5665,7 +5878,9 @@ def render_settings():
                     st.error("❌ Falha na conexão!")
         
         with col2:
-            if st.button("📊 Info do Servidor", use_container_width=True):
+            if st.button("📊 Info do Servidor", 
+                        use_container_width=True,
+                        key="db_server_info"):
                 server_info = {
                     "Versão": "PostgreSQL 15.3",
                     "Uptime": "15 dias, 8 horas",
@@ -5677,7 +5892,9 @@ def render_settings():
                 st.json(server_info)
         
         with col3:
-            if st.button("🔧 Reiniciar Conexão", use_container_width=True):
+            if st.button("🔧 Reiniciar Conexão", 
+                        use_container_width=True,
+                        key="db_restart_connection"):
                 with st.spinner("🔄 Reiniciando conexão..."):
                     time.sleep(1)
                 
@@ -5690,16 +5907,30 @@ def render_settings():
         col1, col2 = st.columns(2)
         
         with col1:
-            auto_reconnect = st.checkbox("Reconexão automática", value=True)
-            connection_retry_attempts = st.number_input("Tentativas de reconexão:", 1, 10, 3)
-            backup_connection = st.checkbox("Conexão de backup", value=False)
+            auto_reconnect = st.checkbox("Reconexão automática", 
+                                       value=True,
+                                       key="db_auto_reconnect")
+            connection_retry_attempts = st.number_input("Tentativas de reconexão:", 
+                                                      1, 10, 3,
+                                                      key="db_connection_retry_attempts")
+            backup_connection = st.checkbox("Conexão de backup", 
+                                          value=False,
+                                          key="db_backup_connection")
         
         with col2:
-            read_replica = st.checkbox("Usar réplica de leitura", value=False)
-            load_balancing = st.checkbox("Balanceamento de carga", value=False)
-            failover_enabled = st.checkbox("Failover automático", value=False)
+            read_replica = st.checkbox("Usar réplica de leitura", 
+                                     value=False,
+                                     key="db_read_replica")
+            load_balancing = st.checkbox("Balanceamento de carga", 
+                                       value=False,
+                                       key="db_load_balancing")
+            failover_enabled = st.checkbox("Failover automático", 
+                                         value=False,
+                                         key="db_failover_enabled")
         
-        if st.button("💾 Salvar Configurações do Banco", type="primary"):
+        if st.button("💾 Salvar Configurações do Banco", 
+                    type="primary",
+                    key="save_db_settings"):
             db_settings = {
                 'db_type': db_type,
                 'connection_pool_size': connection_pool_size,
@@ -5720,45 +5951,79 @@ def render_settings():
             st.markdown("#### 🚨 Alertas e Limites")
             
             # Limites de recursos
-            cpu_alert_threshold = st.slider("Alerta CPU (%):", 50, 100, 80)
-            memory_alert_threshold = st.slider("Alerta Memória (%):", 50, 100, 85)
-            disk_alert_threshold = st.slider("Alerta Disco (%):", 50, 100, 90)
-            connection_alert_threshold = st.slider("Alerta Conexões:", 50, 200, 150)
+            cpu_alert_threshold = st.slider("Alerta CPU (%):", 
+                                           50, 100, 80,
+                                           key="monitoring_cpu_alert_threshold")
+            memory_alert_threshold = st.slider("Alerta Memória (%):", 
+                                              50, 100, 85,
+                                              key="monitoring_memory_alert_threshold")
+            disk_alert_threshold = st.slider("Alerta Disco (%):", 
+                                            50, 100, 90,
+                                            key="monitoring_disk_alert_threshold")
+            connection_alert_threshold = st.slider("Alerta Conexões:", 
+                                                  50, 200, 150,
+                                                  key="monitoring_connection_alert_threshold")
             
             # Configurações de coleta
             st.markdown("#### 📊 Coleta de Métricas")
             
-            enable_monitoring = st.checkbox("Ativar monitoramento", value=True)
-            metrics_interval = st.slider("Intervalo de coleta (seg):", 10, 300, 60)
-            detailed_metrics = st.checkbox("Métricas detalhadas", value=True)
+            enable_monitoring = st.checkbox("Ativar monitoramento", 
+                                          value=True,
+                                          key="monitoring_enable_monitoring")
+            metrics_interval = st.slider("Intervalo de coleta (seg):", 
+                                        10, 300, 60,
+                                        key="monitoring_metrics_interval")
+            detailed_metrics = st.checkbox("Métricas detalhadas", 
+                                         value=True,
+                                         key="monitoring_detailed_metrics")
             
             # Retenção de dados
-            metrics_retention_days = st.slider("Retenção de métricas (dias):", 7, 365, 30)
-            auto_cleanup = st.checkbox("Limpeza automática", value=True)
+            metrics_retention_days = st.slider("Retenção de métricas (dias):", 
+                                              7, 365, 30,
+                                              key="monitoring_metrics_retention_days")
+            auto_cleanup = st.checkbox("Limpeza automática", 
+                                     value=True,
+                                     key="monitoring_auto_cleanup")
         
         with col2:
             st.markdown("#### 📧 Notificações")
             
             # Canais de notificação
-            email_alerts_enabled = st.checkbox("Alertas por email", value=False)
+            email_alerts_enabled = st.checkbox("Alertas por email", 
+                                              value=False,
+                                              key="monitoring_email_alerts")
             
             if email_alerts_enabled:
                 alert_emails = st.text_area("Emails para alertas:", 
-                                           placeholder="admin@petcareai.com\ndba@petcareai.com")
+                                           placeholder="admin@petcareai.com\ndba@petcareai.com",
+                                           key="monitoring_alert_emails")
                 email_frequency = st.selectbox("Frequência emails:", 
-                                              ["Imediato", "A cada 5 min", "A cada 15 min", "Hourly"])
+                                              ["Imediato", "A cada 5 min", "A cada 15 min", "Hourly"],
+                                              key="monitoring_email_frequency")
             
-            webhook_alerts = st.checkbox("Alertas via Webhook", value=False)
+            webhook_alerts = st.checkbox("Alertas via Webhook", 
+                                       value=False,
+                                       key="monitoring_webhook_alerts")
             
             if webhook_alerts:
-                webhook_url = st.text_input("URL do Webhook:", placeholder="https://hooks.slack.com/...")
-                webhook_secret = st.text_input("Secret do Webhook:", type="password")
+                webhook_url = st.text_input("URL do Webhook:", 
+                                           placeholder="https://hooks.slack.com/...",
+                                           key="monitoring_webhook_url")
+                webhook_secret = st.text_input("Secret do Webhook:", 
+                                              type="password",
+                                              key="monitoring_webhook_secret")
             
-            slack_integration = st.checkbox("Integração Slack", value=False)
+            slack_integration = st.checkbox("Integração Slack", 
+                                          value=False,
+                                          key="monitoring_slack_integration")
             
             if slack_integration:
-                slack_token = st.text_input("Slack Bot Token:", type="password")
-                slack_channel = st.text_input("Canal Slack:", placeholder="#alerts")
+                slack_token = st.text_input("Slack Bot Token:", 
+                                           type="password",
+                                           key="monitoring_slack_token")
+                slack_channel = st.text_input("Canal Slack:", 
+                                             placeholder="#alerts",
+                                             key="monitoring_slack_channel")
         
         # Métricas personalizadas
         st.markdown("#### 📈 Métricas Personalizadas")
@@ -5768,7 +6033,8 @@ def render_settings():
             placeholder="""SELECT COUNT(*) as total_users FROM users;
 SELECT COUNT(*) as appointments_today FROM appointments WHERE DATE(created_at) = CURRENT_DATE;
 SELECT AVG(age) as average_pet_age FROM pets WHERE birth_date IS NOT NULL;""",
-            height=100
+            height=100,
+            key="monitoring_custom_metrics"
         )
         
         # Dashboard personalizado
@@ -5777,13 +6043,19 @@ SELECT AVG(age) as average_pet_age FROM pets WHERE birth_date IS NOT NULL;""",
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            refresh_rate = st.selectbox("Taxa de refresh:", ["5s", "10s", "30s", "1min", "5min"])
+            refresh_rate = st.selectbox("Taxa de refresh:", 
+                                       ["5s", "10s", "30s", "1min", "5min"],
+                                       key="monitoring_refresh_rate")
             
         with col2:
-            chart_type = st.selectbox("Tipo de gráfico padrão:", ["Linha", "Barra", "Pizza", "Área"])
+            chart_type = st.selectbox("Tipo de gráfico padrão:", 
+                                     ["Linha", "Barra", "Pizza", "Área"],
+                                     key="monitoring_chart_type")
         
         with col3:
-            show_predictions = st.checkbox("Mostrar predições", value=False)
+            show_predictions = st.checkbox("Mostrar predições", 
+                                         value=False,
+                                         key="monitoring_show_predictions")
         
         # Alertas ativos
         st.markdown("#### 🚨 Alertas Ativos")
@@ -5794,7 +6066,7 @@ SELECT AVG(age) as average_pet_age FROM pets WHERE birth_date IS NOT NULL;""",
             {"tipo": "✅ Success", "mensagem": "Otimização completada", "tempo": "3 horas atrás"}
         ]
         
-        for alert in current_alerts:
+        for i, alert in enumerate(current_alerts):
             col1, col2, col3, col4 = st.columns([1, 3, 2, 1])
             
             with col1:
@@ -5804,10 +6076,14 @@ SELECT AVG(age) as average_pet_age FROM pets WHERE birth_date IS NOT NULL;""",
             with col3:
                 st.write(alert["tempo"])
             with col4:
-                if st.button("❌", key=f"dismiss_{alert['mensagem']}", help="Dispensar alerta"):
+                if st.button("❌", 
+                           key=f"dismiss_alert_{i}", 
+                           help="Dispensar alerta"):
                     st.info("Alerta dispensado")
         
-        if st.button("💾 Salvar Configurações de Monitoramento", type="primary"):
+        if st.button("💾 Salvar Configurações de Monitoramento", 
+                    type="primary",
+                    key="save_monitoring_settings"):
             monitoring_settings = {
                 'cpu_threshold': cpu_alert_threshold,
                 'memory_threshold': memory_alert_threshold,
@@ -5828,48 +6104,83 @@ SELECT AVG(age) as average_pet_age FROM pets WHERE birth_date IS NOT NULL;""",
             st.markdown("#### 🛡️ Políticas de Segurança")
             
             # Políticas de senha
-            min_password_length = st.slider("Tamanho mínimo da senha:", 6, 20, 8)
-            require_special_chars = st.checkbox("Exigir caracteres especiais", value=True)
-            require_numbers = st.checkbox("Exigir números", value=True)
-            require_uppercase = st.checkbox("Exigir maiúsculas", value=True)
+            min_password_length = st.slider("Tamanho mínimo da senha:", 
+                                           6, 20, 8,
+                                           key="security_min_password_length")
+            require_special_chars = st.checkbox("Exigir caracteres especiais", 
+                                               value=True,
+                                               key="security_require_special_chars")
+            require_numbers = st.checkbox("Exigir números", 
+                                        value=True,
+                                        key="security_require_numbers")
+            require_uppercase = st.checkbox("Exigir maiúsculas", 
+                                          value=True,
+                                          key="security_require_uppercase")
             
             # Políticas de sessão
-            session_timeout_minutes = st.slider("Timeout de sessão (min):", 15, 480, 60)
-            max_concurrent_sessions = st.number_input("Máx. sessões simultâneas:", 1, 10, 3)
+            session_timeout_minutes = st.slider("Timeout de sessão (min):", 
+                                               15, 480, 60,
+                                               key="security_session_timeout_minutes")
+            max_concurrent_sessions = st.number_input("Máx. sessões simultâneas:", 
+                                                    1, 10, 3,
+                                                    key="security_max_concurrent_sessions")
             
             # Auditoria
             st.markdown("#### 📋 Auditoria")
             
-            enable_audit_log = st.checkbox("Log de auditoria", value=True)
-            log_failed_logins = st.checkbox("Log tentativas de login falhadas", value=True)
-            log_data_changes = st.checkbox("Log mudanças nos dados", value=True)
-            log_admin_actions = st.checkbox("Log ações administrativas", value=True)
+            enable_audit_log = st.checkbox("Log de auditoria", 
+                                         value=True,
+                                         key="security_enable_audit_log")
+            log_failed_logins = st.checkbox("Log tentativas de login falhadas", 
+                                           value=True,
+                                           key="security_log_failed_logins")
+            log_data_changes = st.checkbox("Log mudanças nos dados", 
+                                         value=True,
+                                         key="security_log_data_changes")
+            log_admin_actions = st.checkbox("Log ações administrativas", 
+                                           value=True,
+                                           key="security_log_admin_actions")
         
         with col2:
             st.markdown("#### 🔒 Controle de Acesso")
             
             # Permissões
-            role_based_access = st.checkbox("Controle baseado em roles", value=True)
-            ip_whitelist_enabled = st.checkbox("Lista branca de IPs", value=False)
+            role_based_access = st.checkbox("Controle baseado em roles", 
+                                          value=True,
+                                          key="security_role_based_access")
+            ip_whitelist_enabled = st.checkbox("Lista branca de IPs", 
+                                             value=False,
+                                             key="security_ip_whitelist_enabled")
             
             if ip_whitelist_enabled:
                 allowed_ips = st.text_area("IPs permitidos (um por linha):", 
-                                         placeholder="192.168.1.100\n10.0.0.50")
+                                         placeholder="192.168.1.100\n10.0.0.50",
+                                         key="security_allowed_ips")
             
             # Criptografia
             st.markdown("#### 🔐 Criptografia")
             
-            encrypt_sensitive_data = st.checkbox("Criptografar dados sensíveis", value=True)
-            encryption_algorithm = st.selectbox("Algoritmo:", ["AES-256", "AES-192", "AES-128"])
+            encrypt_sensitive_data = st.checkbox("Criptografar dados sensíveis", 
+                                                value=True,
+                                                key="security_encrypt_sensitive_data")
+            encryption_algorithm = st.selectbox("Algoritmo:", 
+                                               ["AES-256", "AES-192", "AES-128"],
+                                               key="security_encryption_algorithm")
             
             # Backup de segurança
             st.markdown("#### 💾 Backup de Segurança")
             
-            security_backup_enabled = st.checkbox("Backup automático de segurança", value=True)
-            backup_encryption = st.checkbox("Criptografar backups", value=True)
+            security_backup_enabled = st.checkbox("Backup automático de segurança", 
+                                                 value=True,
+                                                 key="security_backup_enabled")
+            backup_encryption = st.checkbox("Criptografar backups", 
+                                           value=True,
+                                           key="security_backup_encryption")
             
             if security_backup_enabled:
-                backup_frequency = st.selectbox("Frequência:", ["Diário", "Semanal", "Mensal"])
+                backup_frequency = st.selectbox("Frequência:", 
+                                               ["Diário", "Semanal", "Mensal"],
+                                               key="security_backup_frequency")
         
         # Logs de segurança
         st.markdown("#### 📊 Logs de Segurança Recentes")
@@ -5900,15 +6211,21 @@ SELECT AVG(age) as average_pet_age FROM pets WHERE birth_date IS NOT NULL;""",
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            if st.button("🔄 Forçar Logout Geral", use_container_width=True):
+            if st.button("🔄 Forçar Logout Geral", 
+                        use_container_width=True,
+                        key="security_force_logout"):
                 st.warning("⚠️ Todos os usuários serão desconectados")
         
         with col2:
-            if st.button("🔒 Bloquear Sistema", use_container_width=True):
+            if st.button("🔒 Bloquear Sistema", 
+                        use_container_width=True,
+                        key="security_lock_system"):
                 st.warning("⚠️ Sistema será bloqueado temporariamente")
         
         with col3:
-            if st.button("📊 Relatório Segurança", use_container_width=True):
+            if st.button("📊 Relatório Segurança", 
+                        use_container_width=True,
+                        key="security_report"):
                 security_report = {
                     "Total Logins (24h)": random.randint(50, 200),
                     "Tentativas Falhadas": random.randint(0, 5),
@@ -5921,7 +6238,9 @@ SELECT AVG(age) as average_pet_age FROM pets WHERE birth_date IS NOT NULL;""",
                 st.json(security_report)
         
         with col4:
-            if st.button("🛡️ Scan Vulnerabilidades", use_container_width=True):
+            if st.button("🛡️ Scan Vulnerabilidades", 
+                        use_container_width=True,
+                        key="security_vulnerability_scan"):
                 with st.spinner("🔍 Executando scan de segurança..."):
                     time.sleep(3)
                 
@@ -5936,7 +6255,9 @@ SELECT AVG(age) as average_pet_age FROM pets WHERE birth_date IS NOT NULL;""",
                 
                 st.json(vulnerabilities)
         
-        if st.button("💾 Salvar Configurações de Segurança", type="primary"):
+        if st.button("💾 Salvar Configurações de Segurança", 
+                    type="primary",
+                    key="save_security_settings"):
             security_settings = {
                 'min_password_length': min_password_length,
                 'session_timeout': session_timeout_minutes,
