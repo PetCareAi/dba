@@ -58,15 +58,17 @@ except ImportError:
 # CONFIGURAÇÕES E CONSTANTES
 # =====================================================================
 
+# Em streamlit.com, deve-se adicionar todas as variaveis de ambiente inclusivo no
+# Sistema streamlit
 CONFIG = {
     'app_title': 'PetCare DBA Admin',
-    'app_version': '2.0.0',
+    'app_version': '1.0.0',
     'admin_username': 'admin',
     'admin_password': 'petcare2025',
     'admin_email': 'admin@petcareai.com',
     'debug_mode': True,
     'theme': {
-        'primary_color': '#2E8B57',
+        'primary_color': '#2E8B57', # Coloracao nao esta funcionando para ser escolhida no sistema streamlit
         'secondary_color': '#90EE90'
     },
     # Credenciais reais do Supabase
