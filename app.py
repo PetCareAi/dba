@@ -88,10 +88,15 @@ CONFIG = {
         'primary_color': os.getenv('PRIMARY_COLOR', '#2E8B57'),
         'secondary_color': os.getenv('SECONDARY_COLOR', '#90EE90')
     },
-    # Credenciais do Supabase - APENAS via variáveis de ambiente
+    # Credenciais do Supabase
     'supabase_url': os.getenv('SUPABASE_URL'),
     'supabase_anon_key': os.getenv('SUPABASE_ANON_KEY'),
-    'supabase_service_key': os.getenv('SUPABASE_SERVICE_KEY')
+    'supabase_service_key': os.getenv('SUPABASE_SERVICE_KEY'),
+    
+    # Configurações do Google Gemini
+    'gemini_api_key': os.getenv('GEMINI_API_KEY'),
+    'gemini_model': os.getenv('GEMINI_MODEL', 'gemini-2.0-flash'),
+    'gemini_base_url': os.getenv('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta')
 }
 
 # Validação de variáveis obrigatórias
@@ -101,16 +106,307 @@ required_vars = {
     'ADMIN_EMAIL': CONFIG['admin_email'],
     'SUPABASE_URL': CONFIG['supabase_url'],
     'SUPABASE_ANON_KEY': CONFIG['supabase_anon_key'],
-    'SUPABASE_SERVICE_KEY': CONFIG['supabase_service_key']
+    'SUPABASE_SERVICE_KEY': CONFIG['supabase_service_key'],
+    'GEMINI_API_KEY': CONFIG['gemini_api_key']
 }
 
 missing_vars = [var_name for var_name, var_value in required_vars.items() if not var_value]
 
 if missing_vars:
-    import streamlit as st
+    import streamlit as st # type: ignore
     st.error(f"❌ Variáveis de ambiente obrigatórias não configuradas: {', '.join(missing_vars)}")
     st.info("💡 Configure todas as variáveis no arquivo .env ou nas configurações do ambiente")
     st.stop()
+
+class GeminiAssistant:
+    """Assistente IA integrado com Google Gemini e dados do Supabase"""
+    
+    def __init__(self, db_manager):
+        self.db_manager = db_manager
+        self.api_key = CONFIG['gemini_api_key']
+        self.model = CONFIG['gemini_model']
+        self.base_url = CONFIG['gemini_base_url']
+        
+        if not self.api_key:
+            st.error("❌ GEMINI_API_KEY não configurada")
+    
+    def get_database_context(self):
+        """Obtém contexto atual do banco de dados"""
+        try:
+            context = {
+                "database_type": "Supabase (PostgreSQL)",
+                "tables": [],
+                "metrics": self.db_manager.get_database_metrics(),
+                "connection_status": "Conectado" if self.db_manager.connected else "Desconectado"
+            }
+            
+            # Obter informações das tabelas
+            tables = self.db_manager.get_tables()
+            for table in tables[:10]:  # Limitar para não sobrecarregar
+                table_info = {
+                    "name": table['name'],
+                    "rows": table.get('rows', 0),
+                    "size": table.get('size', 'N/A'),
+                    "schema": table.get('schema', 'public')
+                }
+                
+                # Obter colunas se possível
+                try:
+                    columns = self.db_manager.get_table_columns(table['name'])
+                    table_info["columns"] = [col['name'] for col in columns[:5]]  # Primeiras 5 colunas
+                except:
+                    table_info["columns"] = []
+                
+                context["tables"].append(table_info)
+            
+            return context
+            
+        except Exception as e:
+            return {"error": f"Erro ao obter contexto: {str(e)}"}
+    
+    def call_gemini(self, prompt, context=None):
+        """Chama a API do Google Gemini"""
+        try:
+            import requests
+            
+            # Preparar contexto do banco
+            if context is None:
+                context = self.get_database_context()
+            
+            # Prompt melhorado com contexto
+            enhanced_prompt = f"""
+Você é um especialista em banco de dados PostgreSQL/Supabase e administração de sistemas PetCare.
+
+CONTEXTO DO BANCO DE DADOS:
+{json.dumps(context, indent=2, default=str)}
+
+SISTEMA: PetCare DBA Admin - Sistema de gerenciamento de banco de dados para clínicas veterinárias.
+
+PERGUNTA DO USUÁRIO: {prompt}
+
+Instruções:
+- Forneça respostas técnicas e precisas
+- Use dados reais do contexto quando relevante
+- Sugira queries SQL quando apropriado
+- Foque em soluções práticas para administração de BD
+- Mantenha tom profissional mas acessível
+- Se mencionar tabelas/dados, use as informações reais do contexto
+"""
+            
+            url = f"{self.base_url}/models/{self.model}:generateContent"
+            
+            headers = {
+                'Content-Type': 'application/json'
+            }
+            
+            data = {
+                "contents": [
+                    {
+                        "parts": [
+                            {
+                                "text": enhanced_prompt
+                            }
+                        ]
+                    }
+                ]
+            }
+            
+            response = requests.post(
+                f"{url}?key={self.api_key}",
+                headers=headers,
+                json=data,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                
+                if 'candidates' in result and len(result['candidates']) > 0:
+                    content = result['candidates'][0]['content']['parts'][0]['text']
+                    return {
+                        'success': True,
+                        'content': content,
+                        'usage': result.get('usageMetadata', {})
+                    }
+                else:
+                    return {
+                        'success': False,
+                        'error': 'Nenhuma resposta gerada'
+                    }
+            else:
+                return {
+                    'success': False,
+                    'error': f"Erro da API: {response.status_code} - {response.text}"
+                }
+                
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f"Erro na chamada da API: {str(e)}"
+            }
+
+def render_ai_assistant():
+    """Renderiza interface do assistente IA"""
+    
+    # Header profissional
+    st.markdown("""
+    <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                padding: 2rem; border-radius: 20px; text-align: center;
+                margin-bottom: 2rem; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);'>
+        <h1 style='color: white; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);'>
+            🤖 Assistente IA PetCare
+        </h1>
+        <p style='color: #E8F4FD; margin: 1rem 0 0 0; font-size: 1.2rem; opacity: 0.9;'>
+            Powered by Google Gemini 2.0 Flash • Especialista em Banco de Dados
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Verificar configuração
+    if not CONFIG['gemini_api_key']:
+        st.error("❌ Google Gemini não configurado. Configure GEMINI_API_KEY nas variáveis de ambiente.")
+        return
+    
+    # Inicializar assistente
+    if 'gemini_assistant' not in st.session_state:
+        st.session_state.gemini_assistant = GeminiAssistant(db_manager)
+    
+    if 'chat_history' not in st.session_state:
+        st.session_state.chat_history = []
+    
+    # Status do sistema
+    status_col1, status_col2, status_col3, status_col4 = st.columns(4)
+    
+    with status_col1:
+        api_status = "🟢 Conectado" if CONFIG['gemini_api_key'] else "🔴 Desconectado"
+        st.metric("🤖 Gemini API", api_status.split(' ')[1], delta=api_status.split(' ')[0])
+    
+    with status_col2:
+        db_status = "Conectado" if db_manager.connected else "Demo"
+        st.metric("🗄️ Banco de Dados", db_status, delta=f"{len(db_manager.get_tables())} tabelas")
+    
+    with status_col3:
+        model_info = CONFIG['gemini_model']
+        st.metric("🧠 Modelo", model_info, delta="2.0 Flash")
+    
+    with status_col4:
+        chat_count = len(st.session_state.chat_history)
+        st.metric("💬 Conversas", chat_count, delta="Sessão atual")
+    
+    # Interface de chat
+    st.markdown("### 💬 Chat com Assistente IA")
+    
+    # Sugestões rápidas
+    st.markdown("#### 💡 Sugestões Rápidas")
+    
+    suggestions_col1, suggestions_col2, suggestions_col3 = st.columns(3)
+    
+    suggestions = [
+        "Analise o desempenho das tabelas do banco",
+        "Sugira otimizações para o banco PetCare", 
+        "Como melhorar a performance das consultas?",
+        "Quais índices devo criar?",
+        "Analise o crescimento dos dados",
+        "Sugestões de backup e segurança"
+    ]
+    
+    for i, suggestion in enumerate(suggestions):
+        col = [suggestions_col1, suggestions_col2, suggestions_col3][i % 3]
+        with col:
+            if st.button(f"💭 {suggestion}", key=f"suggestion_{i}", use_container_width=True):
+                st.session_state.current_question = suggestion
+                st.rerun()
+    
+    # Input de pergunta
+    col1, col2 = st.columns([4, 1])
+    
+    with col1:
+        question = st.text_area(
+            "🎯 Sua pergunta:",
+            value=st.session_state.get('current_question', ''),
+            placeholder="Ex: Como está o desempenho do banco? Preciso otimizar alguma tabela? Quais são os gargalos atuais?",
+            height=100,
+            help="Faça perguntas sobre administração de banco, performance, otimização, ou análise dos dados"
+        )
+    
+    with col2:
+        st.markdown("<br>", unsafe_allow_html=True)  # Espaçamento
+        
+        if st.button("🚀 Perguntar", type="primary", use_container_width=True):
+            if question.strip():
+                process_ai_question(question)
+            else:
+                st.warning("⚠️ Digite uma pergunta primeiro")
+        
+        if st.button("🧹 Limpar Chat", use_container_width=True):
+            st.session_state.chat_history = []
+            st.session_state.current_question = ""
+            st.rerun()
+        
+        if st.button("📊 Contexto DB", use_container_width=True, help="Ver contexto atual do banco"):
+            context = st.session_state.gemini_assistant.get_database_context()
+            with st.expander("🗄️ Contexto do Banco de Dados", expanded=True):
+                st.json(context)
+    
+    # Histórico de conversas
+    if st.session_state.chat_history:
+        st.markdown("### 📜 Histórico da Conversa")
+        
+        for i, chat in enumerate(reversed(st.session_state.chat_history[-10:])):  # Últimas 10
+            with st.expander(f"💬 Conversa {len(st.session_state.chat_history) - i}: {chat['question'][:50]}...", expanded=i==0):
+                
+                st.markdown(f"**👤 Pergunta ({chat['timestamp']}):**")
+                st.markdown(f"> {chat['question']}")
+                
+                st.markdown("**🤖 Resposta da IA:**")
+                st.markdown(chat['answer'])
+                
+                if chat.get('usage'):
+                    st.caption(f"📊 Tokens: {chat['usage'].get('totalTokenCount', 'N/A')}")
+
+def process_ai_question(question):
+    """Processa pergunta do usuário com a IA"""
+    
+    with st.spinner("🤖 Consultando Gemini..."):
+        result = st.session_state.gemini_assistant.call_gemini(question)
+    
+    if result['success']:
+        # Adicionar ao histórico
+        chat_entry = {
+            'question': question,
+            'answer': result['content'],
+            'timestamp': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+            'usage': result.get('usage', {})
+        }
+        
+        st.session_state.chat_history.append(chat_entry)
+        
+        # Limpar pergunta atual
+        st.session_state.current_question = ""
+        
+        # Mostrar resposta
+        st.success("✅ Resposta gerada com sucesso!")
+        
+        st.markdown("### 🤖 Resposta da IA:")
+        st.markdown(result['content'])
+        
+        # Informações de uso
+        if result.get('usage'):
+            with st.expander("📊 Informações de Uso", expanded=False):
+                usage = result['usage']
+                usage_col1, usage_col2, usage_col3 = st.columns(3)
+                
+                with usage_col1:
+                    st.metric("📝 Tokens Prompt", usage.get('promptTokenCount', 'N/A'))
+                with usage_col2:
+                    st.metric("💬 Tokens Resposta", usage.get('candidatesTokenCount', 'N/A'))
+                with usage_col3:
+                    st.metric("📊 Total Tokens", usage.get('totalTokenCount', 'N/A'))
+        
+        log_activity("Pergunta IA respondida", question[:50])
+        
+    else:
+        st.error(f"❌ Erro ao gerar resposta: {result['error']}")
 
 # =====================================================================
 # CLASSE DE CONEXÃO COM BANCO DE DADOS
@@ -1472,6 +1768,7 @@ def render_sidebar():
             "📜 Editor SQL": "sql_editor",
             "🔧 Operações DBA": "dba_operations",
             "📁 Projetos": "projects",
+            "🤖 Dúvida (IA)": "ai_assistant",
             "⚙️ Configurações": "settings"
         }
         
@@ -9719,6 +10016,7 @@ def main():
             "sql_editor": render_sql_editor,
             "dba_operations": render_dba_operations,
             "projects": render_projects,
+            "ai_assistant": render_ai_assistant,  # NOVA PÁGINA
             "settings": render_settings
         }
         
