@@ -1,3 +1,19 @@
+[server]
+port = 8501
+headless = true
+enableCORS = false
+enableXsrfProtection = false
+maxUploadSize = 200
+maxMessageSize = 200
+enableStaticServing = false
+enableWebsocketCompression = false
+
+[browser]
+gatherUsageStats = false
+showErrorDetails = true
+serverAddress = "localhost"
+serverPort = 8501
+
 [theme]
 primaryColor = "#2E8B57"
 backgroundColor = "#F0FFF0"
@@ -5,12 +21,31 @@ secondaryBackgroundColor = "#E6FFE6"
 textColor = "#006400"
 font = "sans serif"
 
-[server]
-port = 8501
-headless = true
-enableCORS = false
-enableXsrfProtection = false
+[global]
+developmentMode = false
+logLevel = "info"
+unitTest = false
+suppressDeprecationWarnings = true
+showWarningOnDirectExecution = true
 
-[browser]
-gatherUsageStats = false
+[client]
+caching = true
+displayEnabled = true
 showErrorDetails = true
+
+[runner]
+magicEnabled = true
+installTracer = false
+fixMatplotlib = true
+postScriptGC = true
+fastReruns = true
+enforceSerializableSessionState = false
+
+[logger]
+level = "info"
+messageFormat = "%(asctime)s %(levelname) -7s %(name)s: %(message)s"
+
+[deprecation]
+showfileUploaderEncoding = false
+showImageFormat = false
+showPyplotGlobalUse = false

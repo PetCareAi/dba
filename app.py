@@ -55,27 +55,83 @@ except ImportError:
 # CONFIGURAÇÕES E CONSTANTES
 # =====================================================================
 
-CONFIG = {
-    'app_title': os.getenv('APP_TITLE', 'PetCare DBA Admin'),
-    'app_version': os.getenv('APP_VERSION', '1.0.0'),
-    'admin_username': os.getenv('ADMIN_USERNAME'),
-    'admin_password': os.getenv('ADMIN_PASSWORD'),
-    'admin_email': os.getenv('ADMIN_EMAIL'),
-    'debug_mode': os.getenv('DEBUG_MODE', 'False').lower() in ('true', '1', 'yes', 'on'),
-    'theme': {
-        'primary_color': os.getenv('PRIMARY_COLOR', '#2E8B57'),
-        'secondary_color': os.getenv('SECONDARY_COLOR', '#90EE90')
-    },
-    # Credenciais do Supabase
-    'supabase_url': os.getenv('SUPABASE_URL'),
-    'supabase_anon_key': os.getenv('SUPABASE_ANON_KEY'),
-    'supabase_service_key': os.getenv('SUPABASE_SERVICE_KEY'),
+# CONFIG = {
+#     'app_title': os.getenv('APP_TITLE', 'PetCare DBA Admin'),
+#     'app_version': os.getenv('APP_VERSION', '1.0.0'),
+#     'admin_username': os.getenv('ADMIN_USERNAME'),
+#     'admin_password': os.getenv('ADMIN_PASSWORD'),
+#     'admin_email': os.getenv('ADMIN_EMAIL'),
+#     'debug_mode': os.getenv('DEBUG_MODE', 'False').lower() in ('true', '1', 'yes', 'on'),
+#     'theme': {
+#         'primary_color': os.getenv('PRIMARY_COLOR', '#2E8B57'),
+#         'secondary_color': os.getenv('SECONDARY_COLOR', '#90EE90')
+#     },
+#     # Credenciais do Supabase
+#     'supabase_url': os.getenv('SUPABASE_URL'),
+#     'supabase_anon_key': os.getenv('SUPABASE_ANON_KEY'),
+#     'supabase_service_key': os.getenv('SUPABASE_SERVICE_KEY'),
     
-    # Configurações do Google Gemini
-    'gemini_api_key': os.getenv('GEMINI_API_KEY'),
-    'gemini_model': os.getenv('GEMINI_MODEL', 'gemini-2.0-flash'),
-    'gemini_base_url': os.getenv('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta')
-}
+#     # Configurações do Google Gemini
+#     'gemini_api_key': os.getenv('GEMINI_API_KEY'),
+#     'gemini_model': os.getenv('GEMINI_MODEL', 'gemini-2.0-flash'),
+#     'gemini_base_url': os.getenv('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta')
+# }
+
+# # Validação de variáveis obrigatórias
+# required_vars = {
+#     'ADMIN_USERNAME': CONFIG['admin_username'],
+#     'ADMIN_PASSWORD': CONFIG['admin_password'], 
+#     'ADMIN_EMAIL': CONFIG['admin_email'],
+#     'SUPABASE_URL': CONFIG['supabase_url'],
+#     'SUPABASE_ANON_KEY': CONFIG['supabase_anon_key'],
+#     'SUPABASE_SERVICE_KEY': CONFIG['supabase_service_key'],
+#     'GEMINI_API_KEY': CONFIG['gemini_api_key']
+# }
+
+# missing_vars = [var_name for var_name, var_value in required_vars.items() if not var_value]
+
+# if missing_vars:
+#     import streamlit as st # type: ignore
+#     st.error(f"❌ Variáveis de ambiente obrigatórias não configuradas: {', '.join(missing_vars)}")
+#     st.info("💡 Configure todas as variáveis no arquivo .env ou nas configurações do ambiente")
+#     st.stop()
+
+# =====================================================================
+# CONFIGURAÇÕES E CONSTANTES (ATUALIZADO PARA SECRETS)
+# =====================================================================
+
+# Usar secrets do Streamlit em vez de variáveis de ambiente
+try:
+    CONFIG = {
+        'app_title': st.secrets["app"]["title"],
+        'app_version': st.secrets["app"]["version"],
+        'admin_username': st.secrets["admin"]["username"],
+        'admin_password': st.secrets["admin"]["password"],
+        'admin_email': st.secrets["admin"]["email"],
+        'debug_mode': st.secrets["app"]["debug_mode"],
+        'theme': {
+            'primary_color': st.secrets["theme"]["primary_color"],
+            'secondary_color': st.secrets["theme"]["secondary_color"],
+            'background_color': st.secrets["theme"]["background_color"],
+            'text_color': st.secrets["theme"]["text_color"]
+        },
+        # Credenciais do Supabase
+        'supabase_url': st.secrets["supabase"]["url"],
+        'supabase_anon_key': st.secrets["supabase"]["anon_key"],
+        'supabase_service_key': st.secrets["supabase"]["service_key"],
+        
+        # Configurações do Google Gemini
+        'gemini_api_key': st.secrets["gemini"]["api_key"],
+        'gemini_model': st.secrets["gemini"]["model"],
+        'gemini_base_url': st.secrets["gemini"]["base_url"]
+    }
+except KeyError as e:
+    st.error(f"❌ Configuração faltando nos secrets: {e}")
+    st.info("💡 Verifique o arquivo .streamlit/secrets.toml")
+    st.stop()
+except Exception as e:
+    st.error(f"❌ Erro ao carregar configurações: {e}")
+    st.stop()
 
 # Validação de variáveis obrigatórias
 required_vars = {
@@ -91,9 +147,8 @@ required_vars = {
 missing_vars = [var_name for var_name, var_value in required_vars.items() if not var_value]
 
 if missing_vars:
-    import streamlit as st # type: ignore
-    st.error(f"❌ Variáveis de ambiente obrigatórias não configuradas: {', '.join(missing_vars)}")
-    st.info("💡 Configure todas as variáveis no arquivo .env ou nas configurações do ambiente")
+    st.error(f"❌ Configurações obrigatórias não encontradas: {', '.join(missing_vars)}")
+    st.info("💡 Configure todas as variáveis no arquivo .streamlit/secrets.toml")
     st.stop()
 
 # Caminho para armazenar configurações
