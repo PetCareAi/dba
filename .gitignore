@@ -6,7 +6,7 @@
 .env
 .env.local
 .env.production
-.env.example
+# .env.example
 .env.staging
 .streamlit/secrets.toml
 secrets.toml
