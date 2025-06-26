@@ -60,22 +60,49 @@ except ImportError:
 
 # Em streamlit.com, deve-se adicionar todas as variaveis de ambiente inclusivo no
 # Sistema streamlit
+# CONFIG = {
+#     'app_title': 'PetCare DBA Admin',
+#     'app_version': '1.0.0',
+#     'admin_username': 'admin',
+#     'admin_password': 'petcare2025',
+#     'admin_email': 'admin@petcareai.com',
+#     'debug_mode': True,
+#     'theme': {
+#         'primary_color': '#2E8B57', # Coloracao nao esta funcionando para ser escolhida no sistema streamlit
+#         'secondary_color': '#90EE90'
+#     },
+#     # Credenciais reais do Supabase
+#     'supabase_url': 'https://jthzocdiryhuytnmtekj.supabase.co',
+#     'supabase_anon_key': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aHpvY2RpcnlodXl0bm10ZWtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgzMDA4NDUsImV4cCI6MjA2Mzg3Njg0NX0.eNbN8wZsAYz_RmcjyspXUJDPhEGYKHa4pSrWc4Hbb-M',
+#     'supabase_service_key': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aHpvY2RpcnlodXl0bm10ZWtqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODMwMDg0NSwiZXhwIjoyMDYzODc2ODQ1fQ.TiLBm9GgT5QFTY3oMNEiQ1869z5hmRcmHv-wRPnPVRg'
+# }
+
 CONFIG = {
-    'app_title': 'PetCare DBA Admin',
-    'app_version': '1.0.0',
-    'admin_username': 'admin',
-    'admin_password': 'petcare2025',
-    'admin_email': 'admin@petcareai.com',
-    'debug_mode': True,
+    'app_title': os.getenv('APP_TITLE', 'PetCare DBA Admin'),
+    'app_version': os.getenv('APP_VERSION', '1.0.0'),
+    'admin_username': os.getenv('ADMIN_USERNAME', 'admin'),
+    'admin_password': os.getenv('ADMIN_PASSWORD', 'petcare2025'),
+    'admin_email': os.getenv('ADMIN_EMAIL', 'admin@petcareai.com'),
+    'debug_mode': os.getenv('DEBUG_MODE', 'True').lower() in ('true', '1', 'yes', 'on'),
     'theme': {
-        'primary_color': '#2E8B57', # Coloracao nao esta funcionando para ser escolhida no sistema streamlit
-        'secondary_color': '#90EE90'
+        'primary_color': os.getenv('PRIMARY_COLOR', '#2E8B57'),
+        'secondary_color': os.getenv('SECONDARY_COLOR', '#90EE90')
     },
-    # Credenciais reais do Supabase
-    'supabase_url': 'https://jthzocdiryhuytnmtekj.supabase.co',
-    'supabase_anon_key': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aHpvY2RpcnlodXl0bm10ZWtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgzMDA4NDUsImV4cCI6MjA2Mzg3Njg0NX0.eNbN8wZsAYz_RmcjyspXUJDPhEGYKHa4pSrWc4Hbb-M',
-    'supabase_service_key': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aHpvY2RpcnlodXl0bm10ZWtqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODMwMDg0NSwiZXhwIjoyMDYzODc2ODQ1fQ.TiLBm9GgT5QFTY3oMNEiQ1869z5hmRcmHv-wRPnPVRg'
+    # Credenciais do Supabase via variáveis de ambiente
+    'supabase_url': os.getenv('SUPABASE_URL', ''),
+    'supabase_anon_key': os.getenv('SUPABASE_ANON_KEY', ''),
+    'supabase_service_key': os.getenv('SUPABASE_SERVICE_KEY', '')
 }
+
+# Validação de variáveis críticas
+if not CONFIG['supabase_url']:
+    st.warning("⚠️ SUPABASE_URL não configurada. Sistema funcionará em modo demo.")
+
+if not CONFIG['supabase_anon_key']:
+    st.warning("⚠️ SUPABASE_ANON_KEY não configurada. Conexão com Supabase indisponível.")
+
+if not CONFIG['supabase_service_key']:
+    st.warning("⚠️ SUPABASE_SERVICE_KEY não configurada. Operações administrativas limitadas.")
 
 # =====================================================================
 # CLASSE DE CONEXÃO COM BANCO DE DADOS
