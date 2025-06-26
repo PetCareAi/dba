@@ -468,6 +468,106 @@ class GeminiAssistant:
         if not self.api_key:
             st.error("❌ GEMINI_API_KEY não configurada")
     
+    def call_gemini(self, question, context):
+        """Chama a API do Google Gemini"""
+        try:
+            import requests
+            import json
+            import time
+            
+            start_time = time.time()
+            
+            # Preparar o prompt
+            system_prompt = f"""
+Você é um especialista em banco de dados PostgreSQL/Supabase que está ajudando com administração de banco de dados.
+
+CONTEXTO DO BANCO:
+{json.dumps(context, indent=2, default=str)}
+
+INSTRUÇÕES:
+- Responda de forma clara e prática
+- Use exemplos SQL quando apropriado
+- Seja específico sobre otimizações e melhorias
+- Considere o contexto atual do banco de dados
+- Sugira ações concretas quando possível
+- Use formatação markdown para melhor legibilidade
+
+PERGUNTA DO USUÁRIO: {question}
+"""
+
+            # URL da API do Gemini
+            api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.api_key}"
+            
+            # Payload para a API
+            payload = {
+                "contents": [
+                    {
+                        "parts": [
+                            {
+                                "text": system_prompt
+                            }
+                        ]
+                    }
+                ]
+            }
+            
+            headers = {
+                "Content-Type": "application/json"
+            }
+            
+            # Fazer chamada para a API
+            response = requests.post(api_url, json=payload, headers=headers, timeout=30)
+            
+            if response.status_code == 200:
+                result = response.json()
+                
+                # Extrair resposta
+                if 'candidates' in result and len(result['candidates']) > 0:
+                    candidate = result['candidates'][0]
+                    if 'content' in candidate and 'parts' in candidate['content']:
+                        answer = candidate['content']['parts'][0]['text']
+                        
+                        # Informações de uso
+                        usage_info = result.get('usageMetadata', {})
+                        
+                        end_time = time.time()
+                        
+                        return {
+                            'success': True,
+                            'content': answer,
+                            'usage': usage_info,
+                            'response_time': end_time - start_time
+                        }
+                
+                return {
+                    'success': False,
+                    'error': 'Resposta inesperada da API do Gemini',
+                    'response': result
+                }
+            
+            else:
+                error_detail = response.text
+                return {
+                    'success': False,
+                    'error': f'Erro da API Gemini (HTTP {response.status_code}): {error_detail}'
+                }
+                
+        except requests.exceptions.Timeout:
+            return {
+                'success': False,
+                'error': 'Timeout na chamada da API do Gemini'
+            }
+        except requests.exceptions.RequestException as e:
+            return {
+                'success': False,
+                'error': f'Erro de conexão com a API do Gemini: {str(e)}'
+            }
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f'Erro inesperado: {str(e)}'
+            }
+    
     def get_database_context(self):
         """Obtém contexto COMPLETO do banco de dados"""
         try:
