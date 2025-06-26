@@ -52,51 +52,6 @@ except ImportError:
     DOTENV_AVAILABLE = False
 
 # =====================================================================
-# CONFIGURAÇÕES E CONSTANTES
-# =====================================================================
-
-# CONFIG = {
-#     'app_title': os.getenv('APP_TITLE', 'PetCare DBA Admin'),
-#     'app_version': os.getenv('APP_VERSION', '1.0.0'),
-#     'admin_username': os.getenv('ADMIN_USERNAME'),
-#     'admin_password': os.getenv('ADMIN_PASSWORD'),
-#     'admin_email': os.getenv('ADMIN_EMAIL'),
-#     'debug_mode': os.getenv('DEBUG_MODE', 'False').lower() in ('true', '1', 'yes', 'on'),
-#     'theme': {
-#         'primary_color': os.getenv('PRIMARY_COLOR', '#2E8B57'),
-#         'secondary_color': os.getenv('SECONDARY_COLOR', '#90EE90')
-#     },
-#     # Credenciais do Supabase
-#     'supabase_url': os.getenv('SUPABASE_URL'),
-#     'supabase_anon_key': os.getenv('SUPABASE_ANON_KEY'),
-#     'supabase_service_key': os.getenv('SUPABASE_SERVICE_KEY'),
-    
-#     # Configurações do Google Gemini
-#     'gemini_api_key': os.getenv('GEMINI_API_KEY'),
-#     'gemini_model': os.getenv('GEMINI_MODEL', 'gemini-2.0-flash'),
-#     'gemini_base_url': os.getenv('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta')
-# }
-
-# # Validação de variáveis obrigatórias
-# required_vars = {
-#     'ADMIN_USERNAME': CONFIG['admin_username'],
-#     'ADMIN_PASSWORD': CONFIG['admin_password'], 
-#     'ADMIN_EMAIL': CONFIG['admin_email'],
-#     'SUPABASE_URL': CONFIG['supabase_url'],
-#     'SUPABASE_ANON_KEY': CONFIG['supabase_anon_key'],
-#     'SUPABASE_SERVICE_KEY': CONFIG['supabase_service_key'],
-#     'GEMINI_API_KEY': CONFIG['gemini_api_key']
-# }
-
-# missing_vars = [var_name for var_name, var_value in required_vars.items() if not var_value]
-
-# if missing_vars:
-#     import streamlit as st # type: ignore
-#     st.error(f"❌ Variáveis de ambiente obrigatórias não configuradas: {', '.join(missing_vars)}")
-#     st.info("💡 Configure todas as variáveis no arquivo .env ou nas configurações do ambiente")
-#     st.stop()
-
-# =====================================================================
 # CONFIGURAÇÕES E CONSTANTES (ATUALIZADO PARA SECRETS)
 # =====================================================================
 
@@ -514,134 +469,191 @@ class GeminiAssistant:
             st.error("❌ GEMINI_API_KEY não configurada")
     
     def get_database_context(self):
-        """Obtém contexto atual do banco de dados"""
+        """Obtém contexto COMPLETO do banco de dados"""
         try:
             context = {
                 "database_type": "Supabase (PostgreSQL)",
                 "tables": [],
-                "metrics": self.db_manager.get_database_metrics(),
-                "connection_status": "Conectado" if self.db_manager.connected else "Desconectado"
+                "metrics": {},
+                "connection_status": "Conectado" if self.db_manager.connected else "Desconectado",
+                "total_tables_count": 0,
+                "total_records": 0,
+                "database_size": "N/A"
             }
             
-            # Obter informações das tabelas
-            tables = self.db_manager.get_tables()
-            for table in tables[:10]:  # Limitar para não sobrecarregar
-                table_info = {
-                    "name": table['name'],
-                    "rows": table.get('rows', 0),
-                    "size": table.get('size', 'N/A'),
-                    "schema": table.get('schema', 'public')
+            # Obter métricas primeiro
+            try:
+                metrics = self.db_manager.get_database_metrics()
+                context["metrics"] = metrics
+                context["database_size"] = metrics.get('total_size', 'N/A')
+            except Exception as e:
+                context["metrics"] = {"error": str(e)}
+            
+            # Obter TODAS as tabelas (não limitado)
+            try:
+                all_tables = self.db_manager.get_tables()
+                context["total_tables_count"] = len(all_tables)
+                
+                total_records = 0
+                
+                # Processar TODAS as tabelas para contexto completo
+                for table in all_tables:
+                    table_rows = table.get('rows', 0)
+                    total_records += table_rows
+                    
+                    table_info = {
+                        "name": table['name'],
+                        "rows": table_rows,
+                        "size": table.get('size', 'N/A'),
+                        "schema": table.get('schema', 'public'),
+                        "has_indexes": table.get('has_indexes', False),
+                        "has_triggers": table.get('has_triggers', False),
+                        "last_modified": table.get('last_modified', 'N/A')
+                    }
+                    
+                    # Adicionar informações de colunas para tabelas principais (primeiras 20)
+                    if len(context["tables"]) < 20:
+                        try:
+                            columns = self.db_manager.get_table_columns(table['name'])
+                            table_info["columns"] = [
+                                {
+                                    "name": col['name'], 
+                                    "type": col['type']
+                                } for col in columns[:10]  # Primeiras 10 colunas
+                            ]
+                            table_info["total_columns"] = len(columns)
+                        except:
+                            table_info["columns"] = []
+                            table_info["total_columns"] = 0
+                    
+                    context["tables"].append(table_info)
+                
+                context["total_records"] = total_records
+                
+                # Estatísticas adicionais
+                context["table_statistics"] = {
+                    "tables_with_data": len([t for t in all_tables if t.get('rows', 0) > 0]),
+                    "empty_tables": len([t for t in all_tables if t.get('rows', 0) == 0]),
+                    "tables_with_indexes": len([t for t in all_tables if t.get('has_indexes', False)]),
+                    "largest_table": max(all_tables, key=lambda x: x.get('rows', 0))['name'] if all_tables else None,
+                    "largest_table_rows": max([t.get('rows', 0) for t in all_tables]) if all_tables else 0
                 }
                 
-                # Obter colunas se possível
-                try:
-                    columns = self.db_manager.get_table_columns(table['name'])
-                    table_info["columns"] = [col['name'] for col in columns[:5]]  # Primeiras 5 colunas
-                except:
-                    table_info["columns"] = []
-                
-                context["tables"].append(table_info)
+            except Exception as e:
+                context["tables_error"] = str(e)
+                context["total_tables_count"] = 0
             
             return context
             
         except Exception as e:
-            return {"error": f"Erro ao obter contexto: {str(e)}"}
-    
-    def call_gemini(self, prompt, context=None):
-        """Chama a API do Google Gemini"""
-        try:
-            import requests
-            
-            # Preparar contexto do banco
-            if context is None:
-                context = self.get_database_context()
-            
-            # Prompt melhorado com contexto
-            enhanced_prompt = f"""
-Você é um especialista em banco de dados PostgreSQL/Supabase e administração de sistemas PetCare.
-
-CONTEXTO DO BANCO DE DADOS:
-{json.dumps(context, indent=2, default=str)}
-
-SISTEMA: PetCare DBA Admin - Sistema de gerenciamento de banco de dados para clínicas veterinárias.
-
-PERGUNTA DO USUÁRIO: {prompt}
-
-Instruções:
-- Forneça respostas técnicas e precisas
-- Use dados reais do contexto quando relevante
-- Sugira queries SQL quando apropriado
-- Foque em soluções práticas para administração de BD
-- Mantenha tom profissional mas acessível
-- Se mencionar tabelas/dados, use as informações reais do contexto
-"""
-            
-            url = f"{self.base_url}/models/{self.model}:generateContent"
-            
-            headers = {
-                'Content-Type': 'application/json'
-            }
-            
-            data = {
-                "contents": [
-                    {
-                        "parts": [
-                            {
-                                "text": enhanced_prompt
-                            }
-                        ]
-                    }
-                ]
-            }
-            
-            response = requests.post(
-                f"{url}?key={self.api_key}",
-                headers=headers,
-                json=data,
-                timeout=30
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                
-                if 'candidates' in result and len(result['candidates']) > 0:
-                    content = result['candidates'][0]['content']['parts'][0]['text']
-                    return {
-                        'success': True,
-                        'content': content,
-                        'usage': result.get('usageMetadata', {})
-                    }
-                else:
-                    return {
-                        'success': False,
-                        'error': 'Nenhuma resposta gerada'
-                    }
-            else:
-                return {
-                    'success': False,
-                    'error': f"Erro da API: {response.status_code} - {response.text}"
-                }
-                
-        except Exception as e:
             return {
-                'success': False,
-                'error': f"Erro na chamada da API: {str(e)}"
+                "error": f"Erro ao obter contexto: {str(e)}",
+                "database_type": "Erro",
+                "connection_status": "Erro"
             }
+    
+    def save_conversation_to_supabase(self, question, answer, context, usage_info, response_time):
+        """Salva conversa no Supabase"""
+        try:
+            if not self.db_manager.connected or not hasattr(self.db_manager, 'supabase_admin'):
+                return False
+            
+            # Determinar categoria da pergunta baseada em palavras-chave
+            question_lower = question.lower()
+            categoria = "geral"
+            
+            if any(word in question_lower for word in ['tabela', 'table', 'schema']):
+                categoria = "estrutura"
+            elif any(word in question_lower for word in ['performance', 'lento', 'otimiz', 'índice']):
+                categoria = "performance"
+            elif any(word in question_lower for word in ['backup', 'restore', 'recuper']):
+                categoria = "backup"
+            elif any(word in question_lower for word in ['query', 'sql', 'select', 'insert']):
+                categoria = "sql"
+            elif any(word in question_lower for word in ['usuário', 'permiss', 'acesso', 'rls']):
+                categoria = "seguranca"
+            
+            # Gerar session_id se não existir
+            if 'ai_session_id' not in st.session_state:
+                import uuid
+                st.session_state.ai_session_id = str(uuid.uuid4())
+            
+            conversation_data = {
+                'usuario': st.session_state.get('username', 'admin'),
+                'pergunta': question,
+                'resposta': answer,
+                'contexto_banco': context,
+                'tokens_utilizados': usage_info,
+                'tempo_resposta': response_time,
+                'categoria': categoria,
+                'session_id': st.session_state.ai_session_id,
+                'status': 'ativa'
+            }
+            
+            response = self.db_manager.supabase_admin.table('duvidas_analitics_ia').insert(conversation_data).execute()
+            
+            return response.data is not None and len(response.data) > 0
+            
+        except Exception as e:
+            st.error(f"Erro ao salvar conversa: {e}")
+            return False
+    
+    def load_conversation_history(self, limit=10):
+        """Carrega histórico de conversas do Supabase"""
+        try:
+            if not self.db_manager.connected or not hasattr(self.db_manager, 'supabase_admin'):
+                return []
+            
+            current_session = st.session_state.get('ai_session_id')
+            usuario = st.session_state.get('username', 'admin')
+            
+            query = self.db_manager.supabase_admin.table('duvidas_analitics_ia').select(
+                'id, pergunta, resposta, created_at, categoria, tempo_resposta, tokens_utilizados'
+            ).eq('usuario', usuario).eq('status', 'ativa')
+            
+            if current_session:
+                query = query.eq('session_id', current_session)
+            
+            response = query.order('created_at', desc=True).limit(limit).execute()
+            
+            return response.data if response.data else []
+            
+        except Exception as e:
+            st.error(f"Erro ao carregar histórico: {e}")
+            return []
 
 def render_ai_assistant():
-    """Renderiza interface do assistente IA"""
+    """Renderiza interface moderna do assistente IA"""
     
-    # Header profissional
+    # Header moderno e profissional
     st.markdown("""
     <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                padding: 2rem; border-radius: 20px; text-align: center;
-                margin-bottom: 2rem; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);'>
-        <h1 style='color: white; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);'>
-            🤖 Assistente IA PetCare
+                padding: 3rem 2rem; border-radius: 25px; text-align: center;
+                margin-bottom: 2rem; box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+                position: relative; overflow: hidden;'>
+        <div style='position: absolute; top: -50px; right: -50px; width: 100px; height: 100px; 
+                   background: rgba(255,255,255,0.1); border-radius: 50%; opacity: 0.7;'></div>
+        <div style='position: absolute; bottom: -30px; left: -30px; width: 60px; height: 60px; 
+                   background: rgba(255,255,255,0.1); border-radius: 50%; opacity: 0.5;'></div>
+        <h1 style='color: white; margin: 0; font-size: 3rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                   font-weight: 700; letter-spacing: -1px;'>
+            🤖 PetCare AI Assistant
         </h1>
-        <p style='color: #E8F4FD; margin: 1rem 0 0 0; font-size: 1.2rem; opacity: 0.9;'>
+        <p style='color: #E8F4FD; margin: 1rem 0 0 0; font-size: 1.3rem; opacity: 0.95;
+                  font-weight: 400; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);'>
             Powered by Google Gemini 2.0 Flash • Especialista em Banco de Dados
         </p>
+        <div style='margin-top: 1.5rem; display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;'>
+            <div style='color: white; font-size: 0.9rem; opacity: 0.8;'>
+                <span style='font-weight: 600;'>🔗 Status:</span> Conectado
+            </div>
+            <div style='color: white; font-size: 0.9rem; opacity: 0.8;'>
+                <span style='font-weight: 600;'>🗄️ Banco:</span> """ + (f"{len(db_manager.get_tables())} tabelas" if db_manager.connected else "Demo") + """
+            </div>
+            <div style='color: white; font-size: 0.9rem; opacity: 0.8;'>
+                <span style='font-weight: 600;'>⚡ Modelo:</span> Gemini 2.0
+            </div>
+        </div>
     </div>
     """, unsafe_allow_html=True)
     
@@ -654,142 +666,466 @@ def render_ai_assistant():
     if 'gemini_assistant' not in st.session_state:
         st.session_state.gemini_assistant = GeminiAssistant(db_manager)
     
-    if 'chat_history' not in st.session_state:
-        st.session_state.chat_history = []
+    if 'ai_chat_history' not in st.session_state:
+        # Carregar histórico do Supabase
+        st.session_state.ai_chat_history = st.session_state.gemini_assistant.load_conversation_history()
     
-    # Status do sistema
-    status_col1, status_col2, status_col3, status_col4 = st.columns(4)
+    # Layout principal moderno
+    chat_container = st.container()
+    input_container = st.container()
     
-    with status_col1:
-        api_status = "🟢 Conectado" if CONFIG['gemini_api_key'] else "🔴 Desconectado"
-        st.metric("🤖 Gemini API", api_status.split(' ')[1], delta=api_status.split(' ')[0])
+    with input_container:
+        render_ai_input_section()
     
-    with status_col2:
-        db_status = "Conectado" if db_manager.connected else "Demo"
-        st.metric("🗄️ Banco de Dados", db_status, delta=f"{len(db_manager.get_tables())} tabelas")
+    with chat_container:
+        render_ai_chat_section()
+
+def render_ai_input_section():
+    """Renderiza seção de input moderna"""
     
-    with status_col3:
-        model_info = CONFIG['gemini_model']
-        st.metric("🧠 Modelo", model_info, delta="2.0 Flash")
+    # Sugestões inteligentes baseadas no contexto do banco
+    st.markdown("### 💡 Sugestões Inteligentes")
     
-    with status_col4:
-        chat_count = len(st.session_state.chat_history)
-        st.metric("💬 Conversas", chat_count, delta="Sessão atual")
+    # Obter contexto atual para sugestões dinâmicas
+    context = st.session_state.gemini_assistant.get_database_context()
+    total_tables = context.get('total_tables_count', 0)
     
-    # Interface de chat
-    st.markdown("### 💬 Chat com Assistente IA")
+    # Sugestões dinâmicas baseadas no estado atual
+    if total_tables > 50:
+        suggestions = [
+            f"Analise o desempenho das {total_tables} tabelas do banco",
+            "Quais tabelas estão ocupando mais espaço?",
+            "Identifique tabelas que precisam de otimização",
+            "Sugira uma estratégia de indexação para melhor performance",
+            "Como posso organizar melhor tantas tabelas?",
+            "Quais tabelas estão crescendo mais rapidamente?"
+        ]
+    else:
+        suggestions = [
+            "Analise o desempenho geral do banco de dados",
+            "Sugira otimizações para as tabelas principais", 
+            "Como melhorar a performance das consultas?",
+            "Quais índices devo criar para otimizar?",
+            "Analise o crescimento dos dados",
+            "Sugestões de backup e segurança"
+        ]
     
-    # Sugestões rápidas
-    st.markdown("#### 💡 Sugestões Rápidas")
-    
-    suggestions_col1, suggestions_col2, suggestions_col3 = st.columns(3)
-    
-    suggestions = [
-        "Analise o desempenho das tabelas do banco",
-        "Sugira otimizações para o banco PetCare", 
-        "Como melhorar a performance das consultas?",
-        "Quais índices devo criar?",
-        "Analise o crescimento dos dados",
-        "Sugestões de backup e segurança"
-    ]
-    
+    # Grid de sugestões moderno
+    cols = st.columns(3)
     for i, suggestion in enumerate(suggestions):
-        col = [suggestions_col1, suggestions_col2, suggestions_col3][i % 3]
-        with col:
-            if st.button(f"💭 {suggestion}", key=f"suggestion_{i}", use_container_width=True):
+        with cols[i % 3]:
+            if st.button(
+                f"💭 {suggestion[:40]}..." if len(suggestion) > 40 else f"💭 {suggestion}",
+                key=f"suggestion_{i}",
+                use_container_width=True,
+                help=suggestion
+            ):
                 st.session_state.current_question = suggestion
                 st.rerun()
     
-    # Input de pergunta
-    col1, col2 = st.columns([4, 1])
+    # Interface de input moderna
+    st.markdown("### 🎯 Faça sua pergunta")
+    
+    col1, col2 = st.columns([5, 1])
     
     with col1:
         question = st.text_area(
-            "🎯 Sua pergunta:",
+            "Digite sua pergunta:",
             value=st.session_state.get('current_question', ''),
-            placeholder="Ex: Como está o desempenho do banco? Preciso otimizar alguma tabela? Quais são os gargalos atuais?",
-            height=100,
-            help="Faça perguntas sobre administração de banco, performance, otimização, ou análise dos dados"
+            placeholder="Ex: Quantas tabelas existem no banco? Como está o desempenho? Preciso otimizar alguma tabela?",
+            height=120,
+            help="Faça perguntas sobre administração de banco, performance, otimização, ou análise dos dados",
+            key="ai_question_input"
         )
     
     with col2:
-        st.markdown("<br>", unsafe_allow_html=True)  # Espaçamento
+        st.markdown("<br><br>", unsafe_allow_html=True)  # Espaçamento
         
-        if st.button("🚀 Perguntar", type="primary", use_container_width=True):
+        if st.button("🚀 Perguntar", type="primary", use_container_width=True, key="ask_ai_button"):
             if question.strip():
-                process_ai_question(question)
+                process_ai_question(question.strip())
             else:
                 st.warning("⚠️ Digite uma pergunta primeiro")
         
-        if st.button("🧹 Limpar Chat", use_container_width=True):
-            st.session_state.chat_history = []
+        if st.button("🧹 Nova Conversa", use_container_width=True, key="new_conversation"):
+            st.session_state.ai_chat_history = []
             st.session_state.current_question = ""
+            if 'ai_session_id' in st.session_state:
+                del st.session_state.ai_session_id
+            st.success("✅ Nova conversa iniciada!")
             st.rerun()
         
-        if st.button("📊 Contexto DB", use_container_width=True, help="Ver contexto atual do banco"):
-            context = st.session_state.gemini_assistant.get_database_context()
+        if st.button("📊 Contexto", use_container_width=True, help="Ver contexto atual do banco", key="show_context"):
             with st.expander("🗄️ Contexto do Banco de Dados", expanded=True):
+                context = st.session_state.gemini_assistant.get_database_context()
+                
+                # Mostrar resumo visual primeiro
+                if context.get('total_tables_count', 0) > 0:
+                    st.success(f"✅ {context['total_tables_count']} tabelas encontradas")
+                    st.info(f"📊 Total de registros: {context.get('total_records', 0):,}")
+                    st.info(f"💾 Tamanho do banco: {context.get('database_size', 'N/A')}")
+                
+                # Contexto completo
                 st.json(context)
-    
-    # Histórico de conversas
-    if st.session_state.chat_history:
-        st.markdown("### 📜 Histórico da Conversa")
         
-        for i, chat in enumerate(reversed(st.session_state.chat_history[-10:])):  # Últimas 10
-            with st.expander(f"💬 Conversa {len(st.session_state.chat_history) - i}: {chat['question'][:50]}...", expanded=i==0):
-                
-                st.markdown(f"**👤 Pergunta ({chat['timestamp']}):**")
-                st.markdown(f"> {chat['question']}")
-                
-                st.markdown("**🤖 Resposta da IA:**")
-                st.markdown(chat['answer'])
-                
-                if chat.get('usage'):
-                    st.caption(f"📊 Tokens: {chat['usage'].get('totalTokenCount', 'N/A')}")
+        if st.button("📜 Histórico", use_container_width=True, key="show_history"):
+            show_ai_conversation_history()
+
+def render_ai_chat_section():
+    """Renderiza seção de chat moderna"""
+    
+    if not st.session_state.ai_chat_history:
+        # Estado vazio moderno
+        st.markdown("""
+        <div style='text-align: center; padding: 4rem 2rem; 
+                   background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+                   border-radius: 20px; margin: 2rem 0;'>
+            <div style='font-size: 4rem; margin-bottom: 1rem; opacity: 0.6;'>🤖</div>
+            <h3 style='color: #6c757d; margin-bottom: 1rem; font-weight: 600;'>
+                Olá! Sou seu assistente de banco de dados
+            </h3>
+            <p style='color: #6c757d; font-size: 1.1rem; max-width: 600px; margin: 0 auto; line-height: 1.6;'>
+                Posso ajudar você com análises, otimizações, consultas SQL e muito mais. 
+                Faça uma pergunta acima ou escolha uma das sugestões para começar!
+            </p>
+            <div style='margin-top: 2rem; padding: 1rem; background: rgba(102, 126, 234, 0.1); 
+                       border-radius: 10px; display: inline-block;'>
+                <small style='color: #495057; font-weight: 500;'>
+                    💡 Dica: Sou especializado em PostgreSQL/Supabase e tenho acesso aos dados do seu banco em tempo real
+                </small>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        return
+    
+    # Exibir conversas
+    st.markdown("### 💬 Conversa Atual")
+    
+    for i, chat in enumerate(reversed(st.session_state.ai_chat_history[-10:])):
+        render_chat_message(chat, len(st.session_state.ai_chat_history) - i)
+
+def render_chat_message(chat, index):
+    """Renderiza uma mensagem de chat individual de forma moderna"""
+    
+    # Container da conversa
+    st.markdown(f"""
+    <div style='background: linear-gradient(135deg, #ffffff, #f8f9fa); 
+               padding: 0; border-radius: 20px; margin: 1.5rem 0;
+               box-shadow: 0 8px 25px rgba(0,0,0,0.1); border: 1px solid #e9ecef;
+               overflow: hidden;'>
+    """, unsafe_allow_html=True)
+    
+    # Header da conversa
+    timestamp = chat.get('created_at', chat.get('timestamp', 'Agora'))
+    if isinstance(timestamp, str) and 'T' in timestamp:
+        try:
+            from datetime import datetime
+            dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+            timestamp = dt.strftime('%d/%m/%Y %H:%M:%S')
+        except:
+            pass
+    
+    categoria = chat.get('categoria', 'geral')
+    categoria_emoji = {
+        'estrutura': '🏗️',
+        'performance': '⚡',
+        'backup': '💾',
+        'sql': '📝',
+        'seguranca': '🔐',
+        'geral': '💬'
+    }.get(categoria, '💬')
+    
+    st.markdown(f"""
+    <div style='background: linear-gradient(135deg, #667eea, #764ba2); 
+               color: white; padding: 1rem 1.5rem; margin: 0;'>
+        <div style='display: flex; justify-content: space-between; align-items: center;'>
+            <h4 style='margin: 0; font-size: 1.1rem; font-weight: 600;'>
+                {categoria_emoji} Conversa #{index} - {categoria.title()}
+            </h4>
+            <small style='opacity: 0.9; font-weight: 500;'>
+                ⏰ {timestamp}
+            </small>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Pergunta do usuário
+    st.markdown(f"""
+    <div style='padding: 1.5rem; border-bottom: 1px solid #e9ecef;'>
+        <div style='display: flex; align-items: flex-start; gap: 1rem;'>
+            <div style='background: linear-gradient(135deg, #28a745, #20c997); 
+                       color: white; width: 40px; height: 40px; 
+                       border-radius: 50%; display: flex; align-items: center; 
+                       justify-content: center; font-size: 1.2rem; font-weight: bold;
+                       box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);'>
+                👤
+            </div>
+            <div style='flex: 1;'>
+                <div style='background: linear-gradient(135deg, #e8f5e8, #f0fff0); 
+                           padding: 1rem 1.5rem; border-radius: 15px;
+                           border-left: 4px solid #28a745; margin-bottom: 0.5rem;'>
+                    <p style='margin: 0; color: #155724; font-size: 1.05rem; line-height: 1.6;'>
+                        {chat.get('pergunta', chat.get('question', 'Pergunta não disponível'))}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Resposta da IA
+    resposta = chat.get('resposta', chat.get('answer', 'Resposta não disponível'))
+    
+    st.markdown(f"""
+    <div style='padding: 1.5rem;'>
+        <div style='display: flex; align-items: flex-start; gap: 1rem;'>
+            <div style='background: linear-gradient(135deg, #667eea, #764ba2); 
+                       color: white; width: 40px; height: 40px; 
+                       border-radius: 50%; display: flex; align-items: center; 
+                       justify-content: center; font-size: 1.2rem;
+                       box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);'>
+                🤖
+            </div>
+            <div style='flex: 1;'>
+                <div style='background: linear-gradient(135deg, #f8f9ff, #ffffff); 
+                           padding: 1.5rem; border-radius: 15px;
+                           border-left: 4px solid #667eea; box-shadow: 0 2px 10px rgba(0,0,0,0.05);'>
+    """, unsafe_allow_html=True)
+    
+    # Renderizar resposta formatada
+    st.markdown(resposta)
+    
+    # Métricas da resposta
+    if chat.get('tokens_utilizados') or chat.get('usage') or chat.get('tempo_resposta'):
+        st.markdown("""
+        <div style='margin-top: 1rem; padding: 0.75rem; 
+                   background: rgba(102, 126, 234, 0.1); border-radius: 8px;'>
+        """, unsafe_allow_html=True)
+        
+        metrics_cols = st.columns(4)
+        
+        # Tokens
+        tokens_info = chat.get('tokens_utilizados', chat.get('usage', {}))
+        if tokens_info:
+            with metrics_cols[0]:
+                total_tokens = tokens_info.get('totalTokenCount', tokens_info.get('total_tokens', 'N/A'))
+                st.metric("🔢 Tokens", total_tokens)
+        
+        # Tempo de resposta
+        tempo = chat.get('tempo_resposta')
+        if tempo:
+            with metrics_cols[1]:
+                if isinstance(tempo, (int, float)):
+                    st.metric("⏱️ Tempo", f"{tempo:.2f}s")
+                else:
+                    st.metric("⏱️ Tempo", str(tempo))
+        
+        # Categoria
+        with metrics_cols[2]:
+            st.metric("📂 Categoria", categoria.title())
+        
+        # Avaliação
+        with metrics_cols[3]:
+            avaliacao = chat.get('avaliacao')
+            if avaliacao:
+                stars = "⭐" * avaliacao
+                st.metric("⭐ Avaliação", stars)
+            else:
+                if st.button("👍", key=f"like_chat_{index}", help="Avaliar positivamente"):
+                    rate_conversation(chat.get('id'), 5)
+        
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+    st.markdown("</div></div></div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 def process_ai_question(question):
-    """Processa pergunta do usuário com a IA"""
+    """Processa pergunta com melhorias e salvamento no Supabase"""
     
-    with st.spinner("🤖 Consultando Gemini..."):
-        result = st.session_state.gemini_assistant.call_gemini(question)
+    start_time = time.time()
+    
+    with st.spinner("🤖 Consultando Gemini e analisando banco de dados..."):
+        # Obter contexto completo e atualizado
+        context = st.session_state.gemini_assistant.get_database_context()
+        
+        # Chamar Gemini
+        result = st.session_state.gemini_assistant.call_gemini(question, context)
+    
+    end_time = time.time()
+    response_time = end_time - start_time
     
     if result['success']:
-        # Adicionar ao histórico
+        # Salvar no Supabase
+        saved = st.session_state.gemini_assistant.save_conversation_to_supabase(
+            question, 
+            result['content'], 
+            context, 
+            result.get('usage', {}), 
+            response_time
+        )
+        
+        # Adicionar à sessão (para exibição imediata)
         chat_entry = {
-            'question': question,
-            'answer': result['content'],
+            'pergunta': question,
+            'resposta': result['content'],
             'timestamp': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
-            'usage': result.get('usage', {})
+            'tokens_utilizados': result.get('usage', {}),
+            'tempo_resposta': response_time,
+            'categoria': determine_question_category(question)
         }
         
-        st.session_state.chat_history.append(chat_entry)
+        st.session_state.ai_chat_history.append(chat_entry)
         
         # Limpar pergunta atual
         st.session_state.current_question = ""
         
-        # Mostrar resposta
-        st.success("✅ Resposta gerada com sucesso!")
+        # Mostrar resposta imediata
+        st.success("✅ Resposta gerada com sucesso!" + (" (Salva no Supabase)" if saved else " (Não foi possível salvar)"))
         
-        st.markdown("### 🤖 Resposta da IA:")
-        st.markdown(result['content'])
-        
-        # Informações de uso
-        if result.get('usage'):
-            with st.expander("📊 Informações de Uso", expanded=False):
-                usage = result['usage']
-                usage_col1, usage_col2, usage_col3 = st.columns(3)
-                
-                with usage_col1:
-                    st.metric("📝 Tokens Prompt", usage.get('promptTokenCount', 'N/A'))
-                with usage_col2:
-                    st.metric("💬 Tokens Resposta", usage.get('candidatesTokenCount', 'N/A'))
-                with usage_col3:
-                    st.metric("📊 Total Tokens", usage.get('totalTokenCount', 'N/A'))
-        
+        # Log da atividade
         log_activity("Pergunta IA respondida", question[:50])
+        
+        # Recarregar para mostrar nova conversa
+        st.rerun()
         
     else:
         st.error(f"❌ Erro ao gerar resposta: {result['error']}")
+
+def determine_question_category(question):
+    """Determina categoria da pergunta"""
+    question_lower = question.lower()
+    
+    if any(word in question_lower for word in ['tabela', 'table', 'schema', 'estrutura']):
+        return "estrutura"
+    elif any(word in question_lower for word in ['performance', 'lento', 'otimiz', 'índice', 'velocidade']):
+        return "performance"
+    elif any(word in question_lower for word in ['backup', 'restore', 'recuper']):
+        return "backup"
+    elif any(word in question_lower for word in ['query', 'sql', 'select', 'insert', 'update', 'delete']):
+        return "sql"
+    elif any(word in question_lower for word in ['usuário', 'permiss', 'acesso', 'rls', 'segurança']):
+        return "seguranca"
+    else:
+        return "geral"
+
+def show_ai_conversation_history():
+    """Mostra histórico completo de conversas"""
+    st.markdown("### 📜 Histórico Completo de Conversas")
+    
+    # Carregar mais conversas do Supabase
+    full_history = st.session_state.gemini_assistant.load_conversation_history(limit=50)
+    
+    if not full_history:
+        st.info("📭 Nenhuma conversa encontrada no histórico")
+        return
+    
+    # Estatísticas do histórico
+    stats_col1, stats_col2, stats_col3, stats_col4 = st.columns(4)
+    
+    with stats_col1:
+        st.metric("💬 Total Conversas", len(full_history))
+    
+    with stats_col2:
+        categorias = [conv.get('categoria', 'geral') for conv in full_history]
+        categoria_mais_comum = max(set(categorias), key=categorias.count) if categorias else 'N/A'
+        st.metric("📂 Categoria Principal", categoria_mais_comum.title())
+    
+    with stats_col3:
+        tempos = [conv.get('tempo_resposta', 0) for conv in full_history if conv.get('tempo_resposta')]
+        tempo_medio = sum(tempos) / len(tempos) if tempos else 0
+        st.metric("⏱️ Tempo Médio", f"{tempo_medio:.2f}s")
+    
+    with stats_col4:
+        tokens_list = []
+        for conv in full_history:
+            tokens_info = conv.get('tokens_utilizados', {})
+            if isinstance(tokens_info, dict) and 'totalTokenCount' in tokens_info:
+                tokens_list.append(tokens_info['totalTokenCount'])
+        
+        total_tokens = sum(tokens_list) if tokens_list else 0
+        st.metric("🔢 Total Tokens", f"{total_tokens:,}")
+    
+    # Filtros
+    filter_col1, filter_col2 = st.columns(2)
+    
+    with filter_col1:
+        categoria_filter = st.selectbox(
+            "Filtrar por categoria:",
+            ["Todas"] + list(set(categorias)),
+            key="history_category_filter"
+        )
+    
+    with filter_col2:
+        search_term = st.text_input(
+            "Buscar nas conversas:",
+            placeholder="Digite uma palavra-chave...",
+            key="history_search"
+        )
+    
+    # Aplicar filtros
+    filtered_history = full_history
+    
+    if categoria_filter != "Todas":
+        filtered_history = [conv for conv in filtered_history if conv.get('categoria') == categoria_filter.lower()]
+    
+    if search_term:
+        filtered_history = [
+            conv for conv in filtered_history 
+            if search_term.lower() in conv.get('pergunta', '').lower() or 
+               search_term.lower() in conv.get('resposta', '').lower()
+        ]
+    
+    # Exibir conversas filtradas
+    st.markdown(f"**Exibindo {len(filtered_history)} conversa(s):**")
+    
+    for i, conv in enumerate(filtered_history[:20]):  # Limitar a 20 para performance
+        with st.expander(f"💬 {conv.get('pergunta', 'Pergunta')[:60]}...", expanded=False):
+            st.markdown(f"**👤 Pergunta:**")
+            st.markdown(conv.get('pergunta', 'N/A'))
+            
+            st.markdown(f"**🤖 Resposta:**")
+            st.markdown(conv.get('resposta', 'N/A'))
+            
+            # Metadados
+            metadata_col1, metadata_col2, metadata_col3 = st.columns(3)
+            
+            with metadata_col1:
+                timestamp = conv.get('created_at', 'N/A')
+                if isinstance(timestamp, str) and 'T' in timestamp:
+                    try:
+                        dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                        timestamp = dt.strftime('%d/%m/%Y %H:%M')
+                    except:
+                        pass
+                st.info(f"📅 **Data:** {timestamp}")
+            
+            with metadata_col2:
+                categoria = conv.get('categoria', 'geral')
+                st.info(f"📂 **Categoria:** {categoria.title()}")
+            
+            with metadata_col3:
+                tempo = conv.get('tempo_resposta', 0)
+                if isinstance(tempo, (int, float)):
+                    st.info(f"⏱️ **Tempo:** {tempo:.2f}s")
+
+def rate_conversation(conversation_id, rating):
+    """Avalia uma conversa"""
+    try:
+        if not st.session_state.gemini_assistant.db_manager.connected:
+            return False
+        
+        result = st.session_state.gemini_assistant.db_manager.supabase_admin.table('duvidas_analitics_ia').update({
+            'avaliacao': rating
+        }).eq('id', conversation_id).execute()
+        
+        if result.data:
+            st.success("✅ Avaliação salva!")
+            return True
+        return False
+        
+    except Exception as e:
+        st.error(f"Erro ao avaliar: {e}")
+        return False
 
 # =====================================================================
 # CLASSE DE CONEXÃO COM BANCO DE DADOS
