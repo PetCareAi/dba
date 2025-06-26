@@ -967,87 +967,87 @@ class ProjectManager:
         self.supabase_admin = db_manager.supabase_admin if hasattr(db_manager, 'supabase_admin') else None
     
     def get_projects(self):
-        """Busca todos os projetos do Supabase"""
-        try:
-            if not self.db_manager.connected or not self.supabase_client:
-                return self._get_demo_projects()
-            
-            # Usar diretamente o cliente Supabase
-            response = self.supabase_client.table('projetos_analytics').select("""
-                id, nome, descricao, categoria, prioridade, status, tags, membros, 
-                configuracoes, created_at, updated_at, created_by
-            """).eq('status', 'ativo').order('updated_at', desc=True).execute()
-            
-            if response.data:
-                projects = []
-                for proj in response.data:
-                    # Buscar contagem de scripts
-                    scripts_response = self.supabase_client.table('scripts_projetos').select(
-                        'id', count='exact'
-                    ).eq('projeto_id', proj['id']).eq('status', 'ativo').execute()
-                    
-                    scripts_count = scripts_response.count if hasattr(scripts_response, 'count') else 0
-                    
-                    projects.append({
-                        'id': proj['id'],
-                        'name': proj['nome'],
-                        'description': proj['descricao'] or '',
-                        'category': proj['categoria'] or 'Outros',
-                        'priority': proj['prioridade'] or 'Média',
-                        'status': proj['status'],
-                        'tags': proj['tags'] or [],
-                        'members': proj['membros'] or [],
-                        'scripts': scripts_count,
-                        'created_at': datetime.fromisoformat(proj['created_at'].replace('Z', '+00:00')) if proj['created_at'] else datetime.now(),
-                        'settings': proj['configuracoes'] or {}
-                    })
-                return projects
-            else:
-                return []
-                
-        except Exception as e:
-            st.error(f"Erro ao carregar projetos do Supabase: {e}")
-            return self._get_demo_projects()
-    
+      """Busca todos os projetos do Supabase"""
+      try:
+          if not self.db_manager.connected or not self.supabase_admin:
+              return self._get_demo_projects()
+          
+          # Usar cliente admin para buscar projetos
+          response = self.supabase_admin.table('projetos_analytics').select("""
+              id, nome, descricao, categoria, prioridade, status, tags, membros, 
+              configuracoes, created_at, updated_at, created_by
+          """).eq('status', 'ativo').order('updated_at', desc=True).execute()
+          
+          if response.data:
+              projects = []
+              for proj in response.data:
+                  # Buscar contagem de scripts usando cliente admin
+                  scripts_response = self.supabase_admin.table('scripts_projetos').select(
+                      'id', count='exact'
+                  ).eq('projeto_id', proj['id']).eq('status', 'ativo').execute()
+                  
+                  scripts_count = scripts_response.count if hasattr(scripts_response, 'count') else 0
+                  
+                  projects.append({
+                      'id': proj['id'],
+                      'name': proj['nome'],
+                      'description': proj['descricao'] or '',
+                      'category': proj['categoria'] or 'Outros',
+                      'priority': proj['prioridade'] or 'Média',
+                      'status': proj['status'],
+                      'tags': proj['tags'] or [],
+                      'members': proj['membros'] or [],
+                      'scripts': scripts_count,
+                      'created_at': datetime.fromisoformat(proj['created_at'].replace('Z', '+00:00')) if proj['created_at'] else datetime.now(),
+                      'settings': proj['configuracoes'] or {}
+                  })
+              return projects
+          else:
+              return []
+              
+      except Exception as e:
+          st.error(f"Erro ao carregar projetos do Supabase: {e}")
+          return self._get_demo_projects()
+      
     def create_project(self, project_data):
-        """Cria novo projeto no Supabase"""
-        try:
-            if not self.db_manager.connected or not self.supabase_client:
-                st.warning("⚠️ Sem conexão com Supabase. Projeto não será salvo.")
-                return {'success': False, 'message': 'Sem conexão com banco de dados'}
-            
-            # Preparar dados para inserção
-            insert_data = {
-                'nome': project_data['name'],
-                'descricao': project_data['description'],
-                'categoria': project_data['category'],
-                'prioridade': project_data['priority'],
-                'tags': project_data.get('tags', []),
-                'membros': project_data.get('members', []),
-                'configuracoes': project_data.get('settings', {}),
-                'created_by': st.session_state.get('username', 'admin'),
-                'status': 'ativo'
-            }
-            
-            # Inserir no Supabase
-            response = self.supabase_client.table('projetos_analytics').insert(insert_data).execute()
-            
-            if response.data and len(response.data) > 0:
-                project_id = response.data[0]['id']
-                project_name = response.data[0]['nome']
-                return {
-                    'success': True, 
-                    'project_id': project_id, 
-                    'message': f"✅ Projeto '{project_name}' criado com sucesso no Supabase!"
-                }
-            else:
-                return {'success': False, 'message': '❌ Erro ao criar projeto no Supabase'}
-                
-        except Exception as e:
-            error_msg = str(e)
-            st.error(f"Erro detalhado ao criar projeto: {error_msg}")
-            return {'success': False, 'message': f'❌ Erro ao criar projeto: {error_msg}'}
-    
+      """Cria novo projeto no Supabase"""
+      try:
+          if not self.db_manager.connected or not self.supabase_admin:
+              st.warning("⚠️ Sem conexão com Supabase. Projeto não será salvo.")
+              return {'success': False, 'message': 'Sem conexão com banco de dados'}
+          
+          # Preparar dados para inserção
+          insert_data = {
+              'nome': project_data['name'],
+              'descricao': project_data['description'],
+              'categoria': project_data['category'],
+              'prioridade': project_data['priority'],
+              'tags': project_data.get('tags', []),
+              'membros': project_data.get('members', []),
+              'configuracoes': project_data.get('settings', {}),
+              'created_by': st.session_state.get('username', 'admin'),
+              'status': 'ativo'
+          }
+          
+          # Usar cliente admin para bypassar RLS
+          response = self.supabase_admin.table('projetos_analytics').insert(insert_data).execute()
+          
+          if response.data and len(response.data) > 0:
+              project_id = response.data[0]['id']
+              project_name = response.data[0]['nome']
+              return {
+                  'success': True, 
+                  'project_id': project_id, 
+                  'message': f"✅ Projeto '{project_name}' criado com sucesso no Supabase!"
+              }
+          else:
+              return {'success': False, 'message': '❌ Erro ao criar projeto no Supabase'}
+              
+      except Exception as e:
+          error_msg = str(e)
+          st.error(f"Erro detalhado ao criar projeto: {error_msg}")
+          return {'success': False, 'message': f'❌ Erro ao criar projeto: {error_msg}'}
+
     def get_project_scripts(self, project_id):
         """Busca scripts de um projeto"""
         try:
@@ -6496,6 +6496,15 @@ def render_new_project_form_improved(project_manager):
     
     st.info("💾 Este projeto será salvo permanentemente no Supabase")
     
+    # BOTÃO DE VERIFICAÇÃO FORA DO FORMULÁRIO
+    if st.button("🔍 Verificar Tabelas Supabase", key="check_tables_outside_form"):
+        try:
+            tables_check = project_manager.supabase_admin.table('projetos_analytics').select('id').limit(1).execute()
+            st.success("✅ Tabela 'projetos_analytics' encontrada")
+        except Exception as e:
+            st.error(f"❌ Erro ao acessar tabela: {e}")
+            st.info("💡 Execute o script SQL de criação das tabelas primeiro")
+    
     # Formulário com validação aprimorada
     with st.form("create_project_form", clear_on_submit=False):
         st.markdown("#### 📝 Informações Básicas")
@@ -6690,17 +6699,119 @@ def render_new_project_form_improved(project_manager):
                     st.write("1. Verifique a conexão com Supabase")
                     st.write("2. Confirme se as tabelas foram criadas corretamente")
                     st.write("3. Verifique as permissões de acesso")
-                    
-                    if st.button("🔍 Verificar Tabelas Supabase"):
-                        try:
-                            tables_check = project_manager.supabase_client.table('projetos_analytics').select('id').limit(1).execute()
-                            st.success("✅ Tabela 'projetos_analytics' encontrada")
-                        except Exception as e:
-                            st.error(f"❌ Erro ao acessar tabela: {e}")
-                            st.info("💡 Execute o script SQL de criação das tabelas primeiro")
+                    st.write("4. Considere desabilitar RLS temporariamente para testes")
         
         if clear_form:
             st.rerun()
+    
+    # SEÇÃO ADICIONAL FORA DO FORMULÁRIO PARA DIAGNÓSTICOS
+    st.markdown("---")
+    st.markdown("#### 🔧 Diagnósticos e Ajuda")
+    
+    diag_col1, diag_col2, diag_col3 = st.columns(3)
+    
+    with diag_col1:
+        if st.button("🔍 Testar Conexão Admin", key="test_admin_connection"):
+            try:
+                if hasattr(project_manager, 'supabase_admin') and project_manager.supabase_admin:
+                    test_response = project_manager.supabase_admin.table('projetos_analytics').select('id').limit(1).execute()
+                    st.success("✅ Conexão admin funcionando!")
+                    st.info(f"Resposta: {len(test_response.data) if test_response.data else 0} registro(s) encontrado(s)")
+                else:
+                    st.error("❌ Cliente admin não disponível")
+            except Exception as e:
+                st.error(f"❌ Erro na conexão admin: {e}")
+                if "row-level security" in str(e).lower():
+                    st.warning("⚠️ Problema de RLS detectado. Execute o SQL para ajustar as políticas.")
+    
+    with diag_col2:
+        if st.button("📋 Listar Políticas RLS", key="list_rls_policies"):
+            try:
+                if hasattr(project_manager, 'supabase_admin') and project_manager.supabase_admin:
+                    # Tentar consultar políticas RLS
+                    rls_query = """
+                    SELECT schemaname, tablename, policyname, permissive, roles, cmd 
+                    FROM pg_policies 
+                    WHERE tablename IN ('projetos_analytics', 'scripts_projetos', 'execucoes_scripts')
+                    ORDER BY tablename, policyname;
+                    """
+                    
+                    # Esta query pode não funcionar via REST API, mas vamos tentar
+                    st.info("🔍 Tentando listar políticas RLS...")
+                    st.code(rls_query, language='sql')
+                    st.warning("⚠️ Execute esta query no SQL Editor do Supabase para ver as políticas")
+                else:
+                    st.error("❌ Cliente admin não disponível")
+            except Exception as e:
+                st.error(f"❌ Erro ao consultar políticas: {e}")
+    
+    with diag_col3:
+        if st.button("🛠️ Script de Correção", key="correction_script"):
+            st.markdown("#### 📜 Script SQL para Correção")
+            
+            correction_sql = """
+-- Script para resolver problemas de RLS
+-- Execute no SQL Editor do Supabase
+
+-- Opção 1: Desabilitar RLS temporariamente (CUIDADO!)
+ALTER TABLE projetos_analytics DISABLE ROW LEVEL SECURITY;
+ALTER TABLE scripts_projetos DISABLE ROW LEVEL SECURITY;
+ALTER TABLE execucoes_scripts DISABLE ROW LEVEL SECURITY;
+
+-- Opção 2: Criar políticas permissivas para service_role
+CREATE POLICY "service_role_all_access" ON projetos_analytics
+FOR ALL TO service_role
+USING (true)
+WITH CHECK (true);
+
+CREATE POLICY "service_role_all_access" ON scripts_projetos
+FOR ALL TO service_role
+USING (true)
+WITH CHECK (true);
+
+CREATE POLICY "service_role_all_access" ON execucoes_scripts
+FOR ALL TO service_role
+USING (true)
+WITH CHECK (true);
+
+-- Verificar se as políticas foram criadas
+SELECT schemaname, tablename, policyname, permissive, roles, cmd 
+FROM pg_policies 
+WHERE tablename IN ('projetos_analytics', 'scripts_projetos', 'execucoes_scripts')
+ORDER BY tablename, policyname;
+            """
+            
+            st.code(correction_sql, language='sql')
+            
+            st.download_button(
+                "📥 Download Script SQL",
+                correction_sql,
+                f"correcao_rls_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sql",
+                "text/sql",
+                use_container_width=True
+            )
+    
+    # Informações adicionais sobre RLS
+    with st.expander("📚 Informações sobre RLS (Row Level Security)", expanded=False):
+        st.markdown("""
+        **O que é RLS?**
+        Row Level Security é um recurso do PostgreSQL que controla o acesso a linhas individuais de uma tabela.
+        
+        **Por que está causando erro?**
+        - O Supabase habilita RLS por padrão nas novas tabelas
+        - Sem políticas adequadas, nem mesmo o service_role consegue inserir dados
+        - É necessário criar políticas específicas ou desabilitar RLS temporariamente
+        
+        **Soluções:**
+        1. **Temporária:** Desabilitar RLS nas tabelas (não recomendado para produção)
+        2. **Recomendada:** Criar políticas RLS que permitam acesso ao service_role
+        3. **Alternativa:** Ajustar as configurações de autenticação do Supabase
+        
+        **Como aplicar a correção:**
+        1. Vá para o SQL Editor no painel do Supabase
+        2. Execute o script de correção fornecido acima
+        3. Teste novamente a criação do projeto
+        """)
 
 def render_projects_list_improved(project_manager):
     """Lista melhorada de projetos"""
