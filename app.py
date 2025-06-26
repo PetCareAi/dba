@@ -20,6 +20,8 @@ import time
 import random
 import asyncio
 from io import BytesIO, StringIO
+from pathlib import Path
+import shutil
 
 # Importações condicionais
 try:
@@ -52,30 +54,6 @@ except ImportError:
 # =====================================================================
 # CONFIGURAÇÕES E CONSTANTES
 # =====================================================================
-
-# Configurações da aplicação
-# =====================================================================
-# CONFIGURAÇÕES E CONSTANTES
-# =====================================================================
-
-# Em streamlit.com, deve-se adicionar todas as variaveis de ambiente inclusivo no
-# Sistema streamlit
-# CONFIG = {
-#     'app_title': 'PetCare DBA Admin',
-#     'app_version': '1.0.0',
-#     'admin_username': 'admin',
-#     'admin_password': 'petcare2025',
-#     'admin_email': 'admin@petcareai.com',
-#     'debug_mode': True,
-#     'theme': {
-#         'primary_color': '#2E8B57', # Coloracao nao esta funcionando para ser escolhida no sistema streamlit
-#         'secondary_color': '#90EE90'
-#     },
-#     # Credenciais reais do Supabase
-#     'supabase_url': 'https://jthzocdiryhuytnmtekj.supabase.co',
-#     'supabase_anon_key': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aHpvY2RpcnlodXl0bm10ZWtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgzMDA4NDUsImV4cCI6MjA2Mzg3Njg0NX0.eNbN8wZsAYz_RmcjyspXUJDPhEGYKHa4pSrWc4Hbb-M',
-#     'supabase_service_key': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aHpvY2RpcnlodXl0bm10ZWtqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODMwMDg0NSwiZXhwIjoyMDYzODc2ODQ1fQ.TiLBm9GgT5QFTY3oMNEiQ1869z5hmRcmHv-wRPnPVRg'
-# }
 
 CONFIG = {
     'app_title': os.getenv('APP_TITLE', 'PetCare DBA Admin'),
@@ -117,6 +95,352 @@ if missing_vars:
     st.error(f"❌ Variáveis de ambiente obrigatórias não configuradas: {', '.join(missing_vars)}")
     st.info("💡 Configure todas as variáveis no arquivo .env ou nas configurações do ambiente")
     st.stop()
+
+# Caminho para armazenar configurações
+SETTINGS_FILE = Path("user_settings.json")
+
+def load_user_settings():
+    """Carrega configurações salvas do usuário"""
+    try:
+        if SETTINGS_FILE.exists():
+            with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
+                settings = json.load(f)
+                return settings
+        else:
+            # Configurações padrão
+            return {
+                'system': {
+                    'theme_preset': 'PetCare Verde',
+                    'sidebar_default': True,
+                    'compact_mode': False,
+                    'show_tooltips': True,
+                    'mobile_optimized': True,
+                    'auto_scale': True,
+                    'enable_cache': True,
+                    'cache_duration': 15,
+                    'auto_refresh_interval': 30,
+                    'max_records_display': 50,
+                    'query_timeout': 30,
+                    'enable_notifications': True,
+                    'sound_notifications': False,
+                    'browser_notifications': False,
+                    'debug_mode': CONFIG['debug_mode'],
+                    'verbose_logging': False,
+                    'auto_backup_settings': True,
+                    'export_logs': False,
+                    'maintenance_mode': False,
+                    'read_only_mode': False
+                },
+                'user': {
+                    'email': CONFIG['admin_email'],
+                    'full_name': 'Administrador PetCare',
+                    'role': 'Administrador',
+                    'language': 'Português (BR)',
+                    'timezone': 'America/Sao_Paulo',
+                    'date_format': 'DD/MM/YYYY',
+                    'default_page': 'Dashboard',
+                    'items_per_page': 25,
+                    'auto_save_queries': True,
+                    'dashboard_auto_refresh': 60,
+                    'show_advanced_metrics': True,
+                    'chart_animations': True,
+                    'email_alerts': False,
+                    'alert_frequency': 'Diário',
+                    'critical_alerts_only': True,
+                    'session_timeout': 60,
+                    'enable_2fa': False,
+                    'remember_login': False
+                },
+                'database': {
+                    'db_type': 'Supabase',
+                    'supabase_url': CONFIG.get('supabase_url', ''),
+                    'supabase_anon_key': CONFIG.get('supabase_anon_key', ''),
+                    'supabase_service_key': CONFIG.get('supabase_service_key', ''),
+                    'ssl_enabled': True,
+                    'ssl_verify': True,
+                    'encrypt_connection': True,
+                    'connection_pool_size': 20,
+                    'max_connections': 100,
+                    'connection_timeout': 30,
+                    'query_timeout': 60,
+                    'log_slow_queries': True,
+                    'slow_query_threshold': 5,
+                    'log_connections': True,
+                    'monitor_locks': True,
+                    'auto_reconnect': True,
+                    'connection_retry_attempts': 3,
+                    'backup_connection': False,
+                    'read_replica': False,
+                    'load_balancing': False,
+                    'failover_enabled': False
+                },
+                'monitoring': {
+                    'cpu_alert_threshold': 80,
+                    'memory_alert_threshold': 85,
+                    'disk_alert_threshold': 90,
+                    'connection_alert_threshold': 150,
+                    'enable_monitoring': True,
+                    'metrics_interval': 60,
+                    'detailed_metrics': True,
+                    'metrics_retention_days': 30,
+                    'auto_cleanup': True,
+                    'email_alerts': False,
+                    'alert_emails': '',
+                    'email_frequency': 'Imediato',
+                    'webhook_alerts': False,
+                    'webhook_url': '',
+                    'webhook_secret': '',
+                    'slack_integration': False,
+                    'slack_token': '',
+                    'slack_channel': '#alerts',
+                    'custom_metrics': '',
+                    'refresh_rate': '30s',
+                    'chart_type': 'Linha',
+                    'show_predictions': False
+                },
+                'security': {
+                    'min_password_length': 8,
+                    'require_special_chars': True,
+                    'require_numbers': True,
+                    'require_uppercase': True,
+                    'session_timeout_minutes': 60,
+                    'max_concurrent_sessions': 3,
+                    'enable_audit_log': True,
+                    'log_failed_logins': True,
+                    'log_data_changes': True,
+                    'log_admin_actions': True,
+                    'role_based_access': True,
+                    'ip_whitelist_enabled': False,
+                    'allowed_ips': '',
+                    'encrypt_sensitive_data': True,
+                    'encryption_algorithm': 'AES-256',
+                    'security_backup_enabled': True,
+                    'backup_encryption': True,
+                    'backup_frequency': 'Diário'
+                }
+            }
+    except Exception as e:
+        st.error(f"❌ Erro ao carregar configurações: {e}")
+        return {}
+
+def save_user_settings(settings):
+    """Salva configurações do usuário"""
+    try:
+        # Criar backup das configurações anteriores
+        if SETTINGS_FILE.exists():
+            backup_file = Path(f"user_settings_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+            import shutil
+            shutil.copy2(SETTINGS_FILE, backup_file)
+        
+        # Salvar novas configurações
+        with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(settings, f, indent=2, ensure_ascii=False, default=str)
+        
+        return True
+    except Exception as e:
+        st.error(f"❌ Erro ao salvar configurações: {e}")
+        return False
+
+def apply_database_settings(db_settings):
+    """Aplica configurações do banco de dados"""
+    try:
+        global db_manager, CONFIG
+        
+        # Atualizar CONFIG global
+        CONFIG['supabase_url'] = db_settings['supabase_url']
+        CONFIG['supabase_anon_key'] = db_settings['supabase_anon_key']
+        CONFIG['supabase_service_key'] = db_settings['supabase_service_key']
+        
+        # Atualizar variáveis de ambiente
+        os.environ['SUPABASE_URL'] = db_settings['supabase_url']
+        os.environ['SUPABASE_ANON_KEY'] = db_settings['supabase_anon_key']
+        os.environ['SUPABASE_SERVICE_KEY'] = db_settings['supabase_service_key']
+        
+        # Recriar database manager com novas configurações
+        old_connected = db_manager.connected if hasattr(db_manager, 'connected') else False
+        
+        # Reinicializar conexão
+        db_manager._init_connection()
+        
+        # Atualizar project manager se necessário
+        if 'project_manager' in st.session_state:
+            st.session_state.project_manager.db_manager = db_manager
+            if hasattr(st.session_state.project_manager, 'supabase_client'):
+                try:
+                    from supabase import create_client
+                    st.session_state.project_manager.supabase_client = create_client(
+                        db_settings['supabase_url'],
+                        db_settings['supabase_anon_key']
+                    )
+                    st.session_state.project_manager.supabase_admin = create_client(
+                        db_settings['supabase_url'],
+                        db_settings['supabase_service_key']
+                    )
+                except:
+                    pass
+        
+        return {
+            'success': True,
+            'message': f'Configurações aplicadas. Status: {"Conectado" if db_manager.connected else "Desconectado"}',
+            'previous_status': old_connected,
+            'current_status': db_manager.connected
+        }
+        
+    except Exception as e:
+        return {
+            'success': False,
+            'message': f'Erro ao aplicar configurações: {str(e)}',
+            'error': str(e)
+        }
+
+def validate_database_connection(db_settings):
+    """Valida configurações de conexão com banco"""
+    errors = []
+    warnings = []
+    
+    # Validar URL do Supabase
+    if not db_settings['supabase_url']:
+        errors.append("URL do Supabase é obrigatória")
+    elif not db_settings['supabase_url'].startswith('https://'):
+        errors.append("URL deve começar com https://")
+    elif not '.supabase.co' in db_settings['supabase_url']:
+        warnings.append("URL não parece ser do Supabase oficial")
+    
+    # Validar chaves
+    if not db_settings['supabase_anon_key']:
+        errors.append("Chave anônima é obrigatória")
+    elif len(db_settings['supabase_anon_key']) < 100:
+        warnings.append("Chave anônima parece muito curta")
+    
+    if not db_settings['supabase_service_key']:
+        errors.append("Chave de serviço é obrigatória")
+    elif len(db_settings['supabase_service_key']) < 100:
+        warnings.append("Chave de serviço parece muito curta")
+    
+    # Validar valores numéricos
+    if db_settings['connection_pool_size'] < 1:
+        errors.append("Pool de conexões deve ser maior que 0")
+    
+    if db_settings['max_connections'] < db_settings['connection_pool_size']:
+        errors.append("Máximo de conexões deve ser maior que o pool")
+    
+    if db_settings['connection_timeout'] < 5:
+        warnings.append("Timeout muito baixo pode causar problemas")
+    
+    return {
+        'valid': len(errors) == 0,
+        'errors': errors,
+        'warnings': warnings
+    }
+
+def test_database_connection_real(db_settings):
+    """Testa conexão real com as configurações fornecidas"""
+    try:
+        from supabase import create_client
+        
+        # Testar conexão
+        test_client = create_client(
+            db_settings['supabase_url'],
+            db_settings['supabase_anon_key']
+        )
+        
+        # Fazer uma consulta simples
+        start_time = time.time()
+        
+        # Tentar acessar uma tabela (qualquer uma)
+        try:
+            response = test_client.table('projetos_analytics').select('id').limit(1).execute()
+            end_time = time.time()
+            
+            return {
+                'success': True,
+                'message': 'Conexão estabelecida com sucesso',
+                'latency': f"{(end_time - start_time) * 1000:.0f}ms",
+                'response_size': len(str(response.data)) if response.data else 0,
+                'server_version': 'Supabase PostgreSQL',
+                'details': {
+                    'url': db_settings['supabase_url'],
+                    'authenticated': True,
+                    'data_returned': len(response.data) if response.data else 0
+                }
+            }
+        
+        except Exception as table_error:
+            # Se falhar, pode ser que a tabela não existe, mas a conexão está ok
+            end_time = time.time()
+            
+            return {
+                'success': True,
+                'message': 'Conexão OK (tabela de teste não encontrada)',
+                'latency': f"{(end_time - start_time) * 1000:.0f}ms",
+                'warning': str(table_error),
+                'server_version': 'Supabase PostgreSQL',
+                'details': {
+                    'url': db_settings['supabase_url'],
+                    'authenticated': True,
+                    'table_error': str(table_error)
+                }
+            }
+    
+    except Exception as e:
+        return {
+            'success': False,
+            'message': 'Falha na conexão',
+            'error': str(e),
+            'details': {
+                'url': db_settings.get('supabase_url', 'N/A'),
+                'error_type': type(e).__name__
+            }
+        }
+
+def export_settings_to_file(settings):
+    """Exporta configurações para arquivo"""
+    try:
+        export_data = {
+            'exported_at': datetime.now().isoformat(),
+            'app_version': CONFIG['app_version'],
+            'settings': settings
+        }
+        
+        filename = f"petcare_settings_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        
+        return {
+            'success': True,
+            'filename': filename,
+            'data': json.dumps(export_data, indent=2, ensure_ascii=False, default=str)
+        }
+    
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+def import_settings_from_data(import_data):
+    """Importa configurações de dados JSON"""
+    try:
+        # Validar estrutura
+        if 'settings' not in import_data:
+            return {'success': False, 'error': 'Arquivo não contém configurações válidas'}
+        
+        # Validar seções obrigatórias
+        required_sections = ['system', 'user', 'database', 'monitoring', 'security']
+        for section in required_sections:
+            if section not in import_data['settings']:
+                return {'success': False, 'error': f'Seção {section} não encontrada'}
+        
+        return {
+            'success': True,
+            'settings': import_data['settings'],
+            'exported_at': import_data.get('exported_at', 'Desconhecido'),
+            'app_version': import_data.get('app_version', 'Desconhecido')
+        }
+    
+    except Exception as e:
+        return {
+            'success': False,
+            'error': f'Erro ao processar arquivo: {str(e)}'
+        }
 
 class GeminiAssistant:
     """Assistente IA integrado com Google Gemini e dados do Supabase"""
@@ -8896,7 +9220,7 @@ def init_project_manager():
     return st.session_state.project_manager
 
 def render_settings():
-    """Renderiza página de configurações"""
+    """Renderiza página de configurações completamente funcional"""
     st.markdown("""
     <div style='background: linear-gradient(135deg, #F0FFF0, #E6FFE6); 
                 padding: 1.5rem; border-radius: 15px; 
@@ -8905,830 +9229,1252 @@ def render_settings():
             ⚙️ Configurações do Sistema
         </h2>
         <p style='color: #228B22; margin: 0.5rem 0 0 0; font-size: 1.1rem;'>
-            Gerencie configurações, preferências e conexões
+            Gerencie configurações, preferências e conexões de forma permanente
         </p>
     </div>
     """, unsafe_allow_html=True)
     
+    # Carregar configurações salvas
+    if 'user_settings' not in st.session_state:
+        st.session_state.user_settings = load_user_settings()
+    
     # Abas de configurações
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["🔧 Sistema", "👤 Usuário", "🗄️ Banco de Dados", "📊 Monitoramento", "🔐 Segurança"])
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        "🔧 Sistema", 
+        "👤 Usuário", 
+        "🗄️ Banco de Dados", 
+        "📊 Monitoramento", 
+        "🔐 Segurança", 
+        "💾 Backup/Restore"
+    ])
     
     with tab1:
-        st.subheader("🔧 Configurações do Sistema")
+        render_system_settings_tab()
+    
+    with tab2:
+        render_user_settings_tab()
+    
+    with tab3:
+        render_database_settings_tab()
+    
+    with tab4:
+        render_monitoring_settings_tab()
+    
+    with tab5:
+        render_security_settings_tab()
+    
+    with tab6:
+        render_backup_restore_tab()
+
+def render_database_settings_tab():
+    """Renderiza aba de configurações do banco de dados"""
+    st.subheader("🗄️ Configurações do Banco de Dados")
+    
+    current_settings = st.session_state.user_settings.get('database', {})
+    
+    # Status atual da conexão com mais detalhes
+    st.markdown("#### 🔗 Status Atual da Conexão")
+    
+    status_col1, status_col2, status_col3, status_col4 = st.columns(4)
+    
+    with status_col1:
+        connection_status = "🟢 Conectado" if db_manager.connected else "🔴 Desconectado"
+        st.markdown(f"**Status:** {connection_status}")
+    
+    with status_col2:
+        db_type = db_manager.connection_info.get('type', 'N/A') if hasattr(db_manager, 'connection_info') else 'N/A'
+        st.markdown(f"**Tipo:** {db_type}")
+    
+    with status_col3:
+        url_display = CONFIG.get('supabase_url', 'N/A')
+        if url_display and len(url_display) > 30:
+            url_display = url_display[:30] + "..."
+        st.markdown(f"**URL:** {url_display}")
+    
+    with status_col4:
+        table_count = len(db_manager.get_tables()) if hasattr(db_manager, 'get_tables') and db_manager.connected else 0
+        st.markdown(f"**Tabelas:** {table_count}")
+    
+    st.markdown("---")
+    
+    # Configurações de conexão - FUNCIONAIS
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("#### 🔧 Configurações de Conexão")
         
-        col1, col2 = st.columns(2)
+        with st.form("database_connection_form"):
+            # Tipo de banco
+            db_type_new = st.selectbox(
+                "Tipo de banco:", 
+                ["Supabase", "PostgreSQL", "MySQL", "SQLite"],
+                index=["Supabase", "PostgreSQL", "MySQL", "SQLite"].index(current_settings.get('db_type', 'Supabase')),
+                help="Tipo de banco de dados"
+            )
+            
+            # Configurações específicas do Supabase
+            if db_type_new == "Supabase":
+                st.markdown("**🔗 Configurações do Supabase:**")
+                
+                supabase_url = st.text_input(
+                    "Supabase URL *:", 
+                    value=current_settings.get('supabase_url', ''),
+                    placeholder="https://seu-projeto.supabase.co",
+                    help="URL do seu projeto Supabase"
+                )
+                
+                supabase_anon_key = st.text_input(
+                    "Supabase Anon Key *:", 
+                    type="password",
+                    value=current_settings.get('supabase_anon_key', ''),
+                    placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                    help="Chave anônima (pública) do Supabase"
+                )
+                
+                supabase_service_key = st.text_input(
+                    "Supabase Service Key *:", 
+                    type="password",
+                    value=current_settings.get('supabase_service_key', ''),
+                    placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ5...",
+                    help="Chave de serviço (privada) do Supabase"
+                )
+                
+                # Validação em tempo real
+                if supabase_url or supabase_anon_key or supabase_service_key:
+                    temp_settings = {
+                        'supabase_url': supabase_url,
+                        'supabase_anon_key': supabase_anon_key,
+                        'supabase_service_key': supabase_service_key
+                    }
+                    
+                    validation = validate_database_connection(temp_settings)
+                    
+                    if validation['errors']:
+                        st.error("❌ **Erros de validação:**")
+                        for error in validation['errors']:
+                            st.write(f"• {error}")
+                    
+                    if validation['warnings']:
+                        st.warning("⚠️ **Avisos:**")
+                        for warning in validation['warnings']:
+                            st.write(f"• {warning}")
+                    
+                    if not validation['errors'] and supabase_url and supabase_anon_key:
+                        st.success("✅ **Configuração válida**")
+            
+            elif db_type_new == "PostgreSQL":
+                st.markdown("**🐘 Configurações do PostgreSQL:**")
+                
+                pg_host = st.text_input("Host:", value=current_settings.get('pg_host', 'localhost'))
+                pg_port = st.number_input("Porta:", value=current_settings.get('pg_port', 5432), min_value=1, max_value=65535)
+                pg_database = st.text_input("Database:", value=current_settings.get('pg_database', 'petcareai'))
+                pg_username = st.text_input("Usuário:", value=current_settings.get('pg_username', 'postgres'))
+                pg_password = st.text_input("Senha:", type="password", value=current_settings.get('pg_password', ''))
+            
+            # SSL e segurança
+            st.markdown("**🔐 Segurança:**")
+            
+            ssl_enabled = st.checkbox(
+                "SSL habilitado", 
+                value=current_settings.get('ssl_enabled', True),
+                help="Usar conexão SSL/TLS"
+            )
+            
+            ssl_verify = st.checkbox(
+                "Verificar certificado SSL", 
+                value=current_settings.get('ssl_verify', True),
+                help="Verificar validade do certificado SSL",
+                disabled=not ssl_enabled
+            )
+            
+            encrypt_connection = st.checkbox(
+                "Criptografar conexão", 
+                value=current_settings.get('encrypt_connection', True),
+                help="Criptografar dados em trânsito"
+            )
+            
+            # Botões de ação
+            action_col1, action_col2, action_col3 = st.columns(3)
+            
+            with action_col1:
+                test_connection = st.form_submit_button("🔍 Testar", use_container_width=True)
+            
+            with action_col2:
+                save_connection = st.form_submit_button("💾 Salvar", type="primary", use_container_width=True)
+            
+            with action_col3:
+                apply_connection = st.form_submit_button("⚡ Aplicar", use_container_width=True)
+            
+            # Processar ações
+            if test_connection and db_type_new == "Supabase":
+                if supabase_url and supabase_anon_key:
+                    with st.spinner("🔍 Testando conexão..."):
+                        test_settings = {
+                            'supabase_url': supabase_url,
+                            'supabase_anon_key': supabase_anon_key,
+                            'supabase_service_key': supabase_service_key
+                        }
+                        
+                        result = test_database_connection_real(test_settings)
+                    
+                    if result['success']:
+                        st.success(f"✅ {result['message']}")
+                        
+                        # Mostrar detalhes da conexão
+                        with st.expander("📊 Detalhes da Conexão", expanded=False):
+                            details_data = {
+                                "Latência": result.get('latency', 'N/A'),
+                                "Servidor": result.get('server_version', 'N/A'),
+                                "URL": result['details']['url'],
+                                "Autenticado": result['details']['authenticated']
+                            }
+                            st.json(details_data)
+                    else:
+                        st.error(f"❌ {result['message']}")
+                        if 'error' in result:
+                            st.code(result['error'], language='text')
+                else:
+                    st.warning("⚠️ Preencha URL e chave anônima para testar")
+            
+            if save_connection:
+                # Salvar configurações
+                new_db_settings = {
+                    'db_type': db_type_new,
+                    'supabase_url': supabase_url if db_type_new == "Supabase" else current_settings.get('supabase_url', ''),
+                    'supabase_anon_key': supabase_anon_key if db_type_new == "Supabase" else current_settings.get('supabase_anon_key', ''),
+                    'supabase_service_key': supabase_service_key if db_type_new == "Supabase" else current_settings.get('supabase_service_key', ''),
+                    'ssl_enabled': ssl_enabled,
+                    'ssl_verify': ssl_verify,
+                    'encrypt_connection': encrypt_connection
+                }
+                
+                # Atualizar configurações
+                st.session_state.user_settings['database'].update(new_db_settings)
+                
+                # Salvar no arquivo
+                if save_user_settings(st.session_state.user_settings):
+                    st.success("✅ Configurações salvas com sucesso!")
+                    log_activity("Configurações de BD salvas")
+                else:
+                    st.error("❌ Erro ao salvar configurações")
+            
+            if apply_connection:
+                # Aplicar configurações imediatamente
+                new_db_settings = {
+                    'db_type': db_type_new,
+                    'supabase_url': supabase_url if db_type_new == "Supabase" else current_settings.get('supabase_url', ''),
+                    'supabase_anon_key': supabase_anon_key if db_type_new == "Supabase" else current_settings.get('supabase_anon_key', ''),
+                    'supabase_service_key': supabase_service_key if db_type_new == "Supabase" else current_settings.get('supabase_service_key', ''),
+                    'ssl_enabled': ssl_enabled,
+                    'ssl_verify': ssl_verify,
+                    'encrypt_connection': encrypt_connection
+                }
+                
+                with st.spinner("⚡ Aplicando configurações..."):
+                    result = apply_database_settings(new_db_settings)
+                
+                if result['success']:
+                    st.success(f"✅ {result['message']}")
+                    
+                    # Salvar automaticamente se aplicação foi bem-sucedida
+                    st.session_state.user_settings['database'].update(new_db_settings)
+                    save_user_settings(st.session_state.user_settings)
+                    
+                    log_activity("Configurações de BD aplicadas")
+                    
+                    # Mostrar mudança de status
+                    if result['previous_status'] != result['current_status']:
+                        status_change = "Conectado" if result['current_status'] else "Desconectado"
+                        st.info(f"🔄 Status alterado para: {status_change}")
+                    
+                    # Forçar atualização da interface
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.error(f"❌ {result['message']}")
+    
+    with col2:
+        st.markdown("#### ⚡ Performance e Pool de Conexões")
         
-        with col1:
-            st.markdown("#### 🎨 Interface")
-            
-            # Configurações de tema
-            theme_preset = st.selectbox("Tema:", 
-                                       ["PetCare Verde", "Escuro", "Claro", "Personalizado"],
-                                       key="system_theme_preset")
-            
-            if theme_preset == "Personalizado":
-                primary_color = st.color_picker("Cor Primária:", 
-                                               CONFIG['theme']['primary_color'],
-                                               key="system_primary_color")
-                secondary_color = st.color_picker("Cor Secundária:", 
-                                                CONFIG['theme']['secondary_color'],
-                                                key="system_secondary_color")
-            
-            # Configurações de layout
-            sidebar_default = st.checkbox("Sidebar aberta por padrão", 
-                                        value=True,
-                                        key="system_sidebar_default")
-            compact_mode = st.checkbox("Modo compacto", 
-                                     value=False,
-                                     key="system_compact_mode")
-            show_tooltips = st.checkbox("Mostrar dicas de ferramentas", 
-                                      value=True,
-                                      key="system_show_tooltips")
-            
-            st.markdown("#### 📱 Responsividade")
-            
-            mobile_optimized = st.checkbox("Otimização mobile", 
-                                         value=True,
-                                         key="system_mobile_optimized")
-            auto_scale = st.checkbox("Escala automática", 
-                                   value=True,
-                                   key="system_auto_scale")
+        # Configurações de performance
+        connection_pool_size = st.slider(
+            "Tamanho do pool:", 
+            5, 50, 
+            current_settings.get('connection_pool_size', 20),
+            help="Número de conexões mantidas no pool"
+        )
         
-        with col2:
-            st.markdown("#### ⚡ Performance")
-            
-            # Configurações de cache
-            enable_cache = st.checkbox("Ativar cache", 
-                                     value=True,
-                                     key="system_enable_cache")
-            cache_duration = st.slider("Duração do cache (minutos):", 
-                                     1, 60, 15,
-                                     key="system_cache_duration")
-            auto_refresh_interval = st.slider("Auto-refresh (segundos):", 
-                                            10, 300, 30,
-                                            key="system_auto_refresh_interval")
-            
-            # Configurações de dados
-            max_records_display = st.number_input("Máx. registros por página:", 
-                                                10, 1000, 50,
-                                                key="system_max_records_display")
-            query_timeout = st.number_input("Timeout de query (segundos):", 
-                                          5, 300, 30,
-                                          key="system_query_timeout")
-            
-            st.markdown("#### 🔔 Notificações")
-            
-            enable_notifications = st.checkbox("Ativar notificações", 
-                                             value=True,
-                                             key="system_enable_notifications")
-            sound_notifications = st.checkbox("Notificações sonoras", 
-                                            value=False,
-                                            key="system_sound_notifications")
-            browser_notifications = st.checkbox("Notificações do navegador", 
-                                               value=False,
-                                               key="system_browser_notifications")
+        max_connections = st.slider(
+            "Máx. conexões simultâneas:", 
+            10, 200, 
+            current_settings.get('max_connections', 100),
+            help="Máximo de conexões simultâneas permitidas"
+        )
         
-        # Configurações avançadas
+        connection_timeout = st.slider(
+            "Timeout de conexão (seg):", 
+            5, 60, 
+            current_settings.get('connection_timeout', 30),
+            help="Tempo limite para estabelecer conexão"
+        )
+        
+        query_timeout_db = st.slider(
+            "Timeout de query (seg):", 
+            5, 300, 
+            current_settings.get('query_timeout', 60),
+            help="Tempo limite para execução de queries"
+        )
+        
+        st.markdown("#### 📊 Logs e Monitoramento")
+        
+        log_slow_queries = st.checkbox(
+            "Log de queries lentas", 
+            value=current_settings.get('log_slow_queries', True),
+            help="Registrar queries que demoram muito"
+        )
+        
+        if log_slow_queries:
+            slow_query_threshold = st.slider(
+                "Threshold query lenta (seg):", 
+                1, 30, 
+                current_settings.get('slow_query_threshold', 5),
+                help="Tempo mínimo para considerar query lenta"
+            )
+        else:
+            slow_query_threshold = current_settings.get('slow_query_threshold', 5)
+        
+        log_connections = st.checkbox(
+            "Log de conexões", 
+            value=current_settings.get('log_connections', True),
+            help="Registrar tentativas de conexão"
+        )
+        
+        monitor_locks = st.checkbox(
+            "Monitorar locks", 
+            value=current_settings.get('monitor_locks', True),
+            help="Monitorar bloqueios no banco"
+        )
+        
         st.markdown("#### 🛠️ Configurações Avançadas")
         
-        col1, col2, col3 = st.columns(3)
+        auto_reconnect = st.checkbox(
+            "Reconexão automática", 
+            value=current_settings.get('auto_reconnect', True),
+            help="Tentar reconectar automaticamente se a conexão cair"
+        )
         
-        with col1:
-            debug_mode = st.checkbox("Modo debug", 
-                                   value=CONFIG['debug_mode'],
-                                   key="system_debug_mode")
-            verbose_logging = st.checkbox("Log detalhado", 
-                                        value=False,
-                                        key="system_verbose_logging")
+        connection_retry_attempts = st.number_input(
+            "Tentativas de reconexão:", 
+            1, 10, 
+            current_settings.get('connection_retry_attempts', 3),
+            help="Número de tentativas de reconexão"
+        )
         
-        with col2:
-            auto_backup_settings = st.checkbox("Backup automático configurações", 
-                                             value=True,
-                                             key="system_auto_backup_settings")
-            export_logs = st.checkbox("Exportar logs automaticamente", 
-                                    value=False,
-                                    key="system_export_logs")
+        backup_connection = st.checkbox(
+            "Conexão de backup", 
+            value=current_settings.get('backup_connection', False),
+            help="Manter conexão de backup ativa"
+        )
         
-        with col3:
-            maintenance_mode = st.checkbox("Modo manutenção", 
-                                         value=False,
-                                         key="system_maintenance_mode")
-            read_only_mode = st.checkbox("Modo somente leitura", 
-                                       value=False,
-                                       key="system_read_only_mode")
+        read_replica = st.checkbox(
+            "Usar réplica de leitura", 
+            value=current_settings.get('read_replica', False),
+            help="Usar réplica apenas para leitura quando disponível"
+        )
         
-        if st.button("💾 Salvar Configurações do Sistema", 
-                    type="primary",
-                    key="save_system_settings"):
-            # Simular salvamento das configurações
-            updated_config = {
-                'theme_preset': theme_preset,
-                'sidebar_default': sidebar_default,
-                'compact_mode': compact_mode,
-                'cache_duration': cache_duration,
-                'auto_refresh_interval': auto_refresh_interval,
-                'max_records_display': max_records_display,
-                'debug_mode': debug_mode
+        load_balancing = st.checkbox(
+            "Balanceamento de carga", 
+            value=current_settings.get('load_balancing', False),
+            help="Distribuir carga entre múltiplas conexões"
+        )
+        
+        failover_enabled = st.checkbox(
+            "Failover automático", 
+            value=current_settings.get('failover_enabled', False),
+            help="Trocar automaticamente para backup em caso de falha"
+        )
+        
+        # Salvar configurações de performance
+        if st.button("💾 Salvar Configurações de Performance", 
+                    type="primary", 
+                    use_container_width=True):
+            
+            performance_settings = {
+                'connection_pool_size': connection_pool_size,
+                'max_connections': max_connections,
+                'connection_timeout': connection_timeout,
+                'query_timeout': query_timeout_db,
+                'log_slow_queries': log_slow_queries,
+                'slow_query_threshold': slow_query_threshold,
+                'log_connections': log_connections,
+                'monitor_locks': monitor_locks,
+                'auto_reconnect': auto_reconnect,
+                'connection_retry_attempts': connection_retry_attempts,
+                'backup_connection': backup_connection,
+                'read_replica': read_replica,
+                'load_balancing': load_balancing,
+                'failover_enabled': failover_enabled
             }
             
+            # Atualizar configurações
+            st.session_state.user_settings['database'].update(performance_settings)
+            
+            # Salvar no arquivo
+            if save_user_settings(st.session_state.user_settings):
+                st.success("✅ Configurações de performance salvas!")
+                log_activity("Configurações de performance salvas")
+            else:
+                st.error("❌ Erro ao salvar configurações")
+    
+    # Informações do servidor
+    st.markdown("---")
+    st.markdown("#### 📊 Informações do Servidor")
+    
+    if db_manager.connected:
+        try:
+            # Buscar informações reais do banco
+            server_info = {
+                "Status": "🟢 Conectado",
+                "Tipo": db_manager.connection_info.get('type', 'N/A'),
+                "URL": CONFIG.get('supabase_url', 'N/A'),
+                "Tabelas": len(db_manager.get_tables()),
+                "Última Verificação": datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+            }
+            
+            # Tentar obter métricas reais
+            try:
+                metrics = db_manager.get_database_metrics()
+                server_info.update({
+                    "Tamanho Total": metrics.get('total_size', 'N/A'),
+                    "Conexões Ativas": metrics.get('connection_count', 'N/A'),
+                    "CPU": f"{metrics.get('cpu_usage', 'N/A')}%",
+                    "Memória": f"{metrics.get('memory_usage', 'N/A')}%"
+                })
+            except:
+                pass
+            
+            st.json(server_info)
+            
+        except Exception as e:
+            st.error(f"❌ Erro ao obter informações do servidor: {e}")
+    else:
+        st.info("ℹ️ Conecte-se ao banco para ver informações do servidor")
+
+def render_backup_restore_tab():
+    """Renderiza aba de backup e restore de configurações"""
+    st.subheader("💾 Backup e Restore de Configurações")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("#### 📤 Exportar Configurações")
+        
+        # Opções de exportação
+        export_sections = st.multiselect(
+            "Seções para exportar:",
+            ["Sistema", "Usuário", "Banco de Dados", "Monitoramento", "Segurança"],
+            default=["Sistema", "Usuário", "Banco de Dados", "Monitoramento", "Segurança"],
+            help="Escolha quais seções incluir no backup"
+        )
+        
+        include_sensitive = st.checkbox(
+            "Incluir dados sensíveis (senhas, chaves)",
+            value=False,
+            help="⚠️ Cuidado: dados sensíveis serão incluídos no arquivo"
+        )
+        
+        if st.button("📥 Exportar Configurações", type="primary", use_container_width=True):
+            # Preparar dados para exportação
+            export_data = {}
+            
+            section_map = {
+                "Sistema": "system",
+                "Usuário": "user", 
+                "Banco de Dados": "database",
+                "Monitoramento": "monitoring",
+                "Segurança": "security"
+            }
+            
+            for section in export_sections:
+                section_key = section_map[section]
+                if section_key in st.session_state.user_settings:
+                    section_data = st.session_state.user_settings[section_key].copy()
+                    
+                    # Remover dados sensíveis se solicitado
+                    if not include_sensitive and section_key == "database":
+                        sensitive_keys = ['supabase_anon_key', 'supabase_service_key', 'pg_password']
+                        for key in sensitive_keys:
+                            if key in section_data:
+                                section_data[key] = "***REMOVIDO***"
+                    
+                    export_data[section_key] = section_data
+            
+            # Gerar arquivo
+            result = export_settings_to_file(export_data)
+            
+            if result['success']:
+                st.success("✅ Configurações exportadas com sucesso!")
+                
+                st.download_button(
+                    "💾 Download Backup",
+                    result['data'],
+                    result['filename'],
+                    "application/json",
+                    use_container_width=True
+                )
+                
+                log_activity("Configurações exportadas", result['filename'])
+            else:
+                st.error(f"❌ Erro na exportação: {result['error']}")
+    
+    with col2:
+        st.markdown("#### 📥 Importar Configurações")
+        
+        uploaded_file = st.file_uploader(
+            "Escolha arquivo de backup:",
+            type=['json'],
+            help="Selecione um arquivo de backup das configurações"
+        )
+        
+        if uploaded_file is not None:
+            try:
+                # Ler arquivo
+                file_content = uploaded_file.read().decode('utf-8')
+                import_data = json.loads(file_content)
+                
+                # Validar arquivo
+                result = import_settings_from_data(import_data)
+                
+                if result['success']:
+                    st.success("✅ Arquivo válido!")
+                    
+                    # Mostrar informações do backup
+                    st.info(f"📅 **Exportado em:** {result['exported_at']}")
+                    st.info(f"🔖 **Versão do app:** {result['app_version']}")
+                    
+                    # Preview das configurações
+                    with st.expander("👁️ Preview das Configurações", expanded=False):
+                        for section, data in result['settings'].items():
+                            st.markdown(f"**{section.title()}:** {len(data)} configurações")
+                    
+                    # Opções de importação
+                    overwrite_existing = st.checkbox(
+                        "Sobrescrever configurações existentes",
+                        value=False,
+                        help="Se desmarcado, apenas configurações inexistentes serão importadas"
+                    )
+                    
+                    backup_before_import = st.checkbox(
+                        "Criar backup antes de importar",
+                        value=True,
+                        help="Recomendado: criar backup das configurações atuais"
+                    )
+                    
+                    if st.button("⚡ Importar Configurações", type="primary", use_container_width=True):
+                        try:
+                            # Backup antes de importar
+                            if backup_before_import:
+                                backup_result = export_settings_to_file(st.session_state.user_settings)
+                                if backup_result['success']:
+                                    backup_filename = f"backup_before_import_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                                    with open(backup_filename, 'w', encoding='utf-8') as f:
+                                        f.write(backup_result['data'])
+                                    st.info(f"💾 Backup criado: {backup_filename}")
+                            
+                            # Importar configurações
+                            if overwrite_existing:
+                                # Sobrescrever completamente
+                                st.session_state.user_settings.update(result['settings'])
+                            else:
+                                # Merge (manter existentes)
+                                for section, section_data in result['settings'].items():
+                                    if section in st.session_state.user_settings:
+                                        for key, value in section_data.items():
+                                            if key not in st.session_state.user_settings[section]:
+                                                st.session_state.user_settings[section][key] = value
+                                    else:
+                                        st.session_state.user_settings[section] = section_data
+                            
+                            # Salvar configurações importadas
+                            if save_user_settings(st.session_state.user_settings):
+                                st.success("✅ Configurações importadas e salvas com sucesso!")
+                                log_activity("Configurações importadas", uploaded_file.name)
+                                
+                                # Sugerir reinicialização
+                                st.info("🔄 Reinicie a aplicação para aplicar todas as configurações")
+                            else:
+                                st.error("❌ Erro ao salvar configurações importadas")
+                        
+                        except Exception as e:
+                            st.error(f"❌ Erro durante importação: {e}")
+                
+                else:
+                    st.error(f"❌ {result['error']}")
+            
+            except json.JSONDecodeError:
+                st.error("❌ Arquivo JSON inválido")
+            except Exception as e:
+                st.error(f"❌ Erro ao processar arquivo: {e}")
+    
+    # Backup automático
+    st.markdown("---")
+    st.markdown("#### 🔄 Backup Automático")
+    
+    auto_backup_col1, auto_backup_col2 = st.columns(2)
+    
+    with auto_backup_col1:
+        auto_backup_enabled = st.checkbox(
+            "Backup automático habilitado",
+            value=st.session_state.user_settings.get('system', {}).get('auto_backup_settings', True),
+            help="Criar backup automático das configurações"
+        )
+        
+        if auto_backup_enabled:
+            backup_frequency = st.selectbox(
+                "Frequência:",
+                ["Diário", "Semanal", "Mensal"],
+                index=0,
+                help="Frequência dos backups automáticos"
+            )
+            
+            backup_retention = st.number_input(
+                "Manter backups (dias):",
+                min_value=7,
+                max_value=365,
+                value=30,
+                help="Período de retenção dos backups"
+            )
+    
+    with auto_backup_col2:
+        st.markdown("**📂 Backups Recentes:**")
+        
+        # Listar arquivos de backup existentes
+        try:
+            backup_files = list(Path(".").glob("*backup*.json"))
+            backup_files.extend(list(Path(".").glob("user_settings_backup*.json")))
+            
+            if backup_files:
+                for backup_file in sorted(backup_files, reverse=True)[:5]:
+                    file_size = backup_file.stat().st_size
+                    file_date = datetime.fromtimestamp(backup_file.stat().st_mtime)
+                    
+                    st.markdown(f"• `{backup_file.name}` ({file_size} bytes) - {file_date.strftime('%d/%m %H:%M')}")
+            else:
+                st.info("Nenhum backup encontrado")
+        
+        except Exception as e:
+            st.warning(f"Erro ao listar backups: {e}")
+    
+    # Salvar configurações de backup
+    if st.button("💾 Salvar Configurações de Backup", use_container_width=True):
+        backup_settings = {
+            'auto_backup_enabled': auto_backup_enabled,
+            'backup_frequency': backup_frequency if auto_backup_enabled else None,
+            'backup_retention': backup_retention if auto_backup_enabled else 30
+        }
+        
+        st.session_state.user_settings['system'].update(backup_settings)
+        
+        if save_user_settings(st.session_state.user_settings):
+            st.success("✅ Configurações de backup salvas!")
+        else:
+            st.error("❌ Erro ao salvar configurações")
+
+def render_system_settings_tab():
+    """Renderiza aba de configurações do sistema"""
+    st.subheader("🔧 Configurações do Sistema")
+    
+    current_settings = st.session_state.user_settings.get('system', {})
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("#### 🎨 Interface")
+        
+        # Configurações de tema
+        theme_preset = st.selectbox(
+            "Tema:", 
+            ["PetCare Verde", "Escuro", "Claro", "Personalizado"],
+            index=["PetCare Verde", "Escuro", "Claro", "Personalizado"].index(current_settings.get('theme_preset', 'PetCare Verde'))
+        )
+        
+        # Configurações de layout
+        sidebar_default = st.checkbox(
+            "Sidebar aberta por padrão", 
+            value=current_settings.get('sidebar_default', True)
+        )
+        compact_mode = st.checkbox(
+            "Modo compacto", 
+            value=current_settings.get('compact_mode', False)
+        )
+        show_tooltips = st.checkbox(
+            "Mostrar dicas de ferramentas", 
+            value=current_settings.get('show_tooltips', True)
+        )
+        
+        st.markdown("#### 📱 Responsividade")
+        
+        mobile_optimized = st.checkbox(
+            "Otimização mobile", 
+            value=current_settings.get('mobile_optimized', True)
+        )
+        auto_scale = st.checkbox(
+            "Escala automática", 
+            value=current_settings.get('auto_scale', True)
+        )
+    
+    with col2:
+        st.markdown("#### ⚡ Performance")
+        
+        # Configurações de cache
+        enable_cache = st.checkbox(
+            "Ativar cache", 
+            value=current_settings.get('enable_cache', True)
+        )
+        cache_duration = st.slider(
+            "Duração do cache (minutos):", 
+            1, 60, 
+            current_settings.get('cache_duration', 15)
+        )
+        auto_refresh_interval = st.slider(
+            "Auto-refresh (segundos):", 
+            10, 300, 
+            current_settings.get('auto_refresh_interval', 30)
+        )
+        
+        # Configurações de dados
+        max_records_display = st.number_input(
+            "Máx. registros por página:", 
+            10, 1000, 
+            current_settings.get('max_records_display', 50)
+        )
+        query_timeout = st.number_input(
+            "Timeout de query (segundos):", 
+            5, 300, 
+            current_settings.get('query_timeout', 30)
+        )
+        
+        st.markdown("#### 🔔 Notificações")
+        
+        enable_notifications = st.checkbox(
+            "Ativar notificações", 
+            value=current_settings.get('enable_notifications', True)
+        )
+        sound_notifications = st.checkbox(
+            "Notificações sonoras", 
+            value=current_settings.get('sound_notifications', False)
+        )
+        browser_notifications = st.checkbox(
+            "Notificações do navegador", 
+            value=current_settings.get('browser_notifications', False)
+        )
+    
+    # Configurações avançadas
+    st.markdown("#### 🛠️ Configurações Avançadas")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        debug_mode = st.checkbox(
+            "Modo debug", 
+            value=current_settings.get('debug_mode', CONFIG['debug_mode'])
+        )
+        verbose_logging = st.checkbox(
+            "Log detalhado", 
+            value=current_settings.get('verbose_logging', False)
+        )
+    
+    with col2:
+        auto_backup_settings = st.checkbox(
+            "Backup automático configurações", 
+            value=current_settings.get('auto_backup_settings', True)
+        )
+        export_logs = st.checkbox(
+            "Exportar logs automaticamente", 
+            value=current_settings.get('export_logs', False)
+        )
+    
+    with col3:
+        maintenance_mode = st.checkbox(
+            "Modo manutenção", 
+            value=current_settings.get('maintenance_mode', False)
+        )
+        read_only_mode = st.checkbox(
+            "Modo somente leitura", 
+            value=current_settings.get('read_only_mode', False)
+        )
+    
+    if st.button("💾 Salvar Configurações do Sistema", type="primary"):
+        updated_config = {
+            'theme_preset': theme_preset,
+            'sidebar_default': sidebar_default,
+            'compact_mode': compact_mode,
+            'show_tooltips': show_tooltips,
+            'mobile_optimized': mobile_optimized,
+            'auto_scale': auto_scale,
+            'enable_cache': enable_cache,
+            'cache_duration': cache_duration,
+            'auto_refresh_interval': auto_refresh_interval,
+            'max_records_display': max_records_display,
+            'query_timeout': query_timeout,
+            'enable_notifications': enable_notifications,
+            'sound_notifications': sound_notifications,
+            'browser_notifications': browser_notifications,
+            'debug_mode': debug_mode,
+            'verbose_logging': verbose_logging,
+            'auto_backup_settings': auto_backup_settings,
+            'export_logs': export_logs,
+            'maintenance_mode': maintenance_mode,
+            'read_only_mode': read_only_mode
+        }
+        
+        st.session_state.user_settings['system'].update(updated_config)
+        
+        if save_user_settings(st.session_state.user_settings):
             st.success("✅ Configurações do sistema salvas com sucesso!")
             log_activity("Configurações do sistema alteradas")
             
-            # Mostrar configurações salvas
-            with st.expander("📋 Configurações Aplicadas"):
-                st.json(updated_config)
+            # Aplicar configurações imediatamente onde possível
+            if debug_mode != CONFIG.get('debug_mode'):
+                CONFIG['debug_mode'] = debug_mode
+                st.info("🔄 Modo debug alterado - algumas mudanças requerem reinicialização")
+        else:
+            st.error("❌ Erro ao salvar configurações")
+
+def render_user_settings_tab():
+    """Renderiza aba de configurações do usuário"""
+    st.subheader("👤 Configurações do Usuário")
     
-    with tab2:
-        st.subheader("👤 Configurações do Usuário")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("#### 📝 Perfil")
-            
-            # Informações do perfil
-            username = st.text_input("Nome de usuário:", 
-                                    value=CONFIG['admin_username'], 
-                                    disabled=True,
-                                    key="user_username")
-            email = st.text_input("Email:", 
-                                 value=CONFIG['admin_email'],
-                                 key="user_email")
-            full_name = st.text_input("Nome completo:", 
-                                    value="Administrador PetCare",
-                                    key="user_full_name")
-            role = st.selectbox("Função:", 
-                              ["Administrador", "DBA", "Desenvolvedor", "Analista"],
-                              key="user_role")
-            
-            st.markdown("#### 🌍 Localização")
-            
-            language = st.selectbox("Idioma:", 
-                                   ["Português (BR)", "English", "Español"],
-                                   key="user_language")
-            timezone = st.selectbox("Fuso horário:", [
-                "America/Sao_Paulo", "UTC", "America/New_York", "Europe/London"
-            ], key="user_timezone")
-            date_format = st.selectbox("Formato de data:", 
-                                     ["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"],
-                                     key="user_date_format")
-        
-        with col2:
-            st.markdown("#### 🎯 Preferências")
-            
-            # Preferências de interface
-            default_page = st.selectbox("Página inicial:", [
-                "Dashboard", "Tabelas", "Editor SQL", "Operações DBA", "Projetos"
-            ], key="user_default_page")
-            
-            items_per_page = st.slider("Itens por página:", 
-                                     10, 100, 25,
-                                     key="user_items_per_page")
-            auto_save_queries = st.checkbox("Auto-salvar consultas", 
-                                          value=True,
-                                          key="user_auto_save_queries")
-            
-            st.markdown("#### 📊 Dashboard")
-            
-            dashboard_auto_refresh = st.slider("Auto-refresh dashboard (seg):", 
-                                              10, 300, 60,
-                                              key="user_dashboard_auto_refresh")
-            show_advanced_metrics = st.checkbox("Mostrar métricas avançadas", 
-                                              value=True,
-                                              key="user_show_advanced_metrics")
-            chart_animations = st.checkbox("Animações em gráficos", 
-                                         value=True,
-                                         key="user_chart_animations")
-            
-            st.markdown("#### 🔔 Alertas Pessoais")
-            
-            email_alerts_user = st.checkbox("Alertas por email", 
-                                           value=False,
-                                           key="user_email_alerts")
-            if email_alerts_user:
-                alert_frequency = st.selectbox("Frequência:", 
-                                              ["Imediato", "Diário", "Semanal"],
-                                              key="user_alert_frequency")
-            
-            critical_alerts_only = st.checkbox("Apenas alertas críticos", 
-                                             value=True,
-                                             key="user_critical_alerts")
-        
-        # Alteração de senha
-        st.markdown("#### 🔑 Segurança da Conta")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            current_password = st.text_input("Senha atual:", 
-                                           type="password",
-                                           key="user_current_password")
-            new_password = st.text_input("Nova senha:", 
-                                       type="password",
-                                       key="user_new_password")
-            confirm_password = st.text_input("Confirmar nova senha:", 
-                                           type="password",
-                                           key="user_confirm_password")
-            
-            if st.button("🔄 Alterar Senha", key="user_change_password"):
-                if new_password and new_password == confirm_password:
-                    if len(new_password) >= 8:
-                        st.success("✅ Senha alterada com sucesso!")
-                        log_activity("Senha alterada")
-                    else:
-                        st.error("❌ Senha deve ter pelo menos 8 caracteres!")
-                else:
-                    st.error("❌ Senhas não coincidem!")
-        
-        with col2:
-            st.markdown("#### 🔐 Autenticação")
-            
-            enable_2fa = st.checkbox("Autenticação de dois fatores", 
-                                   value=False,
-                                   key="user_enable_2fa")
-            session_timeout = st.slider("Timeout da sessão (minutos):", 
-                                       15, 480, 60,
-                                       key="user_session_timeout")
-            remember_login = st.checkbox("Lembrar login", 
-                                       value=False,
-                                       key="user_remember_login")
-            
-            if enable_2fa:
-                st.info("📱 Configure seu app autenticador (Google Authenticator, Authy, etc.)")
-        
-        if st.button("💾 Salvar Perfil do Usuário", 
-                    type="primary",
-                    key="save_user_profile"):
-            user_settings = {
-                'email': email,
-                'full_name': full_name,
-                'role': role,
-                'language': language,
-                'timezone': timezone,
-                'default_page': default_page,
-                'dashboard_refresh': dashboard_auto_refresh
-            }
-            
-            st.success("✅ Perfil do usuário salvo com sucesso!")
-            log_activity("Perfil do usuário alterado")
-            
-            with st.expander("📋 Perfil Atualizado"):
-                st.json(user_settings)
+    current_settings = st.session_state.user_settings.get('user', {})
     
-    with tab3:
-        st.subheader("🗄️ Configurações do Banco de Dados")
-        
-        # Status atual da conexão
-        st.markdown("#### 🔗 Status da Conexão")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            connection_status = "🟢 Conectado" if db_manager.connected else "🔴 Desconectado"
-            st.markdown(f"**Status:** {connection_status}")
-        
-        with col2:
-            st.markdown(f"**Tipo:** {db_manager.connection_info.get('type', 'N/A')}")
-        
-        with col3:
-            st.markdown(f"**URL:** {db_manager.connection_info.get('url', 'N/A')}")
-        
-        st.markdown("---")
-        
-        # Configurações de conexão
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("#### 🔧 Conexão Principal")
-            
-            db_type = st.selectbox("Tipo de banco:", 
-                                 ["Supabase", "PostgreSQL", "MySQL", "SQLite"],
-                                 key="db_type")
-            
-            if db_type == "Supabase":
-                supabase_url = st.text_input("Supabase URL:", 
-                                            value=CONFIG.get('supabase_url', ''),
-                                            key="db_supabase_url")
-                supabase_key = st.text_input("Supabase Key:", 
-                                           type="password", 
-                                           value=CONFIG.get('supabase_anon_key', ''),
-                                           key="db_supabase_key")
-            
-            elif db_type == "PostgreSQL":
-                pg_host = st.text_input("Host:", 
-                                       value="localhost",
-                                       key="db_pg_host")
-                pg_port = st.number_input("Porta:", 
-                                        value=5432,
-                                        key="db_pg_port")
-                pg_database = st.text_input("Database:", 
-                                          value="petcareai",
-                                          key="db_pg_database")
-                pg_username = st.text_input("Usuário:", 
-                                          value="postgres",
-                                          key="db_pg_username")
-                pg_password = st.text_input("Senha:", 
-                                          type="password",
-                                          key="db_pg_password")
-            
-            # SSL e segurança
-            st.markdown("#### 🔐 Segurança")
-            
-            ssl_enabled = st.checkbox("SSL habilitado", 
-                                    value=True,
-                                    key="db_ssl_enabled")
-            ssl_verify = st.checkbox("Verificar certificado SSL", 
-                                   value=True,
-                                   key="db_ssl_verify")
-            encrypt_connection = st.checkbox("Criptografar conexão", 
-                                           value=True,
-                                           key="db_encrypt_connection")
-        
-        with col2:
-            st.markdown("#### ⚡ Performance")
-            
-            # Pool de conexões
-            connection_pool_size = st.slider("Tamanho do pool:", 
-                                            5, 50, 20,
-                                            key="db_connection_pool_size")
-            max_connections = st.slider("Máx. conexões simultâneas:", 
-                                      10, 200, 100,
-                                      key="db_max_connections")
-            connection_timeout = st.slider("Timeout de conexão (seg):", 
-                                         5, 60, 30,
-                                         key="db_connection_timeout")
-            query_timeout_db = st.slider("Timeout de query (seg):", 
-                                        5, 300, 60,
-                                        key="db_query_timeout")
-            
-            st.markdown("#### 📊 Monitoramento")
-            
-            log_slow_queries = st.checkbox("Log de queries lentas", 
-                                         value=True,
-                                         key="db_log_slow_queries")
-            if log_slow_queries:
-                slow_query_threshold = st.slider("Threshold query lenta (seg):", 
-                                                1, 30, 5,
-                                                key="db_slow_query_threshold")
-            
-            log_connections = st.checkbox("Log de conexões", 
-                                        value=True,
-                                        key="db_log_connections")
-            monitor_locks = st.checkbox("Monitorar locks", 
-                                      value=True,
-                                      key="db_monitor_locks")
-        
-        # Teste de conexão
-        st.markdown("#### 🔍 Teste de Conexão")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            if st.button("🔍 Testar Conexão", 
-                        use_container_width=True,
-                        key="db_test_connection"):
-                with st.spinner("🔄 Testando conexão..."):
-                    time.sleep(2)
-                
-                if db_manager.connected:
-                    st.success("✅ Conexão estabelecida com sucesso!")
-                    
-                    # Mostrar informações da conexão
-                    connection_info = {
-                        "Status": "Conectado",
-                        "Tipo": db_manager.connection_info.get('type'),
-                        "Latência": f"{random.randint(10, 100)}ms",
-                        "Versão": "PostgreSQL 15.x"
-                    }
-                    
-                    st.json(connection_info)
-                else:
-                    st.error("❌ Falha na conexão!")
-        
-        with col2:
-            if st.button("📊 Info do Servidor", 
-                        use_container_width=True,
-                        key="db_server_info"):
-                server_info = {
-                    "Versão": "PostgreSQL 15.3",
-                    "Uptime": "15 dias, 8 horas",
-                    "Tamanho Total": "245.7 MB",
-                    "Conexões Ativas": random.randint(5, 25),
-                    "Transações/seg": random.randint(50, 200)
-                }
-                
-                st.json(server_info)
-        
-        with col3:
-            if st.button("🔧 Reiniciar Conexão", 
-                        use_container_width=True,
-                        key="db_restart_connection"):
-                with st.spinner("🔄 Reiniciando conexão..."):
-                    time.sleep(1)
-                
-                st.success("✅ Conexão reiniciada!")
-                log_activity("Conexão reiniciada")
-        
-        # Configurações avançadas
-        st.markdown("#### 🛠️ Configurações Avançadas")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            auto_reconnect = st.checkbox("Reconexão automática", 
-                                       value=True,
-                                       key="db_auto_reconnect")
-            connection_retry_attempts = st.number_input("Tentativas de reconexão:", 
-                                                      1, 10, 3,
-                                                      key="db_connection_retry_attempts")
-            backup_connection = st.checkbox("Conexão de backup", 
-                                          value=False,
-                                          key="db_backup_connection")
-        
-        with col2:
-            read_replica = st.checkbox("Usar réplica de leitura", 
-                                     value=False,
-                                     key="db_read_replica")
-            load_balancing = st.checkbox("Balanceamento de carga", 
-                                       value=False,
-                                       key="db_load_balancing")
-            failover_enabled = st.checkbox("Failover automático", 
-                                         value=False,
-                                         key="db_failover_enabled")
-        
-        if st.button("💾 Salvar Configurações do Banco", 
-                    type="primary",
-                    key="save_db_settings"):
-            db_settings = {
-                'db_type': db_type,
-                'connection_pool_size': connection_pool_size,
-                'max_connections': max_connections,
-                'ssl_enabled': ssl_enabled,
-                'auto_reconnect': auto_reconnect
-            }
-            
-            st.success("✅ Configurações do banco de dados salvas!")
-            log_activity("Configurações de BD alteradas")
+    col1, col2 = st.columns(2)
     
-    with tab4:
-        st.subheader("📊 Configurações de Monitoramento")
+    with col1:
+        st.markdown("#### 📝 Perfil")
         
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("#### 🚨 Alertas e Limites")
-            
-            # Limites de recursos
-            cpu_alert_threshold = st.slider("Alerta CPU (%):", 
-                                           50, 100, 80,
-                                           key="monitoring_cpu_alert_threshold")
-            memory_alert_threshold = st.slider("Alerta Memória (%):", 
-                                              50, 100, 85,
-                                              key="monitoring_memory_alert_threshold")
-            disk_alert_threshold = st.slider("Alerta Disco (%):", 
-                                            50, 100, 90,
-                                            key="monitoring_disk_alert_threshold")
-            connection_alert_threshold = st.slider("Alerta Conexões:", 
-                                                  50, 200, 150,
-                                                  key="monitoring_connection_alert_threshold")
-            
-            # Configurações de coleta
-            st.markdown("#### 📊 Coleta de Métricas")
-            
-            enable_monitoring = st.checkbox("Ativar monitoramento", 
-                                          value=True,
-                                          key="monitoring_enable_monitoring")
-            metrics_interval = st.slider("Intervalo de coleta (seg):", 
-                                        10, 300, 60,
-                                        key="monitoring_metrics_interval")
-            detailed_metrics = st.checkbox("Métricas detalhadas", 
-                                         value=True,
-                                         key="monitoring_detailed_metrics")
-            
-            # Retenção de dados
-            metrics_retention_days = st.slider("Retenção de métricas (dias):", 
-                                              7, 365, 30,
-                                              key="monitoring_metrics_retention_days")
-            auto_cleanup = st.checkbox("Limpeza automática", 
-                                     value=True,
-                                     key="monitoring_auto_cleanup")
-        
-        with col2:
-            st.markdown("#### 📧 Notificações")
-            
-            # Canais de notificação
-            email_alerts_enabled = st.checkbox("Alertas por email", 
-                                              value=False,
-                                              key="monitoring_email_alerts")
-            
-            if email_alerts_enabled:
-                alert_emails = st.text_area("Emails para alertas:", 
-                                           placeholder="admin@petcareai.com\ndba@petcareai.com",
-                                           key="monitoring_alert_emails")
-                email_frequency = st.selectbox("Frequência emails:", 
-                                              ["Imediato", "A cada 5 min", "A cada 15 min", "Hourly"],
-                                              key="monitoring_email_frequency")
-            
-            webhook_alerts = st.checkbox("Alertas via Webhook", 
-                                       value=False,
-                                       key="monitoring_webhook_alerts")
-            
-            if webhook_alerts:
-                webhook_url = st.text_input("URL do Webhook:", 
-                                           placeholder="https://hooks.slack.com/...",
-                                           key="monitoring_webhook_url")
-                webhook_secret = st.text_input("Secret do Webhook:", 
-                                              type="password",
-                                              key="monitoring_webhook_secret")
-            
-            slack_integration = st.checkbox("Integração Slack", 
-                                          value=False,
-                                          key="monitoring_slack_integration")
-            
-            if slack_integration:
-                slack_token = st.text_input("Slack Bot Token:", 
-                                           type="password",
-                                           key="monitoring_slack_token")
-                slack_channel = st.text_input("Canal Slack:", 
-                                             placeholder="#alerts",
-                                             key="monitoring_slack_channel")
-        
-        # Métricas personalizadas
-        st.markdown("#### 📈 Métricas Personalizadas")
-        
-        custom_metrics = st.text_area(
-            "Queries para métricas customizadas (uma por linha):",
-            placeholder="""SELECT COUNT(*) as total_users FROM users;
-SELECT COUNT(*) as appointments_today FROM appointments WHERE DATE(created_at) = CURRENT_DATE;
-SELECT AVG(age) as average_pet_age FROM pets WHERE birth_date IS NOT NULL;""",
-            height=100,
-            key="monitoring_custom_metrics"
+        # Informações do perfil
+        username = st.text_input(
+            "Nome de usuário:", 
+            value=CONFIG['admin_username'], 
+            disabled=True
+        )
+        email = st.text_input(
+            "Email:", 
+            value=current_settings.get('email', CONFIG['admin_email'])
+        )
+        full_name = st.text_input(
+            "Nome completo:", 
+            value=current_settings.get('full_name', 'Administrador PetCare')
+        )
+        role = st.selectbox(
+            "Função:", 
+            ["Administrador", "DBA", "Desenvolvedor", "Analista"],
+            index=["Administrador", "DBA", "Desenvolvedor", "Analista"].index(current_settings.get('role', 'Administrador'))
         )
         
-        # Dashboard personalizado
+        st.markdown("#### 🌍 Localização")
+        
+        language = st.selectbox(
+            "Idioma:", 
+            ["Português (BR)", "English", "Español"],
+            index=["Português (BR)", "English", "Español"].index(current_settings.get('language', 'Português (BR)'))
+        )
+        timezone = st.selectbox(
+            "Fuso horário:", 
+            ["America/Sao_Paulo", "UTC", "America/New_York", "Europe/London"],
+            index=["America/Sao_Paulo", "UTC", "America/New_York", "Europe/London"].index(current_settings.get('timezone', 'America/Sao_Paulo'))
+        )
+        date_format = st.selectbox(
+            "Formato de data:", 
+            ["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"],
+            index=["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"].index(current_settings.get('date_format', 'DD/MM/YYYY'))
+        )
+    
+    with col2:
+        st.markdown("#### 🎯 Preferências")
+        
+        # Preferências de interface
+        default_page = st.selectbox(
+            "Página inicial:", 
+            ["Dashboard", "Tabelas", "Editor SQL", "Operações DBA", "Projetos"],
+            index=["Dashboard", "Tabelas", "Editor SQL", "Operações DBA", "Projetos"].index(current_settings.get('default_page', 'Dashboard'))
+        )
+        
+        items_per_page = st.slider(
+            "Itens por página:", 
+            10, 100, 
+            current_settings.get('items_per_page', 25)
+        )
+        auto_save_queries = st.checkbox(
+            "Auto-salvar consultas", 
+            value=current_settings.get('auto_save_queries', True)
+        )
+        
         st.markdown("#### 📊 Dashboard")
         
-        col1, col2, col3 = st.columns(3)
+        dashboard_auto_refresh = st.slider(
+            "Auto-refresh dashboard (seg):", 
+            10, 300, 
+            current_settings.get('dashboard_auto_refresh', 60)
+        )
+        show_advanced_metrics = st.checkbox(
+            "Mostrar métricas avançadas", 
+            value=current_settings.get('show_advanced_metrics', True)
+        )
+        chart_animations = st.checkbox(
+            "Animações em gráficos", 
+            value=current_settings.get('chart_animations', True)
+        )
         
-        with col1:
-            refresh_rate = st.selectbox("Taxa de refresh:", 
-                                       ["5s", "10s", "30s", "1min", "5min"],
-                                       key="monitoring_refresh_rate")
-            
-        with col2:
-            chart_type = st.selectbox("Tipo de gráfico padrão:", 
-                                     ["Linha", "Barra", "Pizza", "Área"],
-                                     key="monitoring_chart_type")
+        st.markdown("#### 🔔 Alertas Pessoais")
         
-        with col3:
-            show_predictions = st.checkbox("Mostrar predições", 
-                                         value=False,
-                                         key="monitoring_show_predictions")
+        email_alerts_user = st.checkbox(
+            "Alertas por email", 
+            value=current_settings.get('email_alerts', False)
+        )
+        if email_alerts_user:
+            alert_frequency = st.selectbox(
+                "Frequência:", 
+                ["Imediato", "Diário", "Semanal"],
+                index=["Imediato", "Diário", "Semanal"].index(current_settings.get('alert_frequency', 'Diário'))
+            )
+        else:
+            alert_frequency = current_settings.get('alert_frequency', 'Diário')
         
-        # Alertas ativos
-        st.markdown("#### 🚨 Alertas Ativos")
+        critical_alerts_only = st.checkbox(
+            "Apenas alertas críticos", 
+            value=current_settings.get('critical_alerts_only', True)
+        )
+    
+    if st.button("💾 Salvar Perfil do Usuário", type="primary"):
+        user_settings = {
+            'email': email,
+            'full_name': full_name,
+            'role': role,
+            'language': language,
+            'timezone': timezone,
+            'date_format': date_format,
+            'default_page': default_page,
+            'items_per_page': items_per_page,
+            'auto_save_queries': auto_save_queries,
+            'dashboard_auto_refresh': dashboard_auto_refresh,
+            'show_advanced_metrics': show_advanced_metrics,
+            'chart_animations': chart_animations,
+            'email_alerts': email_alerts_user,
+            'alert_frequency': alert_frequency,
+            'critical_alerts_only': critical_alerts_only
+        }
         
-        current_alerts = [
-            {"tipo": "⚠️ Warning", "mensagem": f"CPU em {cpu_alert_threshold-5}%", "tempo": "5 min atrás"},
-            {"tipo": "ℹ️ Info", "mensagem": "Backup concluído", "tempo": "1 hora atrás"},
-            {"tipo": "✅ Success", "mensagem": "Otimização completada", "tempo": "3 horas atrás"}
-        ]
+        st.session_state.user_settings['user'].update(user_settings)
         
-        for i, alert in enumerate(current_alerts):
-            col1, col2, col3, col4 = st.columns([1, 3, 2, 1])
-            
-            with col1:
-                st.write(alert["tipo"])
-            with col2:
-                st.write(alert["mensagem"])
-            with col3:
-                st.write(alert["tempo"])
-            with col4:
-                if st.button("❌", 
-                           key=f"dismiss_alert_{i}", 
-                           help="Dispensar alerta"):
-                    st.info("Alerta dispensado")
+        if save_user_settings(st.session_state.user_settings):
+            st.success("✅ Perfil do usuário salvo com sucesso!")
+            log_activity("Perfil do usuário alterado")
+        else:
+            st.error("❌ Erro ao salvar perfil")
+
+def render_monitoring_settings_tab():
+    """Renderiza aba de configurações de monitoramento"""
+    st.subheader("📊 Configurações de Monitoramento")
+    
+    current_settings = st.session_state.user_settings.get('monitoring', {})
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("#### 🚨 Alertas e Limites")
         
-        if st.button("💾 Salvar Configurações de Monitoramento", 
-                    type="primary",
-                    key="save_monitoring_settings"):
-            monitoring_settings = {
-                'cpu_threshold': cpu_alert_threshold,
-                'memory_threshold': memory_alert_threshold,
-                'metrics_interval': metrics_interval,
-                'retention_days': metrics_retention_days,
-                'email_alerts': email_alerts_enabled
-            }
-            
+        # Limites de recursos
+        cpu_alert_threshold = st.slider(
+            "Alerta CPU (%):", 
+            50, 100, 
+            current_settings.get('cpu_alert_threshold', 80)
+        )
+        memory_alert_threshold = st.slider(
+            "Alerta Memória (%):", 
+            50, 100, 
+            current_settings.get('memory_alert_threshold', 85)
+        )
+        disk_alert_threshold = st.slider(
+            "Alerta Disco (%):", 
+            50, 100, 
+            current_settings.get('disk_alert_threshold', 90)
+        )
+        connection_alert_threshold = st.slider(
+            "Alerta Conexões:", 
+            50, 200, 
+            current_settings.get('connection_alert_threshold', 150)
+        )
+        
+        # Configurações de coleta
+        st.markdown("#### 📊 Coleta de Métricas")
+        
+        enable_monitoring = st.checkbox(
+            "Ativar monitoramento", 
+            value=current_settings.get('enable_monitoring', True)
+        )
+        metrics_interval = st.slider(
+            "Intervalo de coleta (seg):", 
+            10, 300, 
+            current_settings.get('metrics_interval', 60)
+        )
+        detailed_metrics = st.checkbox(
+            "Métricas detalhadas", 
+            value=current_settings.get('detailed_metrics', True)
+        )
+        
+        # Retenção de dados
+        metrics_retention_days = st.slider(
+            "Retenção de métricas (dias):", 
+            7, 365, 
+            current_settings.get('metrics_retention_days', 30)
+        )
+        auto_cleanup = st.checkbox(
+            "Limpeza automática", 
+            value=current_settings.get('auto_cleanup', True)
+        )
+    
+    with col2:
+        st.markdown("#### 📧 Notificações")
+        
+        # Canais de notificação
+        email_alerts_enabled = st.checkbox(
+            "Alertas por email", 
+            value=current_settings.get('email_alerts', False)
+        )
+        
+        if email_alerts_enabled:
+            alert_emails = st.text_area(
+                "Emails para alertas:", 
+                value=current_settings.get('alert_emails', ''),
+                placeholder="admin@petcareai.com\ndba@petcareai.com"
+            )
+            email_frequency = st.selectbox(
+                "Frequência emails:", 
+                ["Imediato", "A cada 5 min", "A cada 15 min", "Hourly"],
+                index=["Imediato", "A cada 5 min", "A cada 15 min", "Hourly"].index(current_settings.get('email_frequency', 'Imediato'))
+            )
+        else:
+            alert_emails = current_settings.get('alert_emails', '')
+            email_frequency = current_settings.get('email_frequency', 'Imediato')
+        
+        webhook_alerts = st.checkbox(
+            "Alertas via Webhook", 
+            value=current_settings.get('webhook_alerts', False)
+        )
+        
+        if webhook_alerts:
+            webhook_url = st.text_input(
+                "URL do Webhook:", 
+                value=current_settings.get('webhook_url', ''),
+                placeholder="https://hooks.slack.com/..."
+            )
+            webhook_secret = st.text_input(
+                "Secret do Webhook:", 
+                type="password",
+                value=current_settings.get('webhook_secret', '')
+            )
+        else:
+            webhook_url = current_settings.get('webhook_url', '')
+            webhook_secret = current_settings.get('webhook_secret', '')
+        
+        slack_integration = st.checkbox(
+            "Integração Slack", 
+            value=current_settings.get('slack_integration', False)
+        )
+        
+        if slack_integration:
+            slack_token = st.text_input(
+                "Slack Bot Token:", 
+                type="password",
+                value=current_settings.get('slack_token', '')
+            )
+            slack_channel = st.text_input(
+                "Canal Slack:", 
+                value=current_settings.get('slack_channel', '#alerts'),
+                placeholder="#alerts"
+            )
+        else:
+            slack_token = current_settings.get('slack_token', '')
+            slack_channel = current_settings.get('slack_channel', '#alerts')
+    
+    if st.button("💾 Salvar Configurações de Monitoramento", type="primary"):
+        monitoring_settings = {
+            'cpu_alert_threshold': cpu_alert_threshold,
+            'memory_alert_threshold': memory_alert_threshold,
+            'disk_alert_threshold': disk_alert_threshold,
+            'connection_alert_threshold': connection_alert_threshold,
+            'enable_monitoring': enable_monitoring,
+            'metrics_interval': metrics_interval,
+            'detailed_metrics': detailed_metrics,
+            'metrics_retention_days': metrics_retention_days,
+            'auto_cleanup': auto_cleanup,
+            'email_alerts': email_alerts_enabled,
+            'alert_emails': alert_emails,
+            'email_frequency': email_frequency,
+            'webhook_alerts': webhook_alerts,
+            'webhook_url': webhook_url,
+            'webhook_secret': webhook_secret,
+            'slack_integration': slack_integration,
+            'slack_token': slack_token,
+            'slack_channel': slack_channel
+        }
+        
+        st.session_state.user_settings['monitoring'].update(monitoring_settings)
+        
+        if save_user_settings(st.session_state.user_settings):
             st.success("✅ Configurações de monitoramento salvas!")
             log_activity("Configurações de monitoramento alteradas")
+        else:
+            st.error("❌ Erro ao salvar configurações")
+
+def render_security_settings_tab():
+    """Renderiza aba de configurações de segurança"""
+    st.subheader("🔐 Configurações de Segurança")
     
-    with tab5:
-        st.subheader("🔐 Configurações de Segurança")
+    current_settings = st.session_state.user_settings.get('security', {})
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("#### 🛡️ Políticas de Segurança")
         
-        col1, col2 = st.columns(2)
+        # Políticas de senha
+        min_password_length = st.slider(
+            "Tamanho mínimo da senha:", 
+            6, 20, 
+            current_settings.get('min_password_length', 8)
+        )
+        require_special_chars = st.checkbox(
+            "Exigir caracteres especiais", 
+            value=current_settings.get('require_special_chars', True)
+        )
+        require_numbers = st.checkbox(
+            "Exigir números", 
+            value=current_settings.get('require_numbers', True)
+        )
+        require_uppercase = st.checkbox(
+            "Exigir maiúsculas", 
+            value=current_settings.get('require_uppercase', True)
+        )
         
-        with col1:
-            st.markdown("#### 🛡️ Políticas de Segurança")
-            
-            # Políticas de senha
-            min_password_length = st.slider("Tamanho mínimo da senha:", 
-                                           6, 20, 8,
-                                           key="security_min_password_length")
-            require_special_chars = st.checkbox("Exigir caracteres especiais", 
-                                               value=True,
-                                               key="security_require_special_chars")
-            require_numbers = st.checkbox("Exigir números", 
-                                        value=True,
-                                        key="security_require_numbers")
-            require_uppercase = st.checkbox("Exigir maiúsculas", 
-                                          value=True,
-                                          key="security_require_uppercase")
-            
-            # Políticas de sessão
-            session_timeout_minutes = st.slider("Timeout de sessão (min):", 
-                                               15, 480, 60,
-                                               key="security_session_timeout_minutes")
-            max_concurrent_sessions = st.number_input("Máx. sessões simultâneas:", 
-                                                    1, 10, 3,
-                                                    key="security_max_concurrent_sessions")
-            
-            # Auditoria
-            st.markdown("#### 📋 Auditoria")
-            
-            enable_audit_log = st.checkbox("Log de auditoria", 
-                                         value=True,
-                                         key="security_enable_audit_log")
-            log_failed_logins = st.checkbox("Log tentativas de login falhadas", 
-                                           value=True,
-                                           key="security_log_failed_logins")
-            log_data_changes = st.checkbox("Log mudanças nos dados", 
-                                         value=True,
-                                         key="security_log_data_changes")
-            log_admin_actions = st.checkbox("Log ações administrativas", 
-                                           value=True,
-                                           key="security_log_admin_actions")
+        # Políticas de sessão
+        session_timeout_minutes = st.slider(
+            "Timeout de sessão (min):", 
+            15, 480, 
+            current_settings.get('session_timeout_minutes', 60)
+        )
+        max_concurrent_sessions = st.number_input(
+            "Máx. sessões simultâneas:", 
+            1, 10, 
+            current_settings.get('max_concurrent_sessions', 3)
+        )
         
-        with col2:
-            st.markdown("#### 🔒 Controle de Acesso")
-            
-            # Permissões
-            role_based_access = st.checkbox("Controle baseado em roles", 
-                                          value=True,
-                                          key="security_role_based_access")
-            ip_whitelist_enabled = st.checkbox("Lista branca de IPs", 
-                                             value=False,
-                                             key="security_ip_whitelist_enabled")
-            
-            if ip_whitelist_enabled:
-                allowed_ips = st.text_area("IPs permitidos (um por linha):", 
-                                         placeholder="192.168.1.100\n10.0.0.50",
-                                         key="security_allowed_ips")
-            
-            # Criptografia
-            st.markdown("#### 🔐 Criptografia")
-            
-            encrypt_sensitive_data = st.checkbox("Criptografar dados sensíveis", 
-                                                value=True,
-                                                key="security_encrypt_sensitive_data")
-            encryption_algorithm = st.selectbox("Algoritmo:", 
-                                               ["AES-256", "AES-192", "AES-128"],
-                                               key="security_encryption_algorithm")
-            
-            # Backup de segurança
-            st.markdown("#### 💾 Backup de Segurança")
-            
-            security_backup_enabled = st.checkbox("Backup automático de segurança", 
-                                                 value=True,
-                                                 key="security_backup_enabled")
-            backup_encryption = st.checkbox("Criptografar backups", 
-                                           value=True,
-                                           key="security_backup_encryption")
-            
-            if security_backup_enabled:
-                backup_frequency = st.selectbox("Frequência:", 
-                                               ["Diário", "Semanal", "Mensal"],
-                                               key="security_backup_frequency")
+        # Auditoria
+        st.markdown("#### 📋 Auditoria")
         
-        # Logs de segurança
-        st.markdown("#### 📊 Logs de Segurança Recentes")
+        enable_audit_log = st.checkbox(
+            "Log de auditoria", 
+            value=current_settings.get('enable_audit_log', True)
+        )
+        log_failed_logins = st.checkbox(
+            "Log tentativas de login falhadas", 
+            value=current_settings.get('log_failed_logins', True)
+        )
+        log_data_changes = st.checkbox(
+            "Log mudanças nos dados", 
+            value=current_settings.get('log_data_changes', True)
+        )
+        log_admin_actions = st.checkbox(
+            "Log ações administrativas", 
+            value=current_settings.get('log_admin_actions', True)
+        )
+    
+    with col2:
+        st.markdown("#### 🔒 Controle de Acesso")
         
-        security_logs = [
-            {"timestamp": datetime.now() - timedelta(minutes=10), "event": "Login successful", "user": "admin", "ip": "192.168.1.100", "status": "✅"},
-            {"timestamp": datetime.now() - timedelta(hours=2), "event": "Password changed", "user": "admin", "ip": "192.168.1.100", "status": "✅"},
-            {"timestamp": datetime.now() - timedelta(hours=5), "event": "Failed login attempt", "user": "unknown", "ip": "203.0.113.1", "status": "❌"},
-            {"timestamp": datetime.now() - timedelta(days=1), "event": "Database access", "user": "admin", "ip": "192.168.1.100", "status": "✅"}
-        ]
+        # Permissões
+        role_based_access = st.checkbox(
+            "Controle baseado em roles", 
+            value=current_settings.get('role_based_access', True)
+        )
+        ip_whitelist_enabled = st.checkbox(
+            "Lista branca de IPs", 
+            value=current_settings.get('ip_whitelist_enabled', False)
+        )
         
-        df_security = pd.DataFrame([
-            {
-                "Timestamp": format_datetime(log["timestamp"], "full"),
-                "Evento": log["event"],
-                "Usuário": log["user"],
-                "IP": log["ip"],
-                "Status": log["status"]
-            }
-            for log in security_logs
-        ])
+        if ip_whitelist_enabled:
+            allowed_ips = st.text_area(
+                "IPs permitidos (um por linha):", 
+                value=current_settings.get('allowed_ips', ''),
+                placeholder="192.168.1.100\n10.0.0.50"
+            )
+        else:
+            allowed_ips = current_settings.get('allowed_ips', '')
         
-        st.dataframe(df_security, use_container_width=True)
+        # Criptografia
+        st.markdown("#### 🔐 Criptografia")
         
-        # Ações de segurança
-        st.markdown("#### ⚡ Ações de Segurança")
+        encrypt_sensitive_data = st.checkbox(
+            "Criptografar dados sensíveis", 
+            value=current_settings.get('encrypt_sensitive_data', True)
+        )
+        encryption_algorithm = st.selectbox(
+            "Algoritmo:", 
+            ["AES-256", "AES-192", "AES-128"],
+            index=["AES-256", "AES-192", "AES-128"].index(current_settings.get('encryption_algorithm', 'AES-256'))
+        )
         
-        col1, col2, col3, col4 = st.columns(4)
+        # Backup de segurança
+        st.markdown("#### 💾 Backup de Segurança")
         
-        with col1:
-            if st.button("🔄 Forçar Logout Geral", 
-                        use_container_width=True,
-                        key="security_force_logout"):
-                st.warning("⚠️ Todos os usuários serão desconectados")
+        security_backup_enabled = st.checkbox(
+            "Backup automático de segurança", 
+            value=current_settings.get('security_backup_enabled', True)
+        )
+        backup_encryption = st.checkbox(
+            "Criptografar backups", 
+            value=current_settings.get('backup_encryption', True)
+        )
         
-        with col2:
-            if st.button("🔒 Bloquear Sistema", 
-                        use_container_width=True,
-                        key="security_lock_system"):
-                st.warning("⚠️ Sistema será bloqueado temporariamente")
+        if security_backup_enabled:
+            backup_frequency = st.selectbox(
+                "Frequência:", 
+                ["Diário", "Semanal", "Mensal"],
+                index=["Diário", "Semanal", "Mensal"].index(current_settings.get('backup_frequency', 'Diário'))
+            )
+        else:
+            backup_frequency = current_settings.get('backup_frequency', 'Diário')
+    
+    if st.button("💾 Salvar Configurações de Segurança", type="primary"):
+        security_settings = {
+            'min_password_length': min_password_length,
+            'require_special_chars': require_special_chars,
+            'require_numbers': require_numbers,
+            'require_uppercase': require_uppercase,
+            'session_timeout_minutes': session_timeout_minutes,
+            'max_concurrent_sessions': max_concurrent_sessions,
+            'enable_audit_log': enable_audit_log,
+            'log_failed_logins': log_failed_logins,
+            'log_data_changes': log_data_changes,
+            'log_admin_actions': log_admin_actions,
+            'role_based_access': role_based_access,
+            'ip_whitelist_enabled': ip_whitelist_enabled,
+            'allowed_ips': allowed_ips,
+            'encrypt_sensitive_data': encrypt_sensitive_data,
+            'encryption_algorithm': encryption_algorithm,
+            'security_backup_enabled': security_backup_enabled,
+            'backup_encryption': backup_encryption,
+            'backup_frequency': backup_frequency
+        }
         
-        with col3:
-            if st.button("📊 Relatório Segurança", 
-                        use_container_width=True,
-                        key="security_report"):
-                security_report = {
-                    "Total Logins (24h)": random.randint(50, 200),
-                    "Tentativas Falhadas": random.randint(0, 5),
-                    "IPs Únicos": random.randint(5, 20),
-                    "Ações Admin": random.randint(10, 50),
-                    "Queries Executadas": random.randint(100, 500),
-                    "Última Violação": "Nenhuma"
-                }
-                
-                st.json(security_report)
+        st.session_state.user_settings['security'].update(security_settings)
         
-        with col4:
-            if st.button("🛡️ Scan Vulnerabilidades", 
-                        use_container_width=True,
-                        key="security_vulnerability_scan"):
-                with st.spinner("🔍 Executando scan de segurança..."):
-                    time.sleep(3)
-                
-                vulnerabilities = {
-                    "Críticas": 0,
-                    "Altas": 0,
-                    "Médias": 1,
-                    "Baixas": 2,
-                    "Total": 3,
-                    "Status": "✅ Sistema Seguro"
-                }
-                
-                st.json(vulnerabilities)
-        
-        if st.button("💾 Salvar Configurações de Segurança", 
-                    type="primary",
-                    key="save_security_settings"):
-            security_settings = {
-                'min_password_length': min_password_length,
-                'session_timeout': session_timeout_minutes,
-                'audit_log_enabled': enable_audit_log,
-                'encryption_enabled': encrypt_sensitive_data,
-                'backup_encryption': backup_encryption
-            }
-            
+        if save_user_settings(st.session_state.user_settings):
             st.success("✅ Configurações de segurança salvas!")
             log_activity("Configurações de segurança alteradas")
-        
-        # Informações do sistema
-        st.markdown("---")
-        st.subheader("ℹ️ Informações do Sistema")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            system_info = {
-                "Versão": CONFIG['app_version'],
-                "Python": "3.13.x",
-                "Streamlit": "1.28.x",
-                "Supabase": "2.0.x" if SUPABASE_AVAILABLE else "N/A"
-            }
-            st.json(system_info)
-        
-        with col2:
-            server_info = {
-                "Uptime": "5d 12h 30m",
-                "CPU Cores": 4,
-                "RAM Total": "16 GB",
-                "Disco Livre": "120 GB"
-            }
-            st.json(server_info)
-        
-        with col3:
-            db_info = {
-                "Tipo": db_manager.connection_info.get('type', 'N/A'),
-                "Status": "Conectado" if db_manager.connected else "Desconectado",
-                "Tabelas": len(db_manager.get_tables()),
-                "Tamanho": db_manager.get_database_metrics().get('total_size', 'N/A')
-            }
-            st.json(db_info)
+        else:
+            st.error("❌ Erro ao salvar configurações")
 
 # =====================================================================
 # APLICAÇÃO PRINCIPAL
