@@ -80,29 +80,37 @@ except ImportError:
 CONFIG = {
     'app_title': os.getenv('APP_TITLE', 'PetCare DBA Admin'),
     'app_version': os.getenv('APP_VERSION', '1.0.0'),
-    'admin_username': os.getenv('ADMIN_USERNAME', 'admin'),
-    'admin_password': os.getenv('ADMIN_PASSWORD', 'petcare2025'),
-    'admin_email': os.getenv('ADMIN_EMAIL', 'admin@petcareai.com'),
-    'debug_mode': os.getenv('DEBUG_MODE', 'True').lower() in ('true', '1', 'yes', 'on'),
+    'admin_username': os.getenv('ADMIN_USERNAME'),
+    'admin_password': os.getenv('ADMIN_PASSWORD'),
+    'admin_email': os.getenv('ADMIN_EMAIL'),
+    'debug_mode': os.getenv('DEBUG_MODE', 'False').lower() in ('true', '1', 'yes', 'on'),
     'theme': {
         'primary_color': os.getenv('PRIMARY_COLOR', '#2E8B57'),
         'secondary_color': os.getenv('SECONDARY_COLOR', '#90EE90')
     },
-    # Credenciais do Supabase via variáveis de ambiente
-    'supabase_url': os.getenv('SUPABASE_URL', ''),
-    'supabase_anon_key': os.getenv('SUPABASE_ANON_KEY', ''),
-    'supabase_service_key': os.getenv('SUPABASE_SERVICE_KEY', '')
+    # Credenciais do Supabase - APENAS via variáveis de ambiente
+    'supabase_url': os.getenv('SUPABASE_URL'),
+    'supabase_anon_key': os.getenv('SUPABASE_ANON_KEY'),
+    'supabase_service_key': os.getenv('SUPABASE_SERVICE_KEY')
 }
 
-# Validação de variáveis críticas
-if not CONFIG['supabase_url']:
-    st.warning("⚠️ SUPABASE_URL não configurada. Sistema funcionará em modo demo.")
+# Validação de variáveis obrigatórias
+required_vars = {
+    'ADMIN_USERNAME': CONFIG['admin_username'],
+    'ADMIN_PASSWORD': CONFIG['admin_password'], 
+    'ADMIN_EMAIL': CONFIG['admin_email'],
+    'SUPABASE_URL': CONFIG['supabase_url'],
+    'SUPABASE_ANON_KEY': CONFIG['supabase_anon_key'],
+    'SUPABASE_SERVICE_KEY': CONFIG['supabase_service_key']
+}
 
-if not CONFIG['supabase_anon_key']:
-    st.warning("⚠️ SUPABASE_ANON_KEY não configurada. Conexão com Supabase indisponível.")
+missing_vars = [var_name for var_name, var_value in required_vars.items() if not var_value]
 
-if not CONFIG['supabase_service_key']:
-    st.warning("⚠️ SUPABASE_SERVICE_KEY não configurada. Operações administrativas limitadas.")
+if missing_vars:
+    import streamlit as st
+    st.error(f"❌ Variáveis de ambiente obrigatórias não configuradas: {', '.join(missing_vars)}")
+    st.info("💡 Configure todas as variáveis no arquivo .env ou nas configurações do ambiente")
+    st.stop()
 
 # =====================================================================
 # CLASSE DE CONEXÃO COM BANCO DE DADOS
