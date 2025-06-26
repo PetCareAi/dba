@@ -1,1 +1,0 @@
-# Melhorias na forma que o supabse armazena seus ID`s

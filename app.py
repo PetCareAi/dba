@@ -152,28 +152,28 @@ def load_user_settings():
                     'remember_login': False
                 },
                 'database': {
-                    'db_type': 'Supabase',
-                    'supabase_url': CONFIG.get('supabase_url', ''),
-                    'supabase_anon_key': CONFIG.get('supabase_anon_key', ''),
-                    'supabase_service_key': CONFIG.get('supabase_service_key', ''),
-                    'ssl_enabled': True,
-                    'ssl_verify': True,
-                    'encrypt_connection': True,
-                    'connection_pool_size': 20,
-                    'max_connections': 100,
-                    'connection_timeout': 30,
-                    'query_timeout': 60,
-                    'log_slow_queries': True,
-                    'slow_query_threshold': 5,
-                    'log_connections': True,
-                    'monitor_locks': True,
-                    'auto_reconnect': True,
-                    'connection_retry_attempts': 3,
-                    'backup_connection': False,
-                    'read_replica': False,
-                    'load_balancing': False,
-                    'failover_enabled': False
-                },
+                  'db_type': 'Supabase',
+                  'supabase_url': CONFIG.get('supabase_url', ''),
+                  'supabase_anon_key': CONFIG.get('supabase_anon_key', ''),
+                  'supabase_service_key': CONFIG.get('supabase_service_key', ''),
+                  'ssl_enabled': True,
+                  'ssl_verify': True,
+                  'encrypt_connection': True,
+                  'connection_pool_size': 20,  # ADICIONAR ESTA LINHA
+                  'max_connections': 100,      # ADICIONAR ESTA LINHA
+                  'connection_timeout': 30,    # ADICIONAR ESTA LINHA
+                  'query_timeout': 60,
+                  'log_slow_queries': True,
+                  'slow_query_threshold': 5,
+                  'log_connections': True,
+                  'monitor_locks': True,
+                  'auto_reconnect': True,
+                  'connection_retry_attempts': 3,
+                  'backup_connection': False,
+                  'read_replica': False,
+                  'load_balancing': False,
+                  'failover_enabled': False
+              },
                 'monitoring': {
                     'cpu_alert_threshold': 80,
                     'memory_alert_threshold': 85,
@@ -299,32 +299,36 @@ def validate_database_connection(db_settings):
     warnings = []
     
     # Validar URL do Supabase
-    if not db_settings['supabase_url']:
+    if not db_settings.get('supabase_url'):
         errors.append("URL do Supabase é obrigatória")
-    elif not db_settings['supabase_url'].startswith('https://'):
+    elif not db_settings.get('supabase_url', '').startswith('https://'):
         errors.append("URL deve começar com https://")
-    elif not '.supabase.co' in db_settings['supabase_url']:
+    elif not '.supabase.co' in db_settings.get('supabase_url', ''):
         warnings.append("URL não parece ser do Supabase oficial")
     
     # Validar chaves
-    if not db_settings['supabase_anon_key']:
+    if not db_settings.get('supabase_anon_key'):
         errors.append("Chave anônima é obrigatória")
-    elif len(db_settings['supabase_anon_key']) < 100:
+    elif len(db_settings.get('supabase_anon_key', '')) < 100:
         warnings.append("Chave anônima parece muito curta")
     
-    if not db_settings['supabase_service_key']:
+    if not db_settings.get('supabase_service_key'):
         errors.append("Chave de serviço é obrigatória")
-    elif len(db_settings['supabase_service_key']) < 100:
+    elif len(db_settings.get('supabase_service_key', '')) < 100:
         warnings.append("Chave de serviço parece muito curta")
     
-    # Validar valores numéricos
-    if db_settings['connection_pool_size'] < 1:
+    # Validar valores numéricos com valores padrão
+    connection_pool_size = db_settings.get('connection_pool_size', 20)
+    max_connections = db_settings.get('max_connections', 100)
+    connection_timeout = db_settings.get('connection_timeout', 30)
+    
+    if connection_pool_size < 1:
         errors.append("Pool de conexões deve ser maior que 0")
     
-    if db_settings['max_connections'] < db_settings['connection_pool_size']:
+    if max_connections < connection_pool_size:
         errors.append("Máximo de conexões deve ser maior que o pool")
     
-    if db_settings['connection_timeout'] < 5:
+    if connection_timeout < 5:
         warnings.append("Timeout muito baixo pode causar problemas")
     
     return {
@@ -9309,7 +9313,8 @@ def render_database_settings_tab():
                 "Tipo de banco:", 
                 ["Supabase", "PostgreSQL", "MySQL", "SQLite"],
                 index=["Supabase", "PostgreSQL", "MySQL", "SQLite"].index(current_settings.get('db_type', 'Supabase')),
-                help="Tipo de banco de dados"
+                help="Tipo de banco de dados",
+                key="db_type_select"
             )
             
             # Configurações específicas do Supabase
@@ -9320,7 +9325,8 @@ def render_database_settings_tab():
                     "Supabase URL *:", 
                     value=current_settings.get('supabase_url', ''),
                     placeholder="https://seu-projeto.supabase.co",
-                    help="URL do seu projeto Supabase"
+                    help="URL do seu projeto Supabase",
+                    key="db_supabase_url"
                 )
                 
                 supabase_anon_key = st.text_input(
@@ -9328,7 +9334,8 @@ def render_database_settings_tab():
                     type="password",
                     value=current_settings.get('supabase_anon_key', ''),
                     placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                    help="Chave anônima (pública) do Supabase"
+                    help="Chave anônima (pública) do Supabase",
+                    key="db_supabase_anon_key"
                 )
                 
                 supabase_service_key = st.text_input(
@@ -9336,15 +9343,19 @@ def render_database_settings_tab():
                     type="password",
                     value=current_settings.get('supabase_service_key', ''),
                     placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ5...",
-                    help="Chave de serviço (privada) do Supabase"
+                    help="Chave de serviço (privada) do Supabase",
+                    key="db_supabase_service_key"
                 )
                 
-                # Validação em tempo real
-                if supabase_url or supabase_anon_key or supabase_service_key:
+                # Validação em tempo real - apenas se há dados suficientes
+                if supabase_url and supabase_anon_key:
                     temp_settings = {
                         'supabase_url': supabase_url,
                         'supabase_anon_key': supabase_anon_key,
-                        'supabase_service_key': supabase_service_key
+                        'supabase_service_key': supabase_service_key,
+                        'connection_pool_size': current_settings.get('connection_pool_size', 20),
+                        'max_connections': current_settings.get('max_connections', 100),
+                        'connection_timeout': current_settings.get('connection_timeout', 30)
                     }
                     
                     validation = validate_database_connection(temp_settings)
@@ -9359,17 +9370,40 @@ def render_database_settings_tab():
                         for warning in validation['warnings']:
                             st.write(f"• {warning}")
                     
-                    if not validation['errors'] and supabase_url and supabase_anon_key:
+                    if not validation['errors']:
                         st.success("✅ **Configuração válida**")
             
             elif db_type_new == "PostgreSQL":
                 st.markdown("**🐘 Configurações do PostgreSQL:**")
                 
-                pg_host = st.text_input("Host:", value=current_settings.get('pg_host', 'localhost'))
-                pg_port = st.number_input("Porta:", value=current_settings.get('pg_port', 5432), min_value=1, max_value=65535)
-                pg_database = st.text_input("Database:", value=current_settings.get('pg_database', 'petcareai'))
-                pg_username = st.text_input("Usuário:", value=current_settings.get('pg_username', 'postgres'))
-                pg_password = st.text_input("Senha:", type="password", value=current_settings.get('pg_password', ''))
+                pg_host = st.text_input(
+                    "Host:", 
+                    value=current_settings.get('pg_host', 'localhost'),
+                    key="db_pg_host"
+                )
+                pg_port = st.number_input(
+                    "Porta:", 
+                    value=current_settings.get('pg_port', 5432), 
+                    min_value=1, 
+                    max_value=65535,
+                    key="db_pg_port"
+                )
+                pg_database = st.text_input(
+                    "Database:", 
+                    value=current_settings.get('pg_database', 'petcareai'),
+                    key="db_pg_database"
+                )
+                pg_username = st.text_input(
+                    "Usuário:", 
+                    value=current_settings.get('pg_username', 'postgres'),
+                    key="db_pg_username"
+                )
+                pg_password = st.text_input(
+                    "Senha:", 
+                    type="password", 
+                    value=current_settings.get('pg_password', ''),
+                    key="db_pg_password"
+                )
             
             # SSL e segurança
             st.markdown("**🔐 Segurança:**")
@@ -9377,23 +9411,28 @@ def render_database_settings_tab():
             ssl_enabled = st.checkbox(
                 "SSL habilitado", 
                 value=current_settings.get('ssl_enabled', True),
-                help="Usar conexão SSL/TLS"
+                help="Usar conexão SSL/TLS",
+                key="db_ssl_enabled"
             )
             
             ssl_verify = st.checkbox(
                 "Verificar certificado SSL", 
                 value=current_settings.get('ssl_verify', True),
                 help="Verificar validade do certificado SSL",
-                disabled=not ssl_enabled
+                disabled=not ssl_enabled,
+                key="db_ssl_verify"
             )
             
             encrypt_connection = st.checkbox(
                 "Criptografar conexão", 
                 value=current_settings.get('encrypt_connection', True),
-                help="Criptografar dados em trânsito"
+                help="Criptografar dados em trânsito",
+                key="db_encrypt_connection"
             )
             
             # Botões de ação
+            st.markdown("**⚙️ Ações:**")
+            
             action_col1, action_col2, action_col3 = st.columns(3)
             
             with action_col1:
@@ -9501,28 +9540,32 @@ def render_database_settings_tab():
             "Tamanho do pool:", 
             5, 50, 
             current_settings.get('connection_pool_size', 20),
-            help="Número de conexões mantidas no pool"
+            help="Número de conexões mantidas no pool",
+            key="db_connection_pool_size"
         )
         
         max_connections = st.slider(
             "Máx. conexões simultâneas:", 
             10, 200, 
             current_settings.get('max_connections', 100),
-            help="Máximo de conexões simultâneas permitidas"
+            help="Máximo de conexões simultâneas permitidas",
+            key="db_max_connections"
         )
         
         connection_timeout = st.slider(
             "Timeout de conexão (seg):", 
             5, 60, 
             current_settings.get('connection_timeout', 30),
-            help="Tempo limite para estabelecer conexão"
+            help="Tempo limite para estabelecer conexão",
+            key="db_connection_timeout"
         )
         
         query_timeout_db = st.slider(
             "Timeout de query (seg):", 
             5, 300, 
             current_settings.get('query_timeout', 60),
-            help="Tempo limite para execução de queries"
+            help="Tempo limite para execução de queries",
+            key="db_query_timeout"
         )
         
         st.markdown("#### 📊 Logs e Monitoramento")
@@ -9530,7 +9573,8 @@ def render_database_settings_tab():
         log_slow_queries = st.checkbox(
             "Log de queries lentas", 
             value=current_settings.get('log_slow_queries', True),
-            help="Registrar queries que demoram muito"
+            help="Registrar queries que demoram muito",
+            key="db_log_slow_queries"
         )
         
         if log_slow_queries:
@@ -9538,7 +9582,8 @@ def render_database_settings_tab():
                 "Threshold query lenta (seg):", 
                 1, 30, 
                 current_settings.get('slow_query_threshold', 5),
-                help="Tempo mínimo para considerar query lenta"
+                help="Tempo mínimo para considerar query lenta",
+                key="db_slow_query_threshold"
             )
         else:
             slow_query_threshold = current_settings.get('slow_query_threshold', 5)
@@ -9546,13 +9591,15 @@ def render_database_settings_tab():
         log_connections = st.checkbox(
             "Log de conexões", 
             value=current_settings.get('log_connections', True),
-            help="Registrar tentativas de conexão"
+            help="Registrar tentativas de conexão",
+            key="db_log_connections"
         )
         
         monitor_locks = st.checkbox(
             "Monitorar locks", 
             value=current_settings.get('monitor_locks', True),
-            help="Monitorar bloqueios no banco"
+            help="Monitorar bloqueios no banco",
+            key="db_monitor_locks"
         )
         
         st.markdown("#### 🛠️ Configurações Avançadas")
@@ -9560,44 +9607,51 @@ def render_database_settings_tab():
         auto_reconnect = st.checkbox(
             "Reconexão automática", 
             value=current_settings.get('auto_reconnect', True),
-            help="Tentar reconectar automaticamente se a conexão cair"
+            help="Tentar reconectar automaticamente se a conexão cair",
+            key="db_auto_reconnect"
         )
         
         connection_retry_attempts = st.number_input(
             "Tentativas de reconexão:", 
             1, 10, 
             current_settings.get('connection_retry_attempts', 3),
-            help="Número de tentativas de reconexão"
+            help="Número de tentativas de reconexão",
+            key="db_connection_retry_attempts"
         )
         
         backup_connection = st.checkbox(
             "Conexão de backup", 
             value=current_settings.get('backup_connection', False),
-            help="Manter conexão de backup ativa"
+            help="Manter conexão de backup ativa",
+            key="db_backup_connection"
         )
         
         read_replica = st.checkbox(
             "Usar réplica de leitura", 
             value=current_settings.get('read_replica', False),
-            help="Usar réplica apenas para leitura quando disponível"
+            help="Usar réplica apenas para leitura quando disponível",
+            key="db_read_replica"
         )
         
         load_balancing = st.checkbox(
             "Balanceamento de carga", 
             value=current_settings.get('load_balancing', False),
-            help="Distribuir carga entre múltiplas conexões"
+            help="Distribuir carga entre múltiplas conexões",
+            key="db_load_balancing"
         )
         
         failover_enabled = st.checkbox(
             "Failover automático", 
             value=current_settings.get('failover_enabled', False),
-            help="Trocar automaticamente para backup em caso de falha"
+            help="Trocar automaticamente para backup em caso de falha",
+            key="db_failover_enabled"
         )
         
         # Salvar configurações de performance
         if st.button("💾 Salvar Configurações de Performance", 
                     type="primary", 
-                    use_container_width=True):
+                    use_container_width=True,
+                    key="save_db_performance_settings"):
             
             performance_settings = {
                 'connection_pool_size': connection_pool_size,
@@ -9659,6 +9713,115 @@ def render_database_settings_tab():
             st.error(f"❌ Erro ao obter informações do servidor: {e}")
     else:
         st.info("ℹ️ Conecte-se ao banco para ver informações do servidor")
+    
+    # Seção de testes de conectividade
+    st.markdown("---")
+    st.markdown("#### 🧪 Testes de Conectividade")
+    
+    test_col1, test_col2, test_col3, test_col4 = st.columns(4)
+    
+    with test_col1:
+        if st.button("🔌 Testar Conexão Básica", use_container_width=True, key="test_basic_connection"):
+            with st.spinner("🔍 Testando conexão básica..."):
+                try:
+                    if db_manager.connected:
+                        st.success("✅ Conexão básica OK!")
+                    else:
+                        st.error("❌ Sem conexão ativa")
+                except Exception as e:
+                    st.error(f"❌ Erro: {e}")
+    
+    with test_col2:
+        if st.button("📊 Testar Métricas", use_container_width=True, key="test_metrics"):
+            with st.spinner("📊 Testando coleta de métricas..."):
+                try:
+                    metrics = db_manager.get_database_metrics()
+                    st.success(f"✅ Métricas OK! CPU: {metrics.get('cpu_usage', 'N/A')}%")
+                except Exception as e:
+                    st.error(f"❌ Erro nas métricas: {e}")
+    
+    with test_col3:
+        if st.button("🗄️ Testar Tabelas", use_container_width=True, key="test_tables"):
+            with st.spinner("🗄️ Testando listagem de tabelas..."):
+                try:
+                    tables = db_manager.get_tables()
+                    st.success(f"✅ Tabelas OK! {len(tables)} encontradas")
+                except Exception as e:
+                    st.error(f"❌ Erro nas tabelas: {e}")
+    
+    with test_col4:
+        if st.button("💾 Testar Query", use_container_width=True, key="test_query"):
+            with st.spinner("💾 Testando execução de query..."):
+                try:
+                    result = db_manager.execute_query("SELECT 1 as test_query")
+                    if result['success']:
+                        st.success("✅ Query OK!")
+                    else:
+                        st.error(f"❌ Erro na query: {result.get('error', 'Erro desconhecido')}")
+                except Exception as e:
+                    st.error(f"❌ Erro: {e}")
+    
+    # Seção de configurações avançadas
+    st.markdown("---")
+    st.markdown("#### 🔧 Configurações Avançadas do Sistema")
+    
+    advanced_col1, advanced_col2 = st.columns(2)
+    
+    with advanced_col1:
+        st.markdown("**🔄 Reinicialização:**")
+        
+        if st.button("🔄 Reiniciar Conexão DB", use_container_width=True, key="restart_db_connection"):
+            with st.spinner("🔄 Reiniciando conexão..."):
+                try:
+                    db_manager._init_connection()
+                    st.success("✅ Conexão reiniciada!")
+                    time.sleep(1)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Erro ao reiniciar: {e}")
+        
+        if st.button("🧹 Limpar Cache DB", use_container_width=True, key="clear_db_cache"):
+            st.cache_data.clear()
+            st.success("✅ Cache limpo!")
+    
+    with advanced_col2:
+        st.markdown("**📋 Diagnóstico:**")
+        
+        if st.button("🔍 Diagnóstico Completo", use_container_width=True, key="full_diagnostic"):
+            with st.expander("🔍 Resultado do Diagnóstico", expanded=True):
+                diagnostic_info = {
+                    'timestamp': datetime.now().isoformat(),
+                    'db_connected': getattr(db_manager, 'connected', False),
+                    'db_type': getattr(db_manager, 'connection_info', {}).get('type', 'N/A'),
+                    'supabase_available': SUPABASE_AVAILABLE,
+                    'config_loaded': bool(CONFIG.get('supabase_url')),
+                    'tables_count': len(db_manager.get_tables()) if hasattr(db_manager, 'get_tables') else 0,
+                    'settings_loaded': bool(st.session_state.user_settings.get('database'))
+                }
+                st.json(diagnostic_info)
+        
+        if st.button("📤 Exportar Config DB", use_container_width=True, key="export_db_config"):
+            config_export = {
+                'database_settings': st.session_state.user_settings.get('database', {}),
+                'exported_at': datetime.now().isoformat(),
+                'app_version': CONFIG['app_version']
+            }
+            
+            # Remover dados sensíveis
+            safe_config = config_export.copy()
+            if 'database_settings' in safe_config:
+                for sensitive_key in ['supabase_anon_key', 'supabase_service_key', 'pg_password']:
+                    if sensitive_key in safe_config['database_settings']:
+                        safe_config['database_settings'][sensitive_key] = "***REMOVIDO***"
+            
+            st.download_button(
+                "💾 Download Config",
+                json.dumps(safe_config, indent=2, default=str),
+                f"db_config_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                "application/json",
+                use_container_width=True,
+                key="download_db_config"
+            )
 
 def render_backup_restore_tab():
     """Renderiza aba de backup e restore de configurações"""
@@ -9895,32 +10058,38 @@ def render_system_settings_tab():
         theme_preset = st.selectbox(
             "Tema:", 
             ["PetCare Verde", "Escuro", "Claro", "Personalizado"],
-            index=["PetCare Verde", "Escuro", "Claro", "Personalizado"].index(current_settings.get('theme_preset', 'PetCare Verde'))
+            index=["PetCare Verde", "Escuro", "Claro", "Personalizado"].index(current_settings.get('theme_preset', 'PetCare Verde')),
+            key="system_theme_preset"
         )
         
         # Configurações de layout
         sidebar_default = st.checkbox(
             "Sidebar aberta por padrão", 
-            value=current_settings.get('sidebar_default', True)
+            value=current_settings.get('sidebar_default', True),
+            key="system_sidebar_default"
         )
         compact_mode = st.checkbox(
             "Modo compacto", 
-            value=current_settings.get('compact_mode', False)
+            value=current_settings.get('compact_mode', False),
+            key="system_compact_mode"
         )
         show_tooltips = st.checkbox(
             "Mostrar dicas de ferramentas", 
-            value=current_settings.get('show_tooltips', True)
+            value=current_settings.get('show_tooltips', True),
+            key="system_show_tooltips"
         )
         
         st.markdown("#### 📱 Responsividade")
         
         mobile_optimized = st.checkbox(
             "Otimização mobile", 
-            value=current_settings.get('mobile_optimized', True)
+            value=current_settings.get('mobile_optimized', True),
+            key="system_mobile_optimized"
         )
         auto_scale = st.checkbox(
             "Escala automática", 
-            value=current_settings.get('auto_scale', True)
+            value=current_settings.get('auto_scale', True),
+            key="system_auto_scale"
         )
     
     with col2:
@@ -9929,44 +10098,52 @@ def render_system_settings_tab():
         # Configurações de cache
         enable_cache = st.checkbox(
             "Ativar cache", 
-            value=current_settings.get('enable_cache', True)
+            value=current_settings.get('enable_cache', True),
+            key="system_enable_cache"
         )
         cache_duration = st.slider(
             "Duração do cache (minutos):", 
             1, 60, 
-            current_settings.get('cache_duration', 15)
+            current_settings.get('cache_duration', 15),
+            key="system_cache_duration"
         )
         auto_refresh_interval = st.slider(
             "Auto-refresh (segundos):", 
             10, 300, 
-            current_settings.get('auto_refresh_interval', 30)
+            current_settings.get('auto_refresh_interval', 30),
+            key="system_auto_refresh_interval"
         )
         
         # Configurações de dados
         max_records_display = st.number_input(
             "Máx. registros por página:", 
             10, 1000, 
-            current_settings.get('max_records_display', 50)
+            current_settings.get('max_records_display', 50),
+            key="system_max_records_display"
         )
         query_timeout = st.number_input(
             "Timeout de query (segundos):", 
             5, 300, 
-            current_settings.get('query_timeout', 30)
+            current_settings.get('query_timeout', 30),
+            key="system_query_timeout"
         )
         
         st.markdown("#### 🔔 Notificações")
         
         enable_notifications = st.checkbox(
             "Ativar notificações", 
-            value=current_settings.get('enable_notifications', True)
+            value=current_settings.get('enable_notifications', True),
+            key="system_enable_notifications"
         )
         sound_notifications = st.checkbox(
             "Notificações sonoras", 
-            value=current_settings.get('sound_notifications', False)
+            value=current_settings.get('sound_notifications', False),
+            key="system_sound_notifications"
         )
         browser_notifications = st.checkbox(
             "Notificações do navegador", 
-            value=current_settings.get('browser_notifications', False)
+            value=current_settings.get('browser_notifications', False),
+            key="system_browser_notifications"
         )
     
     # Configurações avançadas
@@ -9977,34 +10154,40 @@ def render_system_settings_tab():
     with col1:
         debug_mode = st.checkbox(
             "Modo debug", 
-            value=current_settings.get('debug_mode', CONFIG['debug_mode'])
+            value=current_settings.get('debug_mode', CONFIG['debug_mode']),
+            key="system_debug_mode"
         )
         verbose_logging = st.checkbox(
             "Log detalhado", 
-            value=current_settings.get('verbose_logging', False)
+            value=current_settings.get('verbose_logging', False),
+            key="system_verbose_logging"
         )
     
     with col2:
         auto_backup_settings = st.checkbox(
             "Backup automático configurações", 
-            value=current_settings.get('auto_backup_settings', True)
+            value=current_settings.get('auto_backup_settings', True),
+            key="system_auto_backup_settings"
         )
         export_logs = st.checkbox(
             "Exportar logs automaticamente", 
-            value=current_settings.get('export_logs', False)
+            value=current_settings.get('export_logs', False),
+            key="system_export_logs"
         )
     
     with col3:
         maintenance_mode = st.checkbox(
             "Modo manutenção", 
-            value=current_settings.get('maintenance_mode', False)
+            value=current_settings.get('maintenance_mode', False),
+            key="system_maintenance_mode"
         )
         read_only_mode = st.checkbox(
             "Modo somente leitura", 
-            value=current_settings.get('read_only_mode', False)
+            value=current_settings.get('read_only_mode', False),
+            key="system_read_only_mode"
         )
     
-    if st.button("💾 Salvar Configurações do Sistema", type="primary"):
+    if st.button("💾 Salvar Configurações do Sistema", type="primary", key="save_system_settings"):
         updated_config = {
             'theme_preset': theme_preset,
             'sidebar_default': sidebar_default,
@@ -10056,20 +10239,24 @@ def render_user_settings_tab():
         username = st.text_input(
             "Nome de usuário:", 
             value=CONFIG['admin_username'], 
-            disabled=True
+            disabled=True,
+            key="user_username"
         )
         email = st.text_input(
             "Email:", 
-            value=current_settings.get('email', CONFIG['admin_email'])
+            value=current_settings.get('email', CONFIG['admin_email']),
+            key="user_email"
         )
         full_name = st.text_input(
             "Nome completo:", 
-            value=current_settings.get('full_name', 'Administrador PetCare')
+            value=current_settings.get('full_name', 'Administrador PetCare'),
+            key="user_full_name"
         )
         role = st.selectbox(
             "Função:", 
             ["Administrador", "DBA", "Desenvolvedor", "Analista"],
-            index=["Administrador", "DBA", "Desenvolvedor", "Analista"].index(current_settings.get('role', 'Administrador'))
+            index=["Administrador", "DBA", "Desenvolvedor", "Analista"].index(current_settings.get('role', 'Administrador')),
+            key="user_role"
         )
         
         st.markdown("#### 🌍 Localização")
@@ -10077,17 +10264,20 @@ def render_user_settings_tab():
         language = st.selectbox(
             "Idioma:", 
             ["Português (BR)", "English", "Español"],
-            index=["Português (BR)", "English", "Español"].index(current_settings.get('language', 'Português (BR)'))
+            index=["Português (BR)", "English", "Español"].index(current_settings.get('language', 'Português (BR)')),
+            key="user_language"
         )
         timezone = st.selectbox(
             "Fuso horário:", 
             ["America/Sao_Paulo", "UTC", "America/New_York", "Europe/London"],
-            index=["America/Sao_Paulo", "UTC", "America/New_York", "Europe/London"].index(current_settings.get('timezone', 'America/Sao_Paulo'))
+            index=["America/Sao_Paulo", "UTC", "America/New_York", "Europe/London"].index(current_settings.get('timezone', 'America/Sao_Paulo')),
+            key="user_timezone"
         )
         date_format = st.selectbox(
             "Formato de data:", 
             ["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"],
-            index=["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"].index(current_settings.get('date_format', 'DD/MM/YYYY'))
+            index=["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"].index(current_settings.get('date_format', 'DD/MM/YYYY')),
+            key="user_date_format"
         )
     
     with col2:
@@ -10097,17 +10287,20 @@ def render_user_settings_tab():
         default_page = st.selectbox(
             "Página inicial:", 
             ["Dashboard", "Tabelas", "Editor SQL", "Operações DBA", "Projetos"],
-            index=["Dashboard", "Tabelas", "Editor SQL", "Operações DBA", "Projetos"].index(current_settings.get('default_page', 'Dashboard'))
+            index=["Dashboard", "Tabelas", "Editor SQL", "Operações DBA", "Projetos"].index(current_settings.get('default_page', 'Dashboard')),
+            key="user_default_page"
         )
         
         items_per_page = st.slider(
             "Itens por página:", 
             10, 100, 
-            current_settings.get('items_per_page', 25)
+            current_settings.get('items_per_page', 25),
+            key="user_items_per_page"
         )
         auto_save_queries = st.checkbox(
             "Auto-salvar consultas", 
-            value=current_settings.get('auto_save_queries', True)
+            value=current_settings.get('auto_save_queries', True),
+            key="user_auto_save_queries"
         )
         
         st.markdown("#### 📊 Dashboard")
@@ -10115,38 +10308,44 @@ def render_user_settings_tab():
         dashboard_auto_refresh = st.slider(
             "Auto-refresh dashboard (seg):", 
             10, 300, 
-            current_settings.get('dashboard_auto_refresh', 60)
+            current_settings.get('dashboard_auto_refresh', 60),
+            key="user_dashboard_auto_refresh"
         )
         show_advanced_metrics = st.checkbox(
             "Mostrar métricas avançadas", 
-            value=current_settings.get('show_advanced_metrics', True)
+            value=current_settings.get('show_advanced_metrics', True),
+            key="user_show_advanced_metrics"
         )
         chart_animations = st.checkbox(
             "Animações em gráficos", 
-            value=current_settings.get('chart_animations', True)
+            value=current_settings.get('chart_animations', True),
+            key="user_chart_animations"
         )
         
         st.markdown("#### 🔔 Alertas Pessoais")
         
         email_alerts_user = st.checkbox(
             "Alertas por email", 
-            value=current_settings.get('email_alerts', False)
+            value=current_settings.get('email_alerts', False),
+            key="user_email_alerts"
         )
         if email_alerts_user:
             alert_frequency = st.selectbox(
                 "Frequência:", 
                 ["Imediato", "Diário", "Semanal"],
-                index=["Imediato", "Diário", "Semanal"].index(current_settings.get('alert_frequency', 'Diário'))
+                index=["Imediato", "Diário", "Semanal"].index(current_settings.get('alert_frequency', 'Diário')),
+                key="user_alert_frequency"
             )
         else:
             alert_frequency = current_settings.get('alert_frequency', 'Diário')
         
         critical_alerts_only = st.checkbox(
             "Apenas alertas críticos", 
-            value=current_settings.get('critical_alerts_only', True)
+            value=current_settings.get('critical_alerts_only', True),
+            key="user_critical_alerts_only"
         )
     
-    if st.button("💾 Salvar Perfil do Usuário", type="primary"):
+    if st.button("💾 Salvar Perfil do Usuário", type="primary", key="save_user_profile"):
         user_settings = {
             'email': email,
             'full_name': full_name,
