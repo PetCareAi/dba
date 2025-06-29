@@ -1,0 +1,75 @@
+# Arquivo de citação no formato Citation File Format (CFF)
+# Para mais informações: https://citation-file-format.github.io/
+
+cff-version: 1.2.0
+message: "Se você usar este software, por favor cite usando os metadados deste arquivo."
+type: software
+title: "PetCare DBA Admin"
+abstract: "Sistema de administração de banco de dados para clínicas veterinárias, desenvolvido com Streamlit e Supabase. Oferece interface intuitiva para gerenciamento de dados, execução de queries SQL, monitoramento de performance e assistente IA integrado."
+authors:
+  - family-names: "Silva"
+    given-names: "Estevam"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+    email: "estevam@petcareai.com"
+    affiliation: "PetCare AI"
+  - name: "PetCare AI Team"
+    email: "team@petcareai.com"
+    website: "https://petcareai.com"
+repository-code: "https://github.com/PetCareAi/dba"
+url: "https://petcare-dba-admin.streamlit.app"
+license: MIT
+version: "2.1.0"
+date-released: "2025-01-29"
+keywords:
+  - "database administration"
+  - "veterinary software"
+  - "streamlit"
+  - "supabase"
+  - "postgresql"
+  - "data management"
+  - "sql editor"
+  - "business intelligence"
+  - "artificial intelligence"
+  - "dashboard"
+  - "pet care"
+  - "dba tools"
+  - "database monitoring"
+  - "python"
+preferred-citation:
+  type: software
+  title: "PetCare DBA Admin: Sistema de Administração de Banco de Dados para Veterinária"
+  authors:
+    - family-names: "Silva"
+      given-names: "Estevam"
+      email: "estevam@petcareai.com"
+      affiliation: "PetCare AI"
+  year: 2025
+  url: "https://github.com/PetCareAi/dba"
+  version: "2.1.0"
+  abstract: "Sistema web profissional para administração de bancos de dados PostgreSQL/Supabase, especialmente desenvolvido para o setor veterinário. Inclui editor SQL avançado, dashboard em tempo real, gerenciamento de projetos, assistente IA e ferramentas de monitoramento."
+references:
+  - type: article
+    title: "Streamlit: The fastest way to build data apps"
+    authors:
+      - name: "Streamlit Team"
+    url: "https://streamlit.io"
+    year: 2019
+  - type: article
+    title: "Supabase: The Open Source Firebase Alternative"
+    authors:
+      - name: "Supabase Team"
+    url: "https://supabase.com"
+    year: 2020
+  - type: article
+    title: "PostgreSQL: The World's Most Advanced Open Source Relational Database"
+    authors:
+      - name: "PostgreSQL Global Development Group"
+    url: "https://postgresql.org"
+    year: 1996
+contact:
+  - email: "admin@petcareai.com"
+    name: "Equipe PetCare AI"
+    website: "https://petcareai.com"
+  - email: "estevam@petcareai.com"
+    name: "Estevam Silva"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
