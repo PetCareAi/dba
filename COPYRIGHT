@@ -1,0 +1,134 @@
+PetCare DBA Admin - Sistema de Gerenciamento de Banco de Dados
+Copyright (c) 2025 PetCare AI Technology Solutions
+
+Este software e documentação associada (o "Software") são protegidos por leis de direitos autorais e tratados internacionais. Todos os direitos são reservados.
+
+===============================================================================
+DECLARAÇÃO DE DIREITOS AUTORAIS
+===============================================================================
+
+O PetCare DBA Admin é um software proprietário desenvolvido pela PetCare AI Technology Solutions. O código fonte, documentação, designs, interfaces, logotipos, marcas registradas e todos os outros materiais incluídos neste repositório são protegidos por direitos autorais.
+
+Autores e Contribuidores:
+- Estevam Silva <estevam@petcareai.com> - Desenvolvedor Principal
+- Equipe PetCare AI - Desenvolvimento e Design
+- Contribuidores da Comunidade - Melhorias e Correções
+
+===============================================================================
+LICENÇA MIT
+===============================================================================
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+===============================================================================
+COMPONENTES DE TERCEIROS
+===============================================================================
+
+Este software utiliza as seguintes bibliotecas e ferramentas de terceiros:
+
+Streamlit
+- Copyright (c) 2019 Streamlit Inc.
+- License: Apache License 2.0
+- Website: https://streamlit.io
+
+Supabase Python Client
+- Copyright (c) 2021 Supabase
+- License: MIT License
+- Website: https://supabase.com
+
+Pandas
+- Copyright (c) 2008-2012, AQR Capital Management, LLC, Lambda Foundry, Inc. and PyData Development Team
+- License: BSD 3-Clause License
+- Website: https://pandas.pydata.org
+
+Plotly
+- Copyright (c) 2016-2018 Plotly, Inc
+- License: MIT License
+- Website: https://plotly.com
+
+PostgreSQL (psycopg2)
+- Copyright (c) 2006-2019, Federico Di Gregorio
+- License: GNU Lesser General Public License
+- Website: https://www.psycopg.org
+
+SQLParse
+- Copyright (c) 2008, Andi Albrecht
+- License: BSD License
+- Website: https://github.com/andialbrecht/sqlparse
+
+Para uma lista completa de dependências e suas licenças, consulte o arquivo requirements.txt e a documentação de cada biblioteca.
+
+===============================================================================
+MARCAS REGISTRADAS
+===============================================================================
+
+PetCare™, PetCare AI™, e o logotipo PetCare são marcas registradas ou marcas comerciais da PetCare AI Technology Solutions.
+
+Outras marcas registradas mencionadas neste software são propriedade de seus respectivos proprietários.
+
+===============================================================================
+DADOS E PRIVACIDADE
+===============================================================================
+
+O PetCare DBA Admin pode processar dados sensíveis relacionados a:
+- Informações de banco de dados
+- Configurações de sistema
+- Logs de atividade do usuário
+- Métricas de performance
+
+Os usuários são responsáveis por:
+- Configurar adequadamente as permissões de acesso
+- Implementar medidas de segurança apropriadas
+- Cumprir regulamentações locais de proteção de dados (LGPD, GDPR, etc.)
+- Realizar backups regulares de dados críticos
+
+===============================================================================
+ISENÇÃO DE RESPONSABILIDADE
+===============================================================================
+
+Este software é fornecido "como está", sem garantias de qualquer tipo. A PetCare AI Technology Solutions não se responsabiliza por:
+
+- Perda de dados ou corrupção de banco de dados
+- Problemas de performance ou indisponibilidade
+- Vulnerabilidades de segurança
+- Incompatibilidades com sistemas específicos
+- Danos diretos ou indiretos resultantes do uso do software
+
+===============================================================================
+INFORMAÇÕES DE CONTATO
+===============================================================================
+
+PetCare AI Technology Solutions
+Email: legal@petcareai.com
+Website: https://petcareai.com
+Endereço: Florianópolis, Santa Catarina, Brasil
+
+Para questões de licenciamento: licensing@petcareai.com
+Para questões de segurança: security@petcareai.com
+Para questões técnicas: support@petcareai.com
+
+===============================================================================
+ÚLTIMA ATUALIZAÇÃO
+===============================================================================
+
+Esta declaração de direitos autorais foi atualizada em: 29 de junho de 2025
+Versão do documento: 1.0
+Aplica-se às versões: 2.0.0 e superiores do PetCare DBA Admin
+
+===============================================================================
