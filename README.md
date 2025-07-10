@@ -148,10 +148,10 @@ Antes de iniciar, certifique-se de ter instalado:
 ### **1. Clone o Repositório**
 ```bash
 # Clone o projeto
-git clone https://github.com/estevam5s/petcare-dba-admin.git
+git clone https://github.com/PetCareAi/dba.git
 
 # Entre na pasta do projeto
-cd petcare-dba-admin
+cd dba
 ```
 
 ### **2. Crie o Ambiente Virtual**
@@ -429,13 +429,13 @@ Contribuições são sempre bem-vindas! Aqui está como você pode ajudar:
 ## 🆘 Suporte
 
 ### **Documentação**
-- **[Wiki do Projeto](https://github.com/estevam5s/petcare-dba-admin/wiki)** - Documentação completa
-- **[FAQ](https://github.com/estevam5s/petcare-dba-admin/wiki/FAQ)** - Perguntas frequentes
-- **[Troubleshooting](https://github.com/estevam5s/petcare-dba-admin/wiki/Troubleshooting)** - Solução de problemas
+- **[Wiki do Projeto](https://github.com/PetCareAi/petcare-dba-admin/wiki)** - Documentação completa
+- **[FAQ](https://github.com/PetCareAi/petcare-dba-admin/wiki/FAQ)** - Perguntas frequentes
+- **[Troubleshooting](https://github.com/PetCareAi/petcare-dba-admin/wiki/Troubleshooting)** - Solução de problemas
 
 ### **Comunidade**
-- **[Issues](https://github.com/estevam5s/petcare-dba-admin/issues)** - Reporte problemas ou sugira melhorias
-- **[Discussions](https://github.com/estevam5s/petcare-dba-admin/discussions)** - Discuta ideias e tire dúvidas
+- **[Issues](https://github.com/PetCareAi/petcare-dba-admin/issues)** - Reporte problemas ou sugira melhorias
+- **[Discussions](https://github.com/PetCareAi/petcare-dba-admin/discussions)** - Discuta ideias e tire dúvidas
 - **[Discord](https://discord.gg/petcare)** - Chat da comunidade (em breve)
 
 ### **Suporte Técnico**
@@ -447,31 +447,279 @@ Contribuições são sempre bem-vindas! Aqui está como você pode ajudar:
 
 ## 📄 Licença
 
-Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
+Este projeto está sob **licença proprietária** da **PetCareAi Ltda**.
 
 ```
-MIT License
+CONTRATO DE LICENCA DE SOFTWARE PROPRIETARIO
+PETCAREAI - SISTEMA INTELIGENTE PARA CUIDADOS COM PETS
 
-Copyright (c) 2025 PetCare AI
+Versao: 1.0
+Data de Vigencia: 1o de Junho de 2025
+Copyright (c) 2025 PetCareAi Ltda. Todos os direitos reservados.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+================================================================================
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. DEFINICOES
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Para os fins deste Contrato, os seguintes termos terao os significados abaixo:
+
+"Licenciante" significa PetCareAi Ltda., pessoa juridica de direito privado, 
+inscrita no CNPJ sob no [INSERIR], com sede em [INSERIR ENDERECO].
+
+"Licenciado" significa a pessoa fisica ou juridica que obteve acesso 
+autorizado ao Software sob os termos deste Contrato.
+
+"Software" significa o sistema PetCareAi, incluindo todo codigo fonte, codigo 
+objeto, bibliotecas, modulos, documentacao tecnica, interfaces de usuario, 
+algoritmos, bases de dados, arquivos de configuracao, assets digitais, e 
+qualquer material relacionado, em qualquer formato ou midia.
+
+"Documentacao" significa todos os manuais, especificacoes tecnicas, guias de 
+usuario, documentacao de API e demais materiais explicativos fornecidos pelo 
+Licenciante.
+
+"Dados Confidenciais" significa toda informacao nao publica relacionada ao 
+Software, incluindo codigo fonte, arquitetura, algoritmos, metodologias, 
+dados de treinamento de IA, metricas de performance e estrategias comerciais.
+
+"Uso Autorizado" significa o uso do Software exclusivamente para os fins e 
+dentro dos limites expressamente autorizados por escrito pelo Licenciante.
+
+================================================================================
+
+2. CONCESSAO DE LICENCA
+
+2.1 Escopo da Licenca
+O Licenciante concede ao Licenciado uma licenca nao exclusiva, nao transferivel, 
+revogavel e limitada para usar o Software exclusivamente de acordo com os 
+termos deste Contrato e dentro dos parametros especificados no Anexo A 
+(Especificacoes de Uso).
+
+2.2 Limitacoes de Uso
+A licenca esta limitada a:
+- Uso interno exclusivamente para fins autorizados
+- Numero especifico de usuarios conforme especificado no Anexo A
+- Ambiente de producao e/ou desenvolvimento conforme autorizado
+- Jurisdicao geografica conforme especificado no Anexo A
+
+2.3 Atualizacoes e Modificacoes
+O Licenciante podera, a seu exclusivo criterio, fornecer atualizacoes, patches 
+ou novas versoes do Software, que estarao sujeitas aos termos deste Contrato.
+
+================================================================================
+
+3. PROPRIEDADE INTELECTUAL E DIREITOS AUTORAIS
+
+3.1 Titularidade
+O Software constitui propriedade intelectual exclusiva do Licenciante, 
+protegida pelas leis brasileiras e internacionais de direitos autorais, 
+patentes, marcas registradas e segredos comerciais.
+
+3.2 Reserva de Direitos
+Todos os direitos nao expressamente concedidos neste Contrato sao reservados 
+ao Licenciante. O Licenciado nao adquire qualquer direito de propriedade 
+sobre o Software.
+
+3.3 Protecao de Algoritmos de IA
+Os algoritmos de inteligencia artificial, modelos de machine learning, bases 
+de dados de treinamento e metodologias incorporadas ao Software constituem 
+segredos comerciais do Licenciante e sao protegidas como informacao confidencial.
+
+================================================================================
+
+4. RESTRICOES E PROIBICOES
+
+4.1 Atividades Proibidas
+E expressamente proibido ao Licenciado:
+
+a) Engenharia Reversa: Descompilar, desmontar, fazer engenharia reversa ou 
+   tentar descobrir o codigo fonte do Software;
+
+b) Modificacao: Alterar, adaptar, traduzir ou criar obras derivadas baseadas 
+   no Software;
+
+c) Distribuicao: Copiar, distribuir, sublicenciar, vender, alugar, emprestar 
+   ou transferir o Software para terceiros;
+
+d) Uso Nao Autorizado: Utilizar o Software fora dos parametros especificados 
+   ou para fins nao autorizados;
+
+e) Remocao de Identificacao: Remover, alterar ou obscurecer avisos de 
+   propriedade intelectual, copyright ou outros identificadores;
+
+f) Benchmarking: Realizar testes comparativos ou analises competitivas sem 
+   autorizacao previa por escrito;
+
+g) Extracao de Dados: Extrair, copiar ou reutilizar dados, algoritmos ou 
+   metodologias do Software.
+
+4.2 Restricoes Tecnicas
+O Licenciado nao podera:
+- Contornar medidas de protecao tecnica ou controles de acesso
+- Interferir no funcionamento normal do Software
+- Sobrecarregar intencionalmente os sistemas do Licenciante
+
+================================================================================
+
+5. CONFIDENCIALIDADE E SEGURANCA
+
+5.1 Obrigacoes de Confidencialidade
+O Licenciado compromete-se a:
+- Manter absoluta confidencialidade sobre todos os Dados Confidenciais
+- Implementar medidas de seguranca adequadas para proteger informacoes confidenciais
+- Limitar o acesso ao Software apenas a funcionarios com necessidade justificada
+- Notificar imediatamente qualquer violacao ou suspeita de violacao de seguranca
+
+5.2 Medidas de Seguranca Obrigatorias
+O Licenciado deve implementar e manter:
+- Controles de acesso baseados em funcao (RBAC)
+- Autenticacao multifator para todos os usuarios
+- Criptografia de dados em transito e em repouso
+- Logs de auditoria detalhados
+- Politicas de backup e recuperacao de desastres
+
+5.3 Tratamento de Dados Pessoais
+O uso do Software deve estar em conformidade com a Lei Geral de Protecao de 
+Dados (LGPD) e demais regulamentacoes aplicaveis de privacidade e protecao 
+de dados.
+
+================================================================================
+
+6. COMPLIANCE E AUDITORIA
+
+6.1 Direito de Auditoria
+O Licenciante reserva-se o direito de auditar o uso do Software pelo 
+Licenciado mediante notificacao previa de 30 (trinta) dias, durante horario 
+comercial normal.
+
+6.2 Relatorios de Compliance
+O Licenciado deve fornecer relatorios trimestrais sobre o uso do Software, 
+conforme modelo fornecido pelo Licenciante.
+
+6.3 Controles de Exportacao
+O Licenciado compromete-se a cumprir todas as leis e regulamentacoes 
+aplicaveis de controle de exportacao e importacao.
+
+================================================================================
+
+7. GARANTIAS E RESPONSABILIDADES
+
+7.1 Isencao de Garantias
+O SOFTWARE E FORNECIDO "COMO ESTA" E "CONFORME DISPONIVEL". O LICENCIANTE 
+ISENTA-SE EXPRESSAMENTE DE TODAS AS GARANTIAS, EXPRESSAS OU IMPLICITAS, 
+INCLUINDO MAS NAO LIMITADAS A GARANTIAS DE COMERCIALIZACAO, ADEQUACAO A UM 
+PROPOSITO ESPECIFICO, NAO VIOLACAO E FUNCIONAMENTO ININTERRUPTO.
+
+7.2 Limitacao de Responsabilidade
+EM NENHUMA HIPOTESE O LICENCIANTE SERA RESPONSAVEL POR:
+- Danos indiretos, incidentais, especiais, punitivos ou consequenciais
+- Perda de lucros, receita, dados ou oportunidades de negocio
+- Interrupcao de negocios ou falhas de sistema
+- Danos que excedam o valor pago pelo Licenciado nos 12 meses anteriores
+
+7.3 Indenizacao
+O Licenciado compromete-se a indenizar e manter o Licenciante livre de 
+qualquer reclamacao, dano ou responsabilidade decorrente do uso inadequado 
+ou violacao dos termos deste Contrato.
+
+================================================================================
+
+8. VIGENCIA E RESCISAO
+
+8.1 Vigencia
+Este Contrato entra em vigor na data de sua assinatura e permanece valido 
+ate ser rescindido conforme previsto neste documento.
+
+8.2 Rescisao por Violacao
+O Licenciante podera rescindir este Contrato imediatamente, mediante 
+notificacao por escrito, em caso de:
+- Violacao material dos termos deste Contrato
+- Falencia, insolvencia ou dissolucao do Licenciado
+- Uso nao autorizado ou violacao de seguranca
+
+8.3 Efeitos da Rescisao
+Apos a rescisao:
+- O Licenciado deve cessar imediatamente todo uso do Software
+- Destruir todas as copias do Software e Documentacao
+- Devolver ou destruir todos os Dados Confidenciais
+- Fornecer certificacao por escrito do cumprimento dessas obrigacoes
+
+================================================================================
+
+9. DISPOSICOES LEGAIS
+
+9.1 Lei Aplicavel
+Este Contrato e regido exclusivamente pelas leis da Republica Federativa 
+do Brasil.
+
+9.2 Foro de Eleicao
+Fica eleito o foro da Comarca de [INSERIR CIDADE], Estado de [INSERIR ESTADO], 
+para dirimir quaisquer controversias decorrentes deste Contrato.
+
+9.3 Integralidade do Contrato
+Este Contrato constitui o acordo integral entre as partes e substitui todos 
+os entendimentos anteriores, verbais ou escritos.
+
+9.4 Modificacoes
+Modificacoes somente serao validas se formalizadas por escrito e assinadas 
+por ambas as partes.
+
+9.5 Independencia das Clausulas
+A invalidade de qualquer clausula nao afetara a validade das demais 
+disposicoes deste Contrato.
+
+================================================================================
+
+10. CONTATOS E NOTIFICACOES
+
+10.1 Questoes Legais e Contratuais
+Email: legal@petcareai.com.br
+Telefone: +55 (XX) XXXX-XXXX
+Endereco: [INSERIR ENDERECO COMPLETO]
+
+10.2 Suporte Tecnico
+Email: support@petcareai.com.br
+Portal: https://support.petcareai.com.br
+
+10.3 Notificacao de Violacoes de Seguranca
+Email: security@petcareai.com.br
+Telefone 24h: +55 (XX) XXXX-XXXX
+
+================================================================================
+
+ANEXOS
+
+Anexo A - Especificacoes de Uso
+[A ser preenchido conforme cada contrato especifico]
+
+Anexo B - Politica de Privacidade e Tratamento de Dados
+[Documento separado com politicas detalhadas de LGPD]
+
+Anexo C - Especificacoes Tecnicas e SLA
+[Service Level Agreement e especificacoes tecnicas]
+
+================================================================================
+
+AVISO LEGAL IMPORTANTE:
+
+ESTE E UM SOFTWARE PROPRIETARIO E CONFIDENCIAL DA PETCAREAI LTDA.
+
+ACESSO, USO OU DISTRIBUICAO NAO AUTORIZADOS CONSTITUEM VIOLACAO DE DIREITOS 
+AUTORAIS E PODEM RESULTAR EM ACAO CIVIL E CRIMINAL CONFORME PREVISTO NOS 
+ARTIGOS 184 E 186 DO CODIGO PENAL BRASILEIRO.
+
+Para autorizacoes e licenciamento: legal@petcareai.com.br
+Website oficial: https://petcareai.com.br
+
+================================================================================
+
+Copyright (c) 2025 PetCareAi Ltda. Todos os direitos reservados.
+Documento gerado automaticamente em: [DATA ATUAL]
+Versao do documento: 2.0
+Ultima atualizacao: Junho 2025
 ```
+
+Para licenciamento e autorizações: **legal@petcareai.com.br**
 
 ---
 
@@ -490,9 +738,9 @@ SOFTWARE.
 - **Endereço**: Florianópolis, Santa Catarina, Brasil
 
 ### **Links do Projeto**
-- **Repositório**: [https://github.com/estevam5s/petcare-dba-admin](https://github.com/estevam5s/petcare-dba-admin)
-- **Demo Online**: [https://petcare-dba-admin.streamlit.app](https://petcare-dba-admin.streamlit.app)
-- **Documentação**: [https://docs.petcareai.com](https://docs.petcareai.com)
+- **Repositório**: [https://github.com/PetCareAi/dba](https://github.com/PetCareAi/dba)
+- **Demo Online**: [https://petcare-dba-admin.streamlit.app](https://https://petcareai-dba-app.streamlit.app)
+- **Documentação**: [https://docs.petcareai.com](https://docs.petcareai.com.br)
 
 ---
 
