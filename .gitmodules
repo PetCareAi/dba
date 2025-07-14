@@ -1,0 +1,42 @@
+# .gitmodules - Configuração de submódulos Git
+# Este arquivo define submódulos externos utilizados no projeto
+
+[submodule "docs/theme"]
+	path = docs/theme
+	url = https://github.com/petcareai/docs-theme.git
+	branch = main
+
+[submodule "external/supabase-py"]
+	path = external/supabase-py
+	url = https://github.com/supabase-community/supabase-py.git
+	branch = main
+
+[submodule "external/streamlit-components"]
+	path = external/streamlit-components
+	url = https://github.com/petcareai/custom-streamlit-components.git
+	branch = develop
+
+[submodule "database/migrations-toolkit"]
+	path = database/migrations-toolkit
+	url = https://github.com/petcareai/database-migrations.git
+	branch = main
+
+[submodule "notebooks/templates"]
+	path = notebooks/templates
+	url = https://github.com/petcareai/analytics-templates.git
+	branch = main
+
+[submodule "scripts/deployment-tools"]
+	path = scripts/deployment-tools
+	url = https://github.com/petcareai/deployment-scripts.git
+	branch = production
+
+[submodule "tests/fixtures"]
+	path = tests/fixtures
+	url = https://github.com/petcareai/test-fixtures.git
+	branch = main
+
+[submodule "static/assets"]
+	path = static/assets
+	url = https://github.com/petcareai/brand-assets.git
+	branch = main
