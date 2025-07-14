@@ -1,0 +1,322 @@
+#!/bin/bash
+# Hook commit-msg para PetCare DBA Admin
+# Valida e melhora mensagens de commit seguindo padrões de qualidade
+
+set -e
+
+# Cores para output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+NC='\033[0m' # No Color
+
+# Arquivo da mensagem de commit
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+echo -e "${BLUE}📝 Validando mensagem de commit...${NC}"
+
+# Função para imprimir cabeçalho de seção
+print_section() {
+    echo -e "\n${BLUE}═══ $1 ═══${NC}"
+}
+
+# ═══════════════════════════════════════════════════════════════
+# 1. VERIFICAÇÕES BÁSICAS
+# ═══════════════════════════════════════════════════════════════
+print_section "Verificações Básicas"
+
+# Ignorar commits de merge
+if echo "$COMMIT_MSG" | grep -q "^Merge "; then
+    echo -e "${GREEN}✅ Commit de merge detectado - pulando validação${NC}"
+    exit 0
+fi
+
+# Ignorar commits de revert
+if echo "$COMMIT_MSG" | grep -q "^Revert "; then
+    echo -e "${GREEN}✅ Commit de revert detectado - pulando validação${NC}"
+    exit 0
+fi
+
+# Ignorar commits automáticos do GitHub
+if echo "$COMMIT_MSG" | grep -qE "^(Initial commit|Create|Update|Delete).*\.md$"; then
+    echo -e "${GREEN}✅ Commit automático detectado - pulando validação${NC}"
+    exit 0
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 2. VALIDAÇÃO DE TAMANHO
+# ═══════════════════════════════════════════════════════════════
+print_section "Validação de Tamanho"
+
+# Obter primeira linha (subject)
+SUBJECT=$(echo "$COMMIT_MSG" | head -n1)
+SUBJECT_LENGTH=${#SUBJECT}
+
+# Verificar tamanho mínimo
+if [ $SUBJECT_LENGTH -lt 10 ]; then
+    echo -e "${RED}❌ Mensagem muito curta (${SUBJECT_LENGTH} caracteres)${NC}"
+    echo -e "${BLUE}💡 Use pelo menos 10 caracteres para descrever a mudança${NC}"
+    echo -e "${YELLOW}Exemplo: fix(auth): corrigir validação de login${NC}"
+    exit 1
+fi
+
+# Verificar tamanho máximo
+if [ $SUBJECT_LENGTH -gt 72 ]; then
+    echo -e "${YELLOW}⚠️  Mensagem longa (${SUBJECT_LENGTH} caracteres)${NC}"
+    echo -e "${BLUE}💡 Tente manter abaixo de 72 caracteres no título${NC}"
+    echo -e "${YELLOW}Mensagem atual: ${SUBJECT}${NC}"
+    
+    # Não bloquear, apenas avisar
+    read -p "Continuar mesmo assim? [Y/n] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+        echo -e "${BLUE}Edite a mensagem e tente novamente${NC}"
+        exit 1
+    fi
+fi
+
+echo -e "  ${GREEN}✅ Tamanho: ${SUBJECT_LENGTH} caracteres${NC}"
+
+# ═══════════════════════════════════════════════════════════════
+# 3. VALIDAÇÃO DE FORMATO CONVENTIONAL COMMITS
+# ═══════════════════════════════════════════════════════════════
+print_section "Validação de Formato"
+
+# Tipos válidos de commit
+VALID_TYPES="feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert"
+
+# Escopos válidos para o projeto
+VALID_SCOPES="auth|database|ui|api|config|docs|test|deploy|monitoring|backup|security|performance|analytics|reports"
+
+# Verificar formato básico
+if echo "$SUBJECT" | grep -qE "^(${VALID_TYPES})(\(.*\))?: .+"; then
+    # Extrair componentes
+    TYPE=$(echo "$SUBJECT" | sed -E "s/^(${VALID_TYPES})(\(.*\))?: .*/\1/")
+    SCOPE=$(echo "$SUBJECT" | sed -E "s/^${VALID_TYPES}\(([^)]*)\): .*/\1/" | grep -v "^${SUBJECT}$" || echo "")
+    DESCRIPTION=$(echo "$SUBJECT" | sed -E "s/^(${VALID_TYPES})(\([^)]*\))?: (.*)/\3/")
+    
+    echo -e "  ${GREEN}✅ Formato válido detectado${NC}"
+    echo "    Tipo: $TYPE"
+    [ -n "$SCOPE" ] && echo "    Escopo: $SCOPE"
+    echo "    Descrição: $DESCRIPTION"
+    
+    # Validar escopo se presente
+    if [ -n "$SCOPE" ] && ! echo "$SCOPE" | grep -qE "^(${VALID_SCOPES})$"; then
+        echo -e "  ${YELLOW}⚠️  Escopo '$SCOPE' não reconhecido${NC}"
+        echo -e "  ${BLUE}💡 Escopos sugeridos: ${VALID_SCOPES//|/, }${NC}"
+    fi
+    
+else
+    echo -e "${YELLOW}⚠️  Formato não convencional detectado${NC}"
+    echo -e "${BLUE}💡 Formato recomendado: tipo(escopo): descrição${NC}"
+    echo ""
+    echo -e "${BLUE}Tipos válidos:${NC}"
+    echo "  • feat: nova funcionalidade"
+    echo "  • fix: correção de bug"
+    echo "  • docs: alteração na documentação"
+    echo "  • style: formatação, ponto e vírgula, etc"
+    echo "  • refactor: refatoração de código"
+    echo "  • test: adição ou correção de testes"
+    echo "  • chore: manutenção geral"
+    echo "  • perf: melhoria de performance"
+    echo "  • ci: alterações no CI/CD"
+    echo "  • build: alterações no build"
+    echo ""
+    echo -e "${BLUE}Escopos sugeridos:${NC} ${VALID_SCOPES//|/, }"
+    echo ""
+    echo -e "${YELLOW}Exemplos:${NC}"
+    echo "  feat(auth): adicionar autenticação por token"
+    echo "  fix(database): corrigir conexão com Supabase"
+    echo "  docs(readme): atualizar instruções de instalação"
+    echo "  style(app): formatar código com black"
+    echo ""
+    
+    read -p "Deseja continuar com a mensagem atual? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo -e "${BLUE}Edite a mensagem e tente novamente${NC}"
+        exit 1
+    fi
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 4. VALIDAÇÃO DE CONTEÚDO
+# ═══════════════════════════════════════════════════════════════
+print_section "Validação de Conteúdo"
+
+# Verificar se começa com maiúscula (após o tipo:)
+if echo "$SUBJECT" | grep -qE ": [a-z]"; then
+    echo -e "  ${YELLOW}⚠️  Descrição deveria começar com letra minúscula${NC}"
+    echo -e "  ${BLUE}💡 Convenção: 'feat(auth): adicionar login' (não 'Adicionar')${NC}"
+fi
+
+# Verificar se termina com ponto
+if echo "$SUBJECT" | grep -q "\.$"; then
+    echo -e "  ${YELLOW}⚠️  Evite ponto final no título${NC}"
+    echo -e "  ${BLUE}💡 O título é como um rótulo, não uma frase${NC}"
+fi
+
+# Verificar palavras problemáticas
+PROBLEMATIC_WORDS="WIP|TODO|FIXME|DEBUG|TEST|TEMP|TEMPORARY"
+if echo "$SUBJECT" | grep -qiE "\b(${PROBLEMATIC_WORDS})\b"; then
+    echo -e "  ${RED}❌ Mensagem contém palavras problemáticas${NC}"
+    echo -e "  ${BLUE}💡 Evite: ${PROBLEMATIC_WORDS//|/, }${NC}"
+    echo -e "  ${YELLOW}💡 Esta parece ser uma mudança temporária ou incompleta${NC}"
+    
+    read -p "Continuar mesmo assim? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+fi
+
+# Verificar verbos imperativos
+GOOD_VERBS="adicionar|remover|corrigir|atualizar|implementar|refatorar|otimizar|melhorar|configurar|integrar"
+BAD_VERBS="adicionado|removido|corrigido|atualizado|implementado|refatorado|otimizado|melhorado|configurado|integrado"
+
+if echo "$DESCRIPTION" | grep -qiE "\b(${BAD_VERBS})\b"; then
+    echo -e "  ${YELLOW}⚠️  Use verbos no imperativo${NC}"
+    echo -e "  ${BLUE}💡 'adicionar feature' em vez de 'adicionado feature'${NC}"
+    echo -e "  ${BLUE}💡 'corrigir bug' em vez de 'corrigido bug'${NC}"
+fi
+
+echo -e "  ${GREEN}✅ Validação de conteúdo concluída${NC}"
+
+# ═══════════════════════════════════════════════════════════════
+# 5. VALIDAÇÃO DE CORPO DA MENSAGEM
+# ═══════════════════════════════════════════════════════════════
+print_section "Validação do Corpo"
+
+# Verificar se há corpo da mensagem
+BODY=$(echo "$COMMIT_MSG" | tail -n +3)
+HAS_BODY=false
+
+if [ -n "$BODY" ] && [ "$BODY" != "" ]; then
+    HAS_BODY=true
+    echo -e "  ${GREEN}✅ Corpo da mensagem presente${NC}"
+    
+    # Verificar linha em branco após o título
+    SECOND_LINE=$(echo "$COMMIT_MSG" | sed -n '2p')
+    if [ -n "$SECOND_LINE" ]; then
+        echo -e "  ${YELLOW}⚠️  Deve haver linha em branco após o título${NC}"
+        echo -e "  ${BLUE}💡 Formato: título + linha vazia + corpo${NC}"
+    fi
+    
+    # Verificar tamanho das linhas no corpo
+    while IFS= read -r line; do
+        if [ ${#line} -gt 72 ]; then
+            echo -e "  ${YELLOW}⚠️  Linha no corpo muito longa (${#line} chars)${NC}"
+            echo -e "  ${BLUE}💡 Mantenha linhas do corpo com até 72 caracteres${NC}"
+            break
+        fi
+    done <<< "$BODY"
+    
+else
+    echo -e "  ${BLUE}ℹ️  Sem corpo da mensagem${NC}"
+    
+    # Sugerir corpo para mudanças complexas
+    if echo "$TYPE" | grep -qE "^(feat|fix|refactor)$"; then
+        echo -e "  ${BLUE}💡 Para mudanças importantes, considere adicionar:${NC}"
+        echo "    • Contexto da mudança"
+        echo "    • Razão da mudança"
+        echo "    • Impacto esperado"
+        echo "    • Instruções especiais"
+    fi
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 6. SUGESTÕES DE MELHORIA
+# ═══════════════════════════════════════════════════════════════
+print_section "Sugestões de Melhoria"
+
+# Analisar tipo de commit e dar sugestões específicas
+case "$TYPE" in
+    "feat")
+        echo -e "  ${BLUE}💡 Nova funcionalidade:${NC}"
+        echo "    • Descreva o que a feature faz"
+        echo "    • Mencione se há breaking changes"
+        echo "    • Inclua referência a issues/tickets"
+        ;;
+    "fix")
+        echo -e "  ${BLUE}💡 Correção de bug:${NC}"
+        echo "    • Descreva o problema que foi corrigido"
+        echo "    • Mencione como reproduzir o bug (se aplicável)"
+        echo "    • Inclua referência ao issue/ticket"
+        ;;
+    "docs")
+        echo -e "  ${BLUE}💡 Documentação:${NC}"
+        echo "    • Especifique qual parte foi documentada"
+        echo "    • Mencione se é nova documentação ou atualização"
+        ;;
+    "refactor")
+        echo -e "  ${BLUE}💡 Refatoração:${NC}"
+        echo "    • Explique por que a refatoração foi necessária"
+        echo "    • Mencione se há mudanças de comportamento"
+        echo "    • Inclua métricas de melhoria (se aplicável)"
+        ;;
+esac
+
+# Verificar se menciona issues
+if ! echo "$COMMIT_MSG" | grep -qE "#[0-9]+|closes|fixes|resolves"; then
+    echo -e "  ${BLUE}💡 Considere referenciar issues:${NC}"
+    echo "    • #123 - para referenciar issue"
+    echo "    • closes #123 - para fechar issue"
+    echo "    • fixes #123 - para correções"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 7. MELHORIAS AUTOMÁTICAS
+# ═══════════════════════════════════════════════════════════════
+print_section "Melhorias Automáticas"
+
+IMPROVED_MSG="$COMMIT_MSG"
+IMPROVEMENTS_MADE=false
+
+# Corrigir capitalização comum
+if echo "$SUBJECT" | grep -qE ": [A-Z]" && ! echo "$SUBJECT" | grep -qE "^(feat|fix|docs|style|refactor|test|chore|perf|ci|build)"; then
+    # Se não segue conventional commits, não alterar
+    echo -e "  ${BLUE}ℹ️  Mantendo capitalização original${NC}"
+elif echo "$SUBJECT" | grep -qE ": [A-Z]"; then
+    # Corrigir para minúscula após os dois pontos
+    IMPROVED_SUBJECT=$(echo "$SUBJECT" | sed -E 's/: ([A-Z])/: \l\1/')
+    IMPROVED_MSG=$(echo "$COMMIT_MSG" | sed "1s/.*/$IMPROVED_SUBJECT/")
+    IMPROVEMENTS_MADE=true
+    echo -e "  ${GREEN}✅ Corrigida capitalização: primeira letra minúscula${NC}"
+fi
+
+# Remover ponto final se presente
+if echo "$SUBJECT" | grep -q "\.$"; then
+    IMPROVED_SUBJECT=$(echo "$SUBJECT" | sed 's/\.$$//')
+    IMPROVED_MSG=$(echo "$IMPROVED_MSG" | sed "1s/.*/$IMPROVED_SUBJECT/")
+    IMPROVEMENTS_MADE=true
+    echo -e "  ${GREEN}✅ Removido ponto final do título${NC}"
+fi
+
+# Aplicar melhorias se houver
+if [ "$IMPROVEMENTS_MADE" = true ]; then
+    echo -e "\n${YELLOW}💡 Mensagem melhorada automaticamente:${NC}"
+    echo -e "${GREEN}Nova mensagem:${NC}"
+    echo "$IMPROVED_MSG" | head -1
+    
+    read -p "Aplicar melhorias? [Y/n] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+        echo "$IMPROVED_MSG" > "$COMMIT_MSG_FILE"
+        echo -e "${GREEN}✅ Melhorias aplicadas!${NC}"
+    fi
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# CONCLUSÃO
+# ═══════════════════════════════════════════════════════════════
+echo -e "\n${GREEN}🎉 Validação de mensagem concluída!${NC}"
+echo -e "${BLUE}📊 Resumo:${NC}"
+echo "  • Tamanho: $SUBJECT_LENGTH caracteres"
+echo "  • Formato: $([ -n "$TYPE" ] && echo "Conventional ($TYPE)" || echo "Livre")"
+echo "  • Escopo: $([ -n "$SCOPE" ] && echo "$SCOPE" || echo "Nenhum")"
+echo "  • Corpo: $([ "$HAS_BODY" = true ] && echo "Presente" || echo "Ausente")"
+
+exit 0
