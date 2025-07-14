@@ -1,0 +1,119 @@
+# Configuração do Dependabot para atualizações automáticas de dependências
+# Colocar em: .github/dependabot.yml
+
+version: 2
+updates:
+  # Atualizações para dependências Python (pip)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/Sao_Paulo"
+    
+    # Configurações de revisão
+    reviewers:
+      - "petcareai/core-team"
+    assignees:
+      - "petcareai/maintainers"
+    
+    # Configurações de PR
+    open-pull-requests-limit: 5
+    
+    # Prefixos para commits e PRs
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps-dev"
+      include: "scope"
+    
+    # Labels para PRs
+    labels:
+      - "dependencies"
+      - "python"
+      - "automated"
+    
+    # Agrupar atualizações relacionadas
+    groups:
+      streamlit-ecosystem:
+        patterns:
+          - "streamlit*"
+          - "plotly*"
+          - "pandas*"
+        
+      database-libraries:
+        patterns:
+          - "supabase*"
+          - "psycopg*"
+          - "sqlalchemy*"
+          - "asyncpg*"
+        
+      ai-ml-libraries:
+        patterns:
+          - "google-*"
+          - "openai*"
+          - "anthropic*"
+          - "langchain*"
+        
+      development-tools:
+        dependency-type: "development"
+        patterns:
+          - "pytest*"
+          - "black*"
+          - "flake8*"
+          - "mypy*"
+          - "pre-commit*"
+    
+    # Versionamento semântico
+    versioning-strategy: "increase"
+    
+    # Configurações de rebase
+    rebase-strategy: "auto"
+    
+    # Ignorar certas dependências se necessário
+    ignore:
+      # Exemplo: ignorar atualizações major de biblioteca crítica
+      # - dependency-name: "streamlit"
+      #   versions: ["2.x"]
+      
+      # Ignorar dependências que podem quebrar compatibilidade
+      - dependency-name: "python"
+        versions: [">3.11"]
+
+  # Atualizações para GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Sao_Paulo"
+    
+    reviewers:
+      - "petcareai/devops-team"
+    
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    
+    labels:
+      - "ci/cd"
+      - "github-actions"
+      - "automated"
+    
+    open-pull-requests-limit: 3
+
+  # Atualizações para Docker (se houver Dockerfile)
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      day: "first monday"
+      time: "11:00"
+      timezone: "America/Sao_Paulo"
+    
+    reviewers:
+      - "petcareai/devops-team"
+    
+    commit-message:
+      prefix: "docker"
