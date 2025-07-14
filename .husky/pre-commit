@@ -1,0 +1,108 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Executando verificações pré-commit..."
+
+# Verificar se existem arquivos Python
+if git diff --cached --name-only | grep -E "\.(py)$" > /dev/null; then
+    echo "📝 Arquivos Python detectados"
+    
+    # Verificar formatação com black (se disponível)
+    if command -v black >/dev/null 2>&1; then
+        echo "🎨 Verificando formatação do código com black..."
+        black --check --diff .
+        if [ $? -ne 0 ]; then
+            echo "❌ Formatação incorreta detectada. Execute: black ."
+            exit 1
+        fi
+    fi
+    
+    # Verificar imports com isort (se disponível)
+    if command -v isort >/dev/null 2>&1; then
+        echo "📦 Verificando ordem dos imports com isort..."
+        isort --check-only --diff .
+        if [ $? -ne 0 ]; then
+            echo "❌ Imports fora de ordem. Execute: isort ."
+            exit 1
+        fi
+    fi
+    
+    # Verificar lint com flake8 (se disponível)
+    if command -v flake8 >/dev/null 2>&1; then
+        echo "🔍 Verificando código com flake8..."
+        flake8 . --max-line-length=120 --extend-ignore=E203,W503
+        if [ $? -ne 0 ]; then
+            echo "❌ Problemas de lint detectados"
+            exit 1
+        fi
+    fi
+    
+    # Verificar tipos com mypy (se disponível)
+    if command -v mypy >/dev/null 2>&1; then
+        echo "🔬 Verificando tipos com mypy..."
+        mypy app.py --ignore-missing-imports
+        if [ $? -ne 0 ]; then
+            echo "⚠️ Avisos de tipos detectados"
+            # Não falhamos aqui, apenas alertamos
+        fi
+    fi
+fi
+
+# Verificar se existem arquivos SQL
+if git diff --cached --name-only | grep -E "\.(sql)$" > /dev/null; then
+    echo "🗄️ Arquivos SQL detectados"
+    
+    # Verificar sintaxe básica SQL
+    for arquivo in $(git diff --cached --name-only | grep -E "\.(sql)$"); do
+        echo "🔍 Verificando sintaxe SQL: $arquivo"
+        
+        # Verificações básicas de sintaxe SQL
+        if grep -i "drop table\|truncate\|delete from.*where.*1=1" "$arquivo" > /dev/null; then
+            echo "⚠️ Comandos perigosos detectados em $arquivo"
+            echo "   Por favor, revise cuidadosamente antes do commit"
+        fi
+        
+        # Verificar se tem ponto e vírgula no final
+        if ! tail -1 "$arquivo" | grep -q ";"; then
+            echo "⚠️ Arquivo SQL $arquivo pode estar sem ponto e vírgula no final"
+        fi
+    done
+fi
+
+# Verificar arquivos de configuração
+if git diff --cached --name-only | grep -E "\.(toml|yaml|yml|json)$" > /dev/null; then
+    echo "⚙️ Arquivos de configuração detectados"
+    
+    # Verificar sintaxe JSON
+    for arquivo in $(git diff --cached --name-only | grep -E "\.(json)$"); do
+        echo "🔍 Verificando sintaxe JSON: $arquivo"
+        if command -v python >/dev/null 2>&1; then
+            python -m json.tool "$arquivo" > /dev/null
+            if [ $? -ne 0 ]; then
+                echo "❌ JSON inválido em $arquivo"
+                exit 1
+            fi
+        fi
+    done
+fi
+
+# Verificar tamanho dos arquivos
+echo "📏 Verificando tamanho dos arquivos..."
+for arquivo in $(git diff --cached --name-only); do
+    if [ -f "$arquivo" ]; then
+        tamanho=$(wc -c < "$arquivo")
+        if [ $tamanho -gt 1048576 ]; then  # 1MB
+            echo "⚠️ Arquivo grande detectado: $arquivo ($(echo $tamanho | awk '{print int($1/1024/1024)"MB"}')"
+            echo "   Considere usar Git LFS para arquivos grandes"
+        fi
+    fi
+done
+
+# Verificar se não há credenciais expostas
+echo "🔐 Verificando por credenciais expostas..."
+if git diff --cached | grep -i -E "(password|senha|api_key|secret|token|credential)" | grep -v "placeholder\|example\|dummy\|REMOVIDO"; then
+    echo "⚠️ Possíveis credenciais detectadas no commit"
+    echo "   Verifique se não há informações sensíveis sendo commitadas"
+fi
+
+echo "✅ Verificações pré-commit concluídas com sucesso!"
