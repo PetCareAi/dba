@@ -1,0 +1,113 @@
+# MANIFEST.in - Especifica quais arquivos incluir na distribuição
+# Usado pelo setuptools para determinar quais arquivos fazer parte do pacote
+
+# Incluir arquivos de documentação
+include README.md
+include LICENSE
+include CHANGELOG.md
+include CONTRIBUTING.md
+
+# Incluir configurações da aplicação
+include app.py
+recursive-include .streamlit *.toml
+recursive-include .streamlit *.yaml
+recursive-include .streamlit *.yml
+
+# Incluir scripts de banco de dados
+recursive-include database *.sql
+recursive-include database *.py
+recursive-include database README.md
+
+# Incluir notebooks de análise
+recursive-include notebooks *.ipynb
+recursive-include notebooks *.py
+recursive-include notebooks *.md
+recursive-include notebooks *.txt
+
+# Incluir scripts de release
+recursive-include release-scripts *.sh
+recursive-include release-scripts *.py
+recursive-include release-scripts *.md
+
+# Incluir hooks do Git
+recursive-include .githooks *
+recursive-include .husky *
+
+# Incluir arquivos de configuração
+include requirements.txt
+include requirements-dev.txt
+include Makefile
+include .travis.yml
+include .gitignore
+include CODEOWNERS
+
+# Incluir assets e recursos estáticos
+recursive-include static *.css
+recursive-include static *.js
+recursive-include static *.png
+recursive-include static *.jpg
+recursive-include static *.svg
+recursive-include static *.ico
+
+# Incluir templates
+recursive-include templates *.html
+recursive-include templates *.jinja2
+
+# Incluir arquivos de teste
+recursive-include tests *.py
+recursive-include tests *.json
+recursive-include tests *.yaml
+recursive-include tests *.sql
+
+# Incluir dados de exemplo (se houver)
+recursive-include data *.csv
+recursive-include data *.json
+recursive-include data *.sql
+
+# Incluir arquivos de configuração de desenvolvimento
+include setup.py
+include setup.cfg
+include pyproject.toml
+include tox.ini
+include pytest.ini
+
+# Incluir scripts utilitários
+recursive-include scripts *.py
+recursive-include scripts *.sh
+
+# Incluir documentação adicional
+recursive-include docs *.md
+recursive-include docs *.rst
+recursive-include docs *.txt
+recursive-include docs *.png
+recursive-include docs *.jpg
+
+# Excluir arquivos temporários e de cache
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *.pyd
+global-exclude __pycache__
+global-exclude .DS_Store
+global-exclude *.so
+global-exclude .coverage
+global-exclude .pytest_cache
+global-exclude .tox
+global-exclude .mypy_cache
+
+# Excluir arquivos de desenvolvimento local
+global-exclude .env
+global-exclude .env.local
+global-exclude secrets.toml
+global-exclude *.log
+
+# Excluir diretórios de build
+prune build
+prune dist
+prune *.egg-info
+
+# Excluir arquivos específicos do editor
+global-exclude .vscode
+global-exclude .idea
+global-exclude *.swp
+global-exclude *.swo
+global-exclude *~
