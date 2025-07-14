@@ -1,0 +1,262 @@
+# Configuração do pre-commit para o projeto PetCare DBA Admin
+# Para instalar: pip install pre-commit && pre-commit install
+
+repos:
+  # Hooks básicos
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # Verificações básicas de arquivos
+      - id: trailing-whitespace
+        name: "🧹 Removendo espaços em branco no final das linhas"
+      - id: end-of-file-fixer
+        name: "📝 Corrigindo final de arquivo"
+      - id: check-yaml
+        name: "📋 Verificando sintaxe YAML"
+      - id: check-toml
+        name: "⚙️ Verificando sintaxe TOML"
+      - id: check-json
+        name: "📊 Verificando sintaxe JSON"
+      - id: check-xml
+        name: "🏷️ Verificando sintaxe XML"
+      
+      # Verificações de merge e estrutura
+      - id: check-merge-conflict
+        name: "🔀 Verificando conflitos de merge"
+      - id: check-added-large-files
+        name: "📦 Verificando arquivos grandes"
+        args: ['--maxkb=1024']  # Limite de 1MB
+      - id: check-case-conflict
+        name: "📁 Verificando conflitos de case em nomes"
+      
+      # Verificações específicas de Python
+      - id: check-ast
+        name: "🐍 Verificando sintaxe Python (AST)"
+      - id: check-builtin-literals
+        name: "🔤 Verificando literais built-in Python"
+      - id: check-docstring-first
+        name: "📚 Verificando posição de docstrings"
+      - id: debug-statements
+        name: "🐛 Verificando statements de debug"
+      - id: name-tests-test
+        name: "🧪 Verificando nomenclatura de testes"
+        args: ['--pytest-test-first']
+      
+      # Verificações de segurança básicas
+      - id: detect-private-key
+        name: "🔐 Detectando chaves privadas"
+      - id: detect-aws-credentials
+        name: "☁️ Detectando credenciais AWS"
+
+  # Formatação de código Python
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        name: "⚫ Formatando código Python com Black"
+        language_version: python3
+        args: [
+          "--line-length=120",
+          "--target-version=py39",
+          "--target-version=py310",
+          "--target-version=py311"
+        ]
+
+  # Organização de imports
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        name: "📦 Organizando imports com isort"
+        args: [
+          "--profile=black",
+          "--line-length=120",
+          "--multi-line=3",
+          "--trailing-comma",
+          "--force-grid-wrap=0",
+          "--combine-as",
+          "--use-parentheses"
+        ]
+
+  # Linting Python
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        name: "🔍 Analisando código Python com Flake8"
+        args: [
+          "--max-line-length=120",
+          "--extend-ignore=E203,E501,W503,F401",
+          "--max-complexity=10"
+        ]
+        additional_dependencies:
+          - flake8-docstrings
+          - flake8-bugbear
+          - flake8-comprehensions
+          - flake8-simplify
+
+  # Verificação de tipos com mypy
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        name: "🎯 Verificando tipos com MyPy"
+        args: [
+          "--ignore-missing-imports",
+          "--disallow-untyped-defs",
+          "--no-implicit-optional"
+        ]
+        additional_dependencies:
+          - types-requests
+          - types-PyYAML
+          - types-python-dateutil
+
+  # Verificações de segurança
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        name: "🛡️ Verificando segurança com Bandit"
+        args: [
+          "-r",
+          "--format=custom",
+          "--skip=B101,B601"  # Skip assert_used e shell=True warnings
+        ]
+        exclude: ^(tests/|test_)
+
+  # Verificação de dependências de segurança
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+    rev: v1.3.2
+    hooks:
+      - id: python-safety-dependencies-check
+        name: "🔒 Verificando vulnerabilidades em dependências"
+
+  # Formatação de arquivos YAML
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        name: "✨ Formatando YAML/JSON com Prettier"
+        types_or: [yaml, json]
+        args: ["--tab-width=2", "--print-width=100"]
+
+  # Verificação de commits convencionais
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.0.0
+    hooks:
+      - id: conventional-pre-commit
+        name: "📝 Verificando formato de commit convencional"
+        stages: [commit-msg]
+
+  # Verificação de secrets/credenciais
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        name: "🕵️ Detectando secrets/credenciais"
+        args: [
+          '--baseline', '.secrets.baseline',
+          '--force-use-all-plugins'
+        ]
+        exclude: |
+          (?x)^(
+            .*\.git/.*|
+            .*\.streamlit/secrets\.toml|
+            .*\.env.*|
+            .*test.*\.py|
+            .*mock.*\.py
+          )$
+
+  # Hooks específicos para Python/Streamlit
+  - repo: local
+    hooks:
+      # Verificação de imports de Streamlit
+      - id: streamlit-imports
+        name: "📱 Verificando imports do Streamlit"
+        entry: python -c "
+import re, sys;
+files = [f for f in sys.argv[1:] if f.endswith('.py')];
+for f in files:
+    with open(f) as file:
+        content = file.read();
+        if 'import streamlit' in content and 'streamlit as st' not in content:
+            print(f'{f}: Use \"import streamlit as st\" para consistência');
+            sys.exit(1)
+"
+        language: system
+        files: \.py$
+
+      # Verificação de configurações sensíveis
+      - id: check-secrets-config
+        name: "🔐 Verificando configurações sensíveis"
+        entry: python -c "
+import sys, re;
+for f in sys.argv[1:]:
+    if f.endswith('.py'):
+        with open(f) as file:
+            content = file.read();
+            if re.search(r'(password|secret|key)\s*=\s*[\"\\'][^\"\\'\s][^\"\\';]+[\"\\']', content, re.I):
+                print(f'{f}: Possível hardcoded secret detectado');
+                sys.exit(1)
+"
+        language: system
+        files: \.py$
+
+      # Verificação de TODOs em produção
+      - id: check-todos
+        name: "📋 Verificando TODOs não resolvidos"
+        entry: python -c "
+import sys;
+for f in sys.argv[1:]:
+    if f.endswith('.py'):
+        with open(f) as file:
+            lines = file.readlines();
+            for i, line in enumerate(lines):
+                if 'TODO:' in line.upper() and 'FIXME' in line.upper():
+                    print(f'{f}:{i+1}: TODO/FIXME não resolvido: {line.strip()}');
+                    sys.exit(1)
+"
+        language: system
+        files: \.py$
+
+      # Verificação de estrutura de docstrings
+      - id: docstring-format
+        name: "📖 Verificando formato de docstrings"
+        entry: python -c "
+import ast, sys;
+for f in sys.argv[1:]:
+    if f.endswith('.py'):
+        try:
+            with open(f) as file:
+                tree = ast.parse(file.read());
+                for node in ast.walk(tree):
+                    if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
+                        if node.body and isinstance(node.body[0], ast.Expr) and isinstance(node.body[0].value, ast.Str):
+                            docstring = node.body[0].value.s;
+                            if not docstring.startswith('\"\"\"') or not docstring.endswith('\"\"\"'):
+                                print(f'{f}: Função/classe {node.name} tem docstring mal formatada');
+        except:
+            pass
+"
+        language: system
+        files: \.py$
+
+# Configuração global
+default_language_version:
+  python: python3.11
+
+# Estágios de execução
+default_stages: [commit, push]
+
+# Configurações específicas por estágio
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] correções automáticas de hooks
+
+    [skip ci]
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] atualizações automáticas de hooks'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false
