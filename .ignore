@@ -1,0 +1,164 @@
+# Arquivo .ignore - usado por ferramentas como ripgrep, the_silver_searcher (ag), etc.
+# Similar ao .gitignore mas para ferramentas de busca
+
+# Logs e arquivos temporários
+*.log
+*.tmp
+*.temp
+temp/
+logs/
+*.pid
+*.lock
+
+# Cache do Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+htmlcov/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Ambientes virtuais
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.conda/
+.venv/
+
+# Streamlit
+.streamlit/secrets.toml
+.streamlit/config.toml
+
+# Configurações sensíveis
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.env
+secrets.toml
+config_local.py
+local_settings.py
+
+# Backups de banco de dados
+*.sql.backup
+*.db.backup
+*.dump
+database_backup/
+backups/
+
+# Arquivos de configuração do usuário
+user_settings.json
+user_settings_backup_*.json
+petcare_settings_export_*.json
+
+# Notebooks Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# IDEs e editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Documentação gerada
+docs/_build/
+docs/build/
+site/
+_site/
+
+# Testes e cobertura
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+test-results/
+test-reports/
+
+# Distribuição / empacotamento
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Node.js (se houver ferramentas JS)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Arquivos específicos do projeto
+*.bak
+*.orig
+*.rej
+*.patch
+
+# Arquivos de sistema
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Arquivos grandes de dados
+*.csv
+*.xlsx
+*.json
+data/
+datasets/
+exports/
+
+# Modelos de ML temporários
+models/temp/
+*.model
+*.pkl
+*.pickle
+
+# Arquivos de análise
+analysis_results/
+reports/temp/
+temp_analysis/
+
+# Dependências locais
+vendor/
+third_party/
+
+# Arquivos de profiling
+*.prof
+*.pstats
+
+# Arquivos específicos do Streamlit
+.streamlit/
+streamlit_app.log
