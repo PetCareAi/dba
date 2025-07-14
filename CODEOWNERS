@@ -1,0 +1,71 @@
+# CODEOWNERS - Definição de responsáveis por partes do código
+# Este arquivo define quem deve revisar mudanças em diferentes partes do repositório
+
+# Administradores globais do projeto
+* @admin-petcare @lead-dev-petcare
+
+# Aplicação principal
+app.py @admin-petcare @senior-dev-petcare @dba-lead
+
+# Configurações críticas do sistema
+.streamlit/ @admin-petcare @devops-petcare
+*.toml @admin-petcare @config-manager
+*.env @admin-petcare @security-lead
+
+# Scripts de banco de dados
+database/ @dba-lead @senior-dev-petcare @admin-petcare
+*.sql @dba-lead @database-admin
+
+# Documentação
+*.md @tech-writer @admin-petcare
+docs/ @tech-writer @admin-petcare
+
+# Configurações de CI/CD
+.travis.yml @devops-petcare @admin-petcare
+.github/ @devops-petcare @admin-petcare
+release-scripts/ @devops-petcare @release-manager
+
+# Hooks de Git
+.githooks/ @devops-petcare @senior-dev-petcare
+.husky/ @devops-petcare @frontend-lead
+
+# Notebooks e análises
+notebooks/ @data-analyst @senior-dev-petcare
+
+# Configurações de build e packaging
+Makefile @devops-petcare @build-engineer
+MANIFEST.in @devops-petcare @packaging-lead
+requirements.txt @senior-dev-petcare @admin-petcare
+
+# Testes
+tests/ @qa-lead @senior-dev-petcare
+
+# Configurações específicas por funcionalidade
+# Módulo de autenticação
+*auth* @security-lead @senior-dev-petcare
+
+# Módulo de banco de dados
+*database* @dba-lead @senior-dev-petcare
+
+# Módulo de relatórios
+*relatorio* @data-analyst @senior-dev-petcare
+
+# Módulo de IA
+*ai* @ai-engineer @senior-dev-petcare
+
+# Arquivos de configuração sensíveis
+secrets.toml @admin-petcare @security-lead
+*.key @security-lead @admin-petcare
+*.pem @security-lead @admin-petcare
+
+# Scripts de deployment
+deploy* @devops-petcare @admin-petcare
+*deploy* @devops-petcare @admin-petcare
+
+# Configurações de monitoramento
+*monitoring* @sre-engineer @devops-petcare
+*metric* @sre-engineer @data-analyst
+
+# Logs e debugging
+*log* @sre-engineer @senior-dev-petcare
+*debug* @senior-dev-petcare @admin-petcare
