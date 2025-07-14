@@ -1,0 +1,53 @@
+# Arquivo para ignorar commits específicos no git blame
+# Usado para commits de formatação automática, refatoração em massa, etc.
+# 
+# Para usar: git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# Formato: um commit hash por linha, com comentários opcionais
+
+# Formatação automática inicial do código Python com black/isort
+# Commit: Formatação automática de todo o codebase
+# Data: 2025-01-20
+
+# Refatoração de imports e organização de módulos
+# Commit: Reorganização de imports para melhor estrutura
+# Data: 2025-01-21
+
+# Conversão de aspas simples para duplas em todo o projeto
+# Commit: Padronização de aspas em strings
+# Data: 2025-01-22
+
+# Adição de type hints em todo o codebase
+# Commit: Adição de type hints para melhor tipagem
+# Data: 2025-01-23
+
+# Formatação automática de docstrings
+# Commit: Padronização de docstrings seguindo PEP 257
+# Data: 2025-01-24
+
+# Refatoração de nomes de variáveis para seguir PEP 8
+# Commit: Padronização de nomenclatura de variáveis
+# Data: 2025-01-25
+
+# Reorganização de estrutura de pastas
+# Commit: Reestruturação de diretórios do projeto
+# Data: 2025-01-26
+
+# Atualização em massa de comentários e documentação
+# Commit: Melhoria da documentação inline
+# Data: 2025-01-27
+
+# Conversão de f-strings para format() ou vice-versa
+# Commit: Padronização de formatação de strings
+# Data: 2025-01-28
+
+# Remoção de código morto e imports não utilizados
+# Commit: Limpeza de código não utilizado
+# Data: 2025-01-29
+
+# Adicione novos commits aqui seguindo o padrão:
+# 
+# # Descrição breve da mudança em massa
+# # Commit: Título do commit
+# # Data: YYYY-MM-DD
+# <hash_do_commit>
