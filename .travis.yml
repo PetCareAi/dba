@@ -1,0 +1,125 @@
+# Configuração do Travis CI para PetCare DBA Admin
+language: python
+python:
+  - "3.10"
+  - "3.11"
+  - "3.12"
+
+# Configuração de ambiente
+env:
+  global:
+    - PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR
+    - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+    - STREAMLIT_SERVER_HEADLESS=true
+
+# Serviços necessários
+services:
+  - postgresql
+
+# Configuração do PostgreSQL
+addons:
+  postgresql: "15"
+
+# Cache para acelerar builds
+cache:
+  pip: true
+  directories:
+    - ~/.cache/pip
+    - ~/.streamlit
+
+# Comandos antes da instalação
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install -y postgresql-client
+
+# Instalação de dependências
+install:
+  - pip install --upgrade pip
+  - pip install -r requirements.txt
+  - pip install pytest pytest-cov flake8 black bandit safety
+
+# Configuração do banco de teste
+before_script:
+  - psql -c 'create database test_petcare;' -U postgres
+  - psql -c "create user test_user with password 'test_pass';" -U postgres
+  - psql -c "grant all privileges on database test_petcare to test_user;" -U postgres
+
+# Scripts de teste
+script:
+  # Verificação de qualidade de código
+  - flake8 app.py --max-line-length=120 --ignore=E203,W503
+  - black --check app.py
+  - bandit -r . -x tests/
+  - safety check
+  
+  # Testes unitários
+  - pytest tests/ --cov=. --cov-report=xml --cov-report=html
+  
+  # Teste de execução do app
+  - timeout 30s streamlit run app.py --server.headless=true || true
+
+# Comandos após sucesso
+after_success:
+  - codecov
+
+# Configuração de branches
+branches:
+  only:
+    - main
+    - develop
+    - /^release\/.*$/
+
+# Configuração de matriz de builds
+matrix:
+  include:
+    # Build de produção
+    - python: "3.11"
+      env: BUILD_TYPE=production
+      script:
+        - python -m py_compile app.py
+        - streamlit run app.py --server.headless=true &
+        - sleep 20
+        - kill %1
+    
+    # Build de segurança
+    - python: "3.11"
+      env: BUILD_TYPE=security
+      script:
+        - bandit -r . -f json -o bandit-report.json
+        - safety check --json --output safety-report.json || true
+  
+  # Permitir falha em builds experimentais
+  allow_failures:
+    - env: BUILD_TYPE=security
+
+# Notificações
+notifications:
+  email:
+    recipients:
+      - admin@petcareai.com
+      - dev@petcareai.com
+    on_success: change
+    on_failure: always
+  
+  slack:
+    rooms:
+      - secure: "chave_criptografada_slack"
+    on_success: change
+    on_failure: always
+
+# Deploy automático
+deploy:
+  # Deploy para staging
+  - provider: script
+    script: bash scripts/deploy-staging.sh
+    on:
+      branch: develop
+      python: "3.11"
+  
+  # Deploy para produção
+  - provider: script
+    script: bash scripts/deploy-production.sh
+    on:
+      branch: main
+      python: "3.11"
+      condition: $TRAVIS_PULL_REQUEST = false
