@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/PetCareAi/.github/blob/main/imagens/banco%20de%20dados.png?raw=true" alt="PetCare Logo" width="120" height="120" style="border-radius: 15px; margin: 20px 0;"/>
+  <img width="1920" height="1080" alt="Cream and Pink Creative Pet Care Center Presentation" src="https://github.com/user-attachments/assets/9f20263b-59f7-44f6-9a81-6133185964e3" />
   
   <h3>🐾 Sistema de Administração de Banco de Dados PetCare 🐾</h3>
   
