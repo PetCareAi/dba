@@ -1,3 +1,5 @@
+## 🐾 Sistema de Administração de Banco de Dados PetCare
+
 <div align="center">
   <img width="1920" height="1080" alt="Cream and Pink Creative Pet Care Center Presentation" src="https://github.com/user-attachments/assets/9f20263b-59f7-44f6-9a81-6133185964e3" />
   
@@ -12,32 +14,11 @@
   [![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)]()
 </div>
 
----
-
-## 📋 Índice
-
-- [Sobre o Projeto](#-sobre-o-projeto)
-- [Funcionalidades](#-funcionalidades)
-- [Tecnologias Utilizadas](#-tecnologias-utilizadas)
-- [Pré-requisitos](#-pré-requisitos)
-- [Instalação](#-instalação)
-- [Como Usar](#-como-usar)
-- [Estrutura do Projeto](#-estrutura-do-projeto)
-- [Configuração](#-configuração)
-- [Scripts Disponíveis](#-scripts-disponíveis)
-- [Capturas de Tela](#-capturas-de-tela)
-- [Contribuição](#-contribuição)
-- [Suporte](#-suporte)
-- [Licença](#-licença)
-- [Contato](#-contato)
-
----
-
-## 🎯 Sobre o Projeto
+### 🎯 Sobre o Projeto
 
 O **PetCare DBA Admin** é um sistema web avançado desenvolvido especificamente para a administração e gerenciamento de bancos de dados da plataforma PetCare. Esta ferramenta foi criada para simplificar e otimizar o trabalho de administradores de banco de dados (DBAs) em clínicas veterinárias, hospitais veterinários e sistemas de gestão pet.
 
-### 🌟 Por que o PetCare DBA Admin?
+#### 🌟 Por que o PetCare DBA Admin?
 
 No mundo veterinário moderno, a gestão eficiente de dados é crucial para:
 - **Cuidado dos Animais**: Acesso rápido ao histórico médico dos pets
@@ -45,7 +26,7 @@ No mundo veterinário moderno, a gestão eficiente de dados é crucial para:
 - **Análise de Dados**: Insights para melhorar os serviços veterinários
 - **Conformidade**: Manutenção de registros precisos e seguros
 
-### 🎨 Design e Experiência
+#### 🎨 Design e Experiência
 
 O sistema foi projetado com foco na **usabilidade** e **eficiência**, oferecendo:
 - Interface moderna e intuitiva
@@ -53,99 +34,72 @@ O sistema foi projetado com foco na **usabilidade** e **eficiência**, oferecend
 - Visualizações de dados avançadas
 - Operações seguras e auditáveis
 
----
+### ✨ Funcionalidades
 
-## ✨ Funcionalidades
-
-### 🗄️ **Gerenciamento de Banco de Dados**
+#### 🗄️ **Gerenciamento de Banco de Dados**
 - **Visualização de Tabelas**: Interface completa para explorar estruturas de dados
 - **Editor SQL Avançado**: Execute queries com syntax highlighting e autocomplete
 - **Métricas em Tempo Real**: Monitor de performance e uso do banco
 - **Backup e Restauração**: Ferramentas automatizadas de backup
 
-### 📊 **Dashboard e Analytics**
+#### 📊 **Dashboard e Analytics**
 - **Métricas de Sistema**: CPU, memória, disco e cache hit ratio
 - **Gráficos Interativos**: Visualizações dinâmicas com Plotly e Recharts
 - **Relatórios Customizados**: Geração de relatórios em PDF, Excel e CSV
 - **Alertas Inteligentes**: Notificações automáticas de performance
 
-### 🔧 **Ferramentas de Administração**
+#### 🔧 **Ferramentas de Administração**
 - **Otimização de Tabelas**: Análise e otimização automática
 - **Gerenciamento de Índices**: Criação e monitoramento de índices
 - **Auditoria de Dados**: Log completo de todas as operações
 - **Gestão de Usuários**: Controle de acesso e permissões
 
-### 🔒 **Segurança e Compliance**
+#### 🔒 **Segurança e Compliance**
 - **Autenticação Segura**: Sistema de login protegido
 - **Controle de Acesso**: Níveis hierárquicos de permissão
 - **Logs de Auditoria**: Rastreamento completo de atividades
 - **Backup Automático**: Proteção automática de dados
 
-### 📱 **Interface Responsiva**
+#### 📱 **Interface Responsiva**
 - **Design Adaptativo**: Funciona em desktop, tablet e mobile
 - **Tema Customizável**: Interface clara e profissional
 - **Navegação Intuitiva**: Menu lateral organizado por categorias
 - **Feedback Visual**: Indicadores de status e progresso
 
----
+### 🛠️ Tecnologias Utilizadas
 
-## 🛠️ Tecnologias Utilizadas
-
-### **Backend & Database**
+#### **Backend & Database**
 - ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white) **Python 3.9+** - Linguagem principal
 - ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=flat&logo=supabase&logoColor=white) **Supabase** - Banco de dados PostgreSQL na nuvem
 - ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white) **PostgreSQL** - Sistema de banco de dados
 
-### **Frontend & UI**
+#### **Frontend & UI**
 - ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white) **Streamlit** - Framework web para Python
 - ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat&logo=html5&logoColor=white) **HTML/CSS** - Customizações de interface
 - ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black) **JavaScript** - Interações avançadas
 
-### **Visualização de Dados**
+#### **Visualização de Dados**
 - ![Plotly](https://img.shields.io/badge/Plotly-3F4F75?style=flat&logo=plotly&logoColor=white) **Plotly** - Gráficos interativos
 - **Recharts** - Componentes de gráficos React
 - ![Pandas](https://img.shields.io/badge/Pandas-150458?style=flat&logo=pandas&logoColor=white) **Pandas** - Manipulação de dados
 - **NumPy** - Computação numérica
 
-### **Utilitários e Bibliotecas**
-- **Streamlit-Option-Menu** - Menu lateral customizado
-- **Python-dotenv** - Gerenciamento de variáveis de ambiente
-- **Requests** - Cliente HTTP
-- **Datetime** - Manipulação de datas
-- **Random** - Geração de dados aleatórios
-- **JSON** - Processamento de dados JSON
-
-### **Desenvolvimento e Deploy**
-- ![Git](https://img.shields.io/badge/Git-F05032?style=flat&logo=git&logoColor=white) **Git** - Controle de versão
-- ![GitHub](https://img.shields.io/badge/GitHub-100000?style=flat&logo=github&logoColor=white) **GitHub** - Repositório de código
-- **pip** - Gerenciador de pacotes Python
-- **virtualenv** - Ambiente virtual Python
-
----
-
-## 📋 Pré-requisitos
+### 📋 Pré-requisitos
 
 Antes de iniciar, certifique-se de ter instalado:
 
-### **Software Obrigatório**
+#### **Software Obrigatório**
 - **Python 3.9 ou superior** ([Download](https://python.org/downloads/))
 - **pip** (geralmente incluído com Python)
 - **Git** ([Download](https://git-scm.com/downloads))
 
-### **Contas Necessárias**
+#### **Contas Necessárias**
 - **Conta Supabase** ([Criar conta gratuita](https://supabase.com))
 - **Projeto Supabase** configurado com banco PostgreSQL
 
-### **Sistema Operacional**
-- Windows 10/11
-- macOS 10.14+
-- Linux (Ubuntu 18.04+, CentOS 7+)
+### 🚀 Instalação
 
----
-
-## 🚀 Instalação
-
-### **1. Clone o Repositório**
+#### **1. Clone o Repositório**
 ```bash
 # Clone o projeto
 git clone https://github.com/PetCareAi/dba.git
@@ -154,7 +108,7 @@ git clone https://github.com/PetCareAi/dba.git
 cd dba
 ```
 
-### **2. Crie o Ambiente Virtual**
+#### **2. Crie o Ambiente Virtual**
 ```bash
 # Crie o ambiente virtual
 python -m venv venv
@@ -166,7 +120,7 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-### **3. Instale as Dependências**
+#### **3. Instale as Dependências**
 ```bash
 # Instale todas as dependências
 pip install -r requirements.txt
@@ -175,7 +129,7 @@ pip install -r requirements.txt
 pip install streamlit supabase pandas plotly streamlit-option-menu python-dotenv requests
 ```
 
-### **4. Configure as Variáveis de Ambiente**
+#### **4. Configure as Variáveis de Ambiente**
 ```bash
 # Crie o arquivo .env (copie do exemplo)
 cp .env.example .env
@@ -184,7 +138,7 @@ cp .env.example .env
 nano .env
 ```
 
-### **5. Execute o Sistema**
+#### **5. Execute o Sistema**
 ```bash
 # Inicie a aplicação
 streamlit run app.py
@@ -193,11 +147,9 @@ streamlit run app.py
 python start.py
 ```
 
----
+### 📖 Como Usar
 
-## 📖 Como Usar
-
-### **1. Primeiro Acesso**
+#### **1. Primeiro Acesso**
 
 1. **Inicie a aplicação**: Execute `streamlit run app.py`
 2. **Acesse o sistema**: Abra `http://localhost:8501` no navegador
@@ -205,7 +157,7 @@ python start.py
    - **Usuário**: `admin`
    - **Senha**: `petcare2025`
 
-### **2. Configuração Inicial**
+#### **2. Configuração Inicial**
 
 1. **Configure o Supabase**: 
    - Vá em "Configurações" → "Banco de Dados"
@@ -217,14 +169,14 @@ python start.py
    - Clique em "Atualizar Lista" para descobrir tabelas
    - Explore a estrutura dos dados
 
-### **3. Operações Principais**
+#### **3. Operações Principais**
 
-#### **📊 Dashboard**
+##### **📊 Dashboard**
 - Visualize métricas em tempo real
 - Monitore performance do sistema
 - Acompanhe uso de recursos
 
-#### **🗄️ Gerenciamento de Tabelas**
+##### **🗄️ Gerenciamento de Tabelas**
 ```sql
 -- Exemplo de query para listar pets
 SELECT * FROM pets WHERE status = 'ativo' LIMIT 10;
@@ -238,20 +190,7 @@ WHERE c.data_consulta >= CURRENT_DATE - INTERVAL '7 days'
 ORDER BY c.data_consulta DESC;
 ```
 
-#### **📈 Relatórios**
-1. Acesse "Relatórios" no menu
-2. Selecione o tipo de relatório
-3. Configure os filtros
-4. Exporte em PDF, Excel ou CSV
-
-#### **🔧 Manutenção**
-- Execute backups regulares
-- Otimize tabelas mensalmente
-- Monitore logs de erro
-
----
-
-## 📁 Estrutura do Projeto
+### 📁 Estrutura do Projeto
 
 ```
 petcare-dba-admin/
@@ -281,20 +220,9 @@ petcare-dba-admin/
     └── ...
 ```
 
-### **Principais Arquivos**
+### ⚙️ Configuração
 
-| Arquivo | Descrição | Função |
-|---------|-----------|---------|
-| `app.py` | Aplicação principal | Interface Streamlit completa |
-| `start.py` | Script de inicialização | Configuração e inicialização |
-| `requirements.txt` | Dependências | Lista de pacotes necessários |
-| `.env` | Configurações | Variáveis de ambiente secretas |
-
----
-
-## ⚙️ Configuração
-
-### **Arquivo .env**
+#### **Arquivo .env**
 ```env
 # Configurações do Supabase
 SUPABASE_URL=https://seu-projeto.supabase.co
@@ -316,32 +244,9 @@ PRIMARY_COLOR=#2E8B57
 SECONDARY_COLOR=#90EE90
 ```
 
-### **Configurações Avançadas**
+### 🎬 Scripts Disponíveis
 
-#### **Performance**
-```python
-# Em app.py - Configurações de cache
-@st.cache_data(ttl=300)  # Cache por 5 minutos
-def load_table_data(table_name):
-    # Código de carregamento
-    pass
-```
-
-#### **Segurança**
-```python
-# Configurações de segurança
-CONFIG = {
-    'session_timeout': 3600,  # 1 hora
-    'max_query_time': 30,     # 30 segundos
-    'max_results': 1000,      # 1000 registros
-}
-```
-
----
-
-## 🎬 Scripts Disponíveis
-
-### **Script Principal**
+#### **Script Principal**
 ```bash
 # Iniciar aplicação
 streamlit run app.py
@@ -350,7 +255,7 @@ streamlit run app.py
 streamlit run app.py --server.port 8502 --server.address 0.0.0.0
 ```
 
-### **Scripts Utilitários**
+#### **Scripts Utilitários**
 ```bash
 # Backup do banco de dados
 python scripts/backup.py
@@ -365,44 +270,11 @@ python scripts/setup.py
 python -m pytest tests/
 ```
 
-### **Scripts de Desenvolvimento**
-```bash
-# Instalar dependências de desenvolvimento
-pip install -r requirements-dev.txt
-
-# Executar linting
-flake8 app.py
-
-# Executar formatação
-black app.py
-
-# Executar type checking
-mypy app.py
-```
-
----
-
-## 📸 Capturas de Tela
-
-### **Dashboard Principal**
-> Interface limpa e intuitiva com métricas em tempo real
-
-### **Editor SQL**
-> Editor avançado com syntax highlighting e autocomplete
-
-### **Gerenciamento de Tabelas**
-> Visualização completa da estrutura do banco de dados
-
-### **Relatórios**
-> Geração automática de relatórios em múltiplos formatos
-
----
-
-## 🤝 Contribuição
+### 🤝 Contribuição para o DBA Admin
 
 Contribuições são sempre bem-vindas! Aqui está como você pode ajudar:
 
-### **Como Contribuir**
+#### **Como Contribuir**
 
 1. **Fork o projeto**
 2. **Crie uma branch para sua feature** (`git checkout -b feature/AmazingFeature`)
@@ -410,38 +282,235 @@ Contribuições são sempre bem-vindas! Aqui está como você pode ajudar:
 4. **Push para a branch** (`git push origin feature/AmazingFeature`)
 5. **Abra um Pull Request**
 
-### **Diretrizes de Contribuição**
+#### **Diretrizes de Contribuição**
 
 - **Code Style**: Siga o PEP 8 para Python
 - **Documentação**: Documente todas as funções principais
 - **Testes**: Adicione testes para novas funcionalidades
 - **Commits**: Use mensagens claras e descritivas
 
-### **Reportar Bugs**
+---
 
-1. Verifique se o bug já não foi reportado
-2. Crie uma issue detalhada
-3. Inclua passos para reproduzir
-4. Adicione screenshots se necessário
+## 💬 Suporte
+
+### 🆘 Obter Ajuda
+
+- **📖 Documentação**: [petcarescript.org/docs](https://petcarescript.org/docs)
+- **💬 Comunidade Discord**: [discord.gg/petcarescript](https://discord.gg/petcarescript)
+- **❓ Stack Overflow**: Marque suas perguntas com `petcarescript`
+- **🐛 GitHub Issues**: [Relatar bugs e solicitações de recursos](https://github.com/petcarescript/vscode-extension/issues)
+
+### 📞 Contato
+
+- **📧 Email**: support@petcarescript.org
+- **🐦 Twitter**: [@PetCareScript](https://twitter.com/PetCareScript)
+- **💼 LinkedIn**: [PetCareScript Official](https://linkedin.com/company/petcarescript)
+
+### 🏢 Suporte Empresarial
+
+Para clientes empresariais, oferecemos:
+- **⚡ Suporte Prioritário** - Assistência técnica 24/7
+- **🔧 Recursos Personalizados** - Ferramentas de desenvolvimento sob medida
+- **📚 Programas de Treinamento** - Onboarding de equipe e workshops
+- **🛡️ Auditorias de Segurança** - Análise de segurança de código
+
+Entre em contato: enterprise@petcarescript.org
+
+### 🆘 Canais de Suporte
+
+| Tipo de Suporte | Canal | Resposta |
+|------------------|-------|----------|
+| **🐛 Bugs & Issues** | [GitHub Issues](https://github.com/PetCareAi/extension-for-devs/issues) | 24-48h |
+| **💬 Discussões** | [GitHub Discussions](https://github.com/PetCareAi/extension-for-devs/discussions) | 24h |
+| **📧 Suporte Direto** | [support@petcareai.com.br](mailto:support@petcareai.com.br) | 24h |
+| **📖 Documentação** | [documentation.petcareai.com.br](https://documentation.petcareai.com.br) | Sempre |
+
+### 💬 Canais de Comunicação
+
+| Canal | Propósito | Tempo de Resposta |
+|-------|-----------|-------------------|
+| 📧 **Email** | Suporte geral e comercial | 24-48 horas |
+| 💬 **WhatsApp** | Suporte técnico urgente | 2-8 horas |
+| 🐛 **GitHub Issues** | Bugs e solicitações de funcionalidades | 1-3 dias |
+| 📱 **Telegram** | Comunidade de usuários | Tempo real |
+| 📺 **YouTube** | Tutoriais e novidades | Semanal |
+
+### 📧 Contatos Diretos
+
+- **🎯 Suporte Geral**: [suporte@petcareai.com.br](mailto:suporte@petcareai.com.br)
+- **🔧 Suporte Técnico**: [tech@petcareai.com.br](mailto:tech@petcareai.com.br)
+- **💼 Parcerias**: [parcerias@petcareai.com.br](mailto:parcerias@petcareai.com.br)
+- **📰 Imprensa**: [imprensa@petcareai.com.br](mailto:imprensa@petcareai.com.br)
+
+### 🆘 Suporte Urgente
+
+Para situações críticas que impedem o funcionamento da clínica:
+
+📞 **Telefone de Emergência**: (11) 9999-8888
+💬 **WhatsApp**: [wa.me/5511999998888](https://wa.me/5511999998888)
+
+### 🚀 Treinamentos e Workshops
+
+Oferecemos treinamentos gratuitos para maximizar o uso do sistema:
+
+#### 📅 Agenda de Treinamentos
+- **🟢 Básico**: Segundas-feiras às 19h (1h)
+- **🟡 Intermediário**: Quartas-feiras às 19h (1.5h)
+- **🔴 Avançado**: Sextas-feiras às 19h (2h)
+
+#### 📋 Tópicos Abordados
+- ✅ Primeiros passos no PetCare Pro
+- ✅ Gestão eficiente de clientes e pets
+- ✅ Registro de consultas e prescrições
+- ✅ Sistema de agendamentos
+- ✅ Relatórios e análises
+- ✅ Backup e segurança de dados
+- ✅ Dicas e truques avançados
+
+#### 📝 Inscrições
+**Link**: [treinamentos.petcareai.com.br](https://treinamentos.petcareai.com.br)
+**WhatsApp**: (11) 9999-7777
 
 ---
 
-## 🆘 Suporte
+## 🔗 Links Importantes
 
-### **Documentação**
-- **[Wiki do Projeto](https://github.com/PetCareAi/petcare-dba-admin/wiki)** - Documentação completa
-- **[FAQ](https://github.com/PetCareAi/petcare-dba-admin/wiki/FAQ)** - Perguntas frequentes
-- **[Troubleshooting](https://github.com/PetCareAi/petcare-dba-admin/wiki/Troubleshooting)** - Solução de problemas
+### 📚 Recursos Oficiais
+- 🌐 **Site Oficial:** https://language.petcareai.com.br/
+- 📖 **Documentação:** https://language.petcareai.com.br/docs
+- 🎓 **Tutoriais:** https://language.petcareai.com.br/tutorials
+- 📦 **NPM Package:** https://www.npmjs.com/package/petcarescript
+- 🧩 **VS Code Extension:** https://marketplace.visualstudio.com/items?itemName=petcarescript.petcarescript
 
-### **Comunidade**
-- **[Issues](https://github.com/PetCareAi/petcare-dba-admin/issues)** - Reporte problemas ou sugira melhorias
-- **[Discussions](https://github.com/PetCareAi/petcare-dba-admin/discussions)** - Discuta ideias e tire dúvidas
-- **[Discord](https://discord.gg/petcare)** - Chat da comunidade (em breve)
+### 🛠️ Desenvolvimento
+- 💻 **GitHub Repository:** https://github.com/PetCareAi/petcarescript
+- 🐛 **Issues & Bugs:** https://github.com/PetCareAi/petcarescript/issues
+- 💬 **Discussions:** https://github.com/PetCareAi/petcarescript/discussions
+- 🔄 **Pull Requests:** https://github.com/PetCareAi/petcarescript/pulls
+- 📊 **Project Board:** https://github.com/PetCareAi/petcarescript/projects
 
-### **Suporte Técnico**
-- **Email**: support@petcareai.com
-- **Horário**: Segunda a Sexta, 9h às 18h (UTC-3)
-- **SLA**: Resposta em até 24 horas
+### 📈 Analytics & Status
+- 📊 **NPM Stats:** https://npm-stat.com/charts.html?package=petcarescript
+- 🔍 **GitHub Stats:** https://github.com/PetCareAi/petcarescript/pulse
+- 🚀 **Status Page:** https://status.petcareai.com.br
+- 📈 **Roadmap:** https://language.petcareai.com.br/roadmap
+
+### 🌐 PetCareAI Ecosystem
+
+| Recurso | Link | Descrição |
+|---------|------|-----------|
+| 🌍 **Site Oficial** | [petcareai.com.br](https://petcareai.com.br) | Portal principal |
+| 🏢 **GitHub Org** | [github.com/PetCareAI](https://github.com/PetCareAi) | 18+ repositórios |
+| 💬 **Discord** | [discord.gg/petcareai](https://discord.gg/petcareai) | Comunidade ativa |
+| 📚 **Documentação** | [docs.petcareai.com.br](https://documentation.petcareai.com.br) | Wiki completa |
+| 📋 **Tasks** | [tasks.petcareai.com.br](https://tasks.petcareai.com.br) | Gerenciamento ágil |
+| 📊 **Analytics** | [analytics.petcareai.com.br](https://analytics.petcareai.com.br) | Dashboards |
+
+### 🛠️ Ferramentas & Recursos
+
+| Categoria | Ferramentas |
+|-----------|-------------|
+| **🎨 Design** | Figma, Adobe XD, Sketch |
+| **💻 IDE** | VSCode + Extensão PetCareAI |
+| **🧪 Testing** | Jest, Cypress, Testing Library |
+| **📦 Package Managers** | npm, yarn |
+| **🚀 Deploy** | Vercel, Netlify, GitHub Pages |
+| **📊 Analytics** | Google Analytics, Hotjar |
+
+### 📚 Recursos de Ajuda
+
+#### 📖 Documentação
+- **📗 Manual do Usuário**: [docs.petcareai.com.br/manual](https://docs.petcareai.com.br/manual)
+- **🔧 Guia Técnico**: [docs.petcareai.com.br/tech](https://docs.petcareai.com.br/tech)
+- **❓ FAQ**: [docs.petcareai.com.br/faq](https://docs.petcareai.com.br/faq)
+
+#### 👥 Comunidade
+- **💬 Grupo Telegram**: [t.me/petcareai.com.br](https://t.me/petcareai.com.br)
+- **📱 Grupo WhatsApp**: [Comunidade PetCare Pro](https://chat.whatsapp.com/petcareai.com.br)
+- **💼 LinkedIn Groups**: [Veterinários PetCare Pro](https://linkedin.com/groups/petcareai.com.br)
+
+---
+
+## 👥 Equipe de Desenvolvimento
+
+### **Core Team**
+- **Tech Lead** - Arquitetura e desenvolvimento principal
+- **Mobile Developer** - Desenvolvimento React Native
+- **Backend Developer** - APIs e banco de dados
+- **UX/UI Designer** - Interface e experiência
+
+### 🚀 Líder Técnico
+
+<div align="center">
+  <img src="https://github.com/estevam5s.png" width="80" style="border-radius: 50%;" />
+  <br />
+  <strong>Estevam Souza</strong><br />
+  <em>Especialista TI Full-Stack</em><br />
+  <a href="https://linkedin.com/in/estevam-souza">LinkedIn</a> |
+  <a href="https://github.com/estevam5s">GitHub</a> |
+  <a href="https://estevamsouza.com.br">Website</a>
+</div>
+
+### 🚀 Core Team
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="https://github.com/avatar1.png" width="100px;" alt=""/>
+      <br />
+      <sub><b>João Silva</b></sub>
+      <br />
+      <sub>Tech Lead & Full Stack Developer</sub>
+      <br />
+      <a href="mailto:joao@petcarepro.com">📧</a>
+      <a href="https://linkedin.com/in/joao">💼</a>
+    </td>
+    <td align="center">
+      <img src="https://github.com/avatar2.png" width="100px;" alt=""/>
+      <br />
+      <sub><b>Maria Santos</b></sub>
+      <br />
+      <sub>UI/UX Designer & Frontend Developer</sub>
+      <br />
+      <a href="mailto:maria@petcarepro.com">📧</a>
+      <a href="https://linkedin.com/in/maria">💼</a>
+    </td>
+    <td align="center">
+      <img src="https://github.com/avatar3.png" width="100px;" alt=""/>
+      <br />
+      <sub><b>Dr. Carlos Mendes</b></sub>
+      <br />
+      <sub>Veterinary Advisor & Product Owner</sub>
+      <br />
+      <a href="mailto:carlos@petcarepro.com">📧</a>
+      <a href="https://linkedin.com/in/carlos">💼</a>
+    </td>
+  </tr>
+</table>
+
+### 🌟 Contributors
+
+Agradecemos a todos os [contribuidores](CONTRIBUTORS.md) que ajudaram a construir este projeto.
+
+<a href="https://github.com/petcare-pro/petcare-pro/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=petcare-pro/petcare-pro" />
+</a>
+
+### 🤝 Como Juntar-se à Equipe
+
+**Estamos sempre buscando novos talentos!**
+
+- 📞 **Discord**: [discord.gg/petcareai](https://discord.gg/petcareai)
+- 💼 **LinkedIn**: [company/petcare-ai](https://linkedin.com/company/petcare-ai)
+- 📧 **Email**: contato@petcareai.com.br
+
+**Áreas Abertas:**
+- 👨‍💻 Desenvolvedores (Frontend, Backend, Mobile)
+- 🧠 Especialistas IA/ML
+- 🛡️ Cybersecurity Engineers
+- 📊 Data Scientists
+- 🎨 UI/UX Designers
+- 📈 Marketing Digital
 
 ---
 
@@ -451,37 +520,246 @@ Este projeto está sob [licença proprietária](LICENSE) da **PetCareAi Ltda**.
 
 Para licenciamento e autorizações: **legal@petcareai.com.br**
 
+### 📋 Resumo da Licença MIT
+
+✅ **Permitido:**
+- ✅ Uso comercial
+- ✅ Modificação
+- ✅ Distribuição
+- ✅ Uso privado
+
+❌ **Limitações:**
+- ❌ Responsabilidade
+- ❌ Garantia
+
+📝 **Condições:**
+- 📝 Incluir licença e copyright
+
 ---
 
-## 📞 Contato
+## 🙏 Agradecimentos
 
-### **Equipe de Desenvolvimento**
+### 🙏 **Reconhecimentos Especiais**
 
-**🧑‍💻 Estevam Silva** - *Lead Developer & DBA*
-- **GitHub**: [@estevam5s](https://github.com/estevam5s)
-- **LinkedIn**: [estevam-silva](https://linkedin.com/in/estevam-silva)
-- **Email**: estevam@petcareai.com
+- **Google** pelo Gemini 2.0 Flash API
+- **Microsoft** pelo VS Code e sua excelente API de extensões
+- **Comunidade Open Source** por inspiração e feedback contínuo
+- **Beta Testers** por ajudar a melhorar a extensão
+- **Contribuidores** que tornaram este projeto possível
 
-### **PetCare AI**
-- **Website**: [https://petcareai.com](https://petcareai.com)
-- **Email**: contact@petcareai.com
-- **Endereço**: Florianópolis, Santa Catarina, Brasil
+### 🌟 **Inspirações**
+- **GitHub Copilot** - Inspiração para IA integrada
+- **Material Icon Theme** - Padrões de iconografia
+- **Dracula Theme** - Inspiração para temas escuros
+- **Vue.js Community** - Melhores práticas de desenvolvimento
 
-### **Links do Projeto**
-- **Repositório**: [https://github.com/PetCareAi/dba](https://github.com/PetCareAi/dba)
-- **Demo Online**: [https://petcare-dba-admin.streamlit.app](https://https://petcareai-dba-app.streamlit.app)
-- **Documentação**: [https://docs.petcareai.com](https://docs.petcareai.com.br)
+### **Tecnologias e Ferramentas**
+
+- 🧠 **Google AI** - Pela API Gemini revolucionária
+- 🔬 **TensorFlow Team** - Pela plataforma de ML mais avançada
+- ⚛️ **React Community** - Pelo ecossistema incrível
+- 📦 **Open Source Community** - Por todas as bibliotecas utilizadas
+
+### **Validação Científica**
+
+- 🏥 **Hospital Veterinário USP** - Validação dos algoritmos
+- 🎓 **FMVZ-USP** - Consultoria científica
+- 👨‍⚕️ **CFMV** - Orientações éticas e técnicas
+- 🐕 **ANCLIVEPA** - Apoio da comunidade veterinária
+
+### **Beta Testers**
+
+Agradecimento especial aos **500+ tutores** que participaram dos testes beta e ajudaram a aperfeiçoar nossa IA.
+
+### 🏆 Reconhecimentos Especiais
+
+- **🩺 Conselho Regional de Medicina Veterinária de São Paulo (CRMV-SP)** - Consultoria técnica
+- **🏥 Clínica Veterinária VetCare** - Testes e feedback funcional
+- **👨‍💻 React Native Community** - Suporte técnico e bibliotecas
+- **☁️ Supabase Team** - Plataforma backend robusta
+- **🎨 Expo Team** - Framework de desenvolvimento excepcional
+
+### Projetos que Inspiraram
+
+- [React](https://reactjs.org/) - Biblioteca para interfaces
+- [Electron](https://electronjs.org/) - Framework para apps desktop
+- [Supabase](https://supabase.com/) - Backend open source
+- [Chart.js](https://chartjs.org/) - Visualização de dados
+
+### 💝 **Apoie o Projeto**
+
+Gostou da extensão? Considere apoiar o desenvolvimento:
+
+- ⭐ **Star** no [GitHub](https://github.com/PetCareAi/extension-for-devs)
+- 🐦 **Compartilhe** nas redes sociais
+- 💰 **Doe** via [Buy me a coffee](https://buymeacoffee.com/petcareai)
+- 🤝 **Contribua** com código ou documentação
+
+---
+
+## 🎯 Roadmap
+
+### 📊 Repositórios Atualizados
+- **25+ repositórios** agora incluídos na apresentação
+- **Informações detalhadas** de cada projeto com tecnologias específicas
+- **Status atualizado** de todos os repositórios (Produção, Beta, Desenvolvimento)
+- **Links diretos** para todos os repositórios GitHub
+
+### 🧠 Categoria IA & Machine Learning
+- **Ultra ML Pet Detection v6.0** - Sistema ultra-profissional com YOLO e MediaPipe
+- **PetCareAI Analytics** - Análise avançada com Machine Learning
+- **LLM AI Assistant** - Assistentes virtuais com Gemini AI
+- **Sistemas de Computer Vision** para análise veterinária
+
+### 📱 Aplicações Completas
+- **Apps Mobile**: React Native, Expo, Vue.js PWA
+- **Apps Desktop**: Electron, sistemas multiplataforma
+- **Plataformas Web**: Next.js, React, Angular, Vue.js
+- **APIs e Backend**: NestJS, Python, sistemas RESTful
+
+### 🏢 Sistemas Empresariais
+- **ERP Completo** - Gestão empresarial integrada
+- **Sistemas de CRM** - Gestão de relacionamento com clientes
+- **Plataformas de Cybersecurity** - ISO 27001/27002
+- **Sistemas de Gestão de Projetos** - Scrum e Kanban
+
+### ⚡ Melhorias Técnicas
+- **Animações aprimoradas** com Framer Motion
+- **SEO otimizado** com meta tags completas
+- **Performance melhorada** com lazy loading
+- **Responsividade aprimorada** para todos os dispositivos
+
+---
+
+## ⚠️ **Disclaimer Importante**
+
+> **AVISO MÉDICO**: O PetCare AI é uma ferramenta de **triagem e educação** que utiliza inteligência artificial para análise preliminar. 
+> 
+> **NÃO SUBSTITUI** a consulta veterinária profissional. Sempre procure um médico veterinário licenciado para diagnóstico definitivo e tratamento.
+> 
+> Em caso de **emergência**, procure imediatamente um veterinário ou hospital veterinário 24h.
 
 ---
 
 <div align="center">
-  <h3>🐾 Desenvolvido com ❤️ para a comunidade veterinária 🐾</h3>
+
+## 🎉 **Comece Agora!**
+
+```bash
+# Instale PetCareScript em 10 segundos
+npm install -g petcarescript
+
+# Execute seu primeiro programa
+echo 'show "🐾 Olá, PetCareScript!";' > hello.pcs
+pcs hello.pcs
+```
+
+### 🌟 **Junte-se à Revolução da Programação Humana!**
+
+[![Get Started](https://img.shields.io/badge/🚀%20Get%20Started-Now-brightgreen?style=for-the-badge&logoColor=white)](https://language.petcareai.com.br/getting-started)
+[![Join Discord](https://img.shields.io/badge/💬%20Join-Discord-7289da?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/petcarescript)
+[![Follow Twitter](https://img.shields.io/badge/🐦%20Follow-Twitter-1da1f2?style=for-the-badge&logo=twitter&logoColor=white)](https://twitter.com/petcarescript)
+
+</div>
+
+---
+
+<div align="center">
+
+### **Built with ❤️ for the Developer Community**
+
+**PetCareScript** - *Making programming human-readable, one keyword at a time.*
+
+**© 2025 PetCareScript. Made with 🐾 in Brazil.**
+
+</div>
+
+---
+
+<div align="center">
+
+## 📱 Redes Sociais
+
+[![Website](https://img.shields.io/badge/Visit-petcarescript.org-22c55e?style=for-the-badge&logo=react)](https://petcarescript.org)
+[![GitHub](https://img.shields.io/badge/Star-on%20GitHub-181717?style=for-the-badge&logo=github)](https://github.com/estevamsl/petcarescript-website)
+[![Twitter](https://img.shields.io/badge/Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white)](https://twitter.com/petcareai)
+[![Instagram](https://img.shields.io/badge/Instagram-E4405F?style=for-the-badge&logo=instagram&logoColor=white)](https://instagram.com/petcareai)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/company/petcareai)
+[![YouTube](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtube.com/petcareai)
+
+**Instagram**: [@petcarepro.br](https://instagram.com/petcareai.com.br)
+**LinkedIn**: [PetCare Pro](https://linkedin.com/company/petcareai.com.br)
+**Facebook**: [PetCare Pro Brasil](https://facebook.com/petcareai.com.br)
+**Twitter**: [@petcarepro_br](https://twitter.com/petcareai.com.br)
+
+</div>
+
+---
+
+<div align="center">
+  <h2>🚀 Pronto para Revolucionar o Cuidado Animal?</h2>
+  <p><strong>Junte-se à maior organização de tecnologia pet do Brasil!</strong></p>
   
-  <p><em>"Cuidando dos dados, cuidamos melhor dos nossos pets"</em></p>
+  <a href="https://discord.gg/petcareai" target="_blank">
+    <img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord" />
+  </a>
+  <a href="https://github.com/PetCareAI" target="_blank">
+    <img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white" alt="GitHub" />
+  </a>
+  <a href="https://linkedin.com/company/petcare-ai" target="_blank">
+    <img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn" />
+  </a>
   
-  **⭐ Se este projeto te ajudou, considere dar uma estrela no GitHub! ⭐**
+  <br /><br />
   
-  ---
-  
-  <sub>© 2025 PetCare AI. Todos os direitos reservados.</sub>
+  <p>
+    <em>"Transformando o cuidado animal através da tecnologia" 🐾</em><br />
+    <strong>© 2025 PetCareAI Organization - Todos os direitos reservados</strong>
+  </p>
+</div>
+
+---
+
+## Star History
+
+<a href="https://www.star-history.com/#PetCareAi/analytics&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=PetCareAi/analytics&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=PetCareAi/analytics&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=PetCareAi/analytics&type=Date" />
+ </picture>
+</a>
+
+---
+
+<div align="center">
+
+### 🙏 Obrigado por escolher o PetCare Pro!
+
+**Juntos, estamos revolucionando a medicina veterinária no Brasil**
+
+Desenvolvido com ❤️ por veterinários, para veterinários
+
+---
+
+<p>
+  <img src="https://img.shields.io/badge/Made%20with-❤️-red?style=for-the-badge" alt="Made with Love">
+  <img src="https://img.shields.io/badge/Para-Veterinários%20🇧🇷-green?style=for-the-badge" alt="Para Veterinários Brasileiros">
+  <img src="https://img.shields.io/badge/Open%20Source-💪-blue?style=for-the-badge" alt="Open Source">
+</p>
+
+**🐾 Feito com ❤️ para o bem-estar dos pets brasileiros**
+
+⭐ **Se este projeto ajudou você e seu pet, deixe uma estrela!** ⭐
+
+**🐾 PetCare AI Extension v1.0.1 Enhanced**
+
+*Desenvolvido com ❤️ para a comunidade de desenvolvedores*
+
+**Powered by Google Gemini 2.0 Flash | Built with 🤖 AI + 💻 Human Creativity**
+
+*© 2024 PetCare AI. Todos os direitos reservados.*
+
+<p><small>© 2025 PetCareAi. Todos os direitos reservados.</small></p>
+
 </div>
