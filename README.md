@@ -6,7 +6,7 @@
   <p><strong>Uma solução completa e intuitiva para gerenciamento de dados veterinários</strong></p>
     
   [![Python](https://img.shields.io/badge/Python-3.9+-blue?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-  [![Streamlit](https://img.shields.io/badge/Streamlit-1.29+-red?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io)
+  [![Streamlit](https://img.shields.io/badge/Streamlit-1.29+-red?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io) 
   [![Supabase](https://img.shields.io/badge/Supabase-Database-green?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
   [![License](https://img.shields.io/badge/License-Proprietary-yellow?style=for-the-badge)](#licença)
   [![Version](https://img.shields.io/badge/Version-1.0.0-blue?style=for-the-badge)](https://github.com)
@@ -764,5 +764,4 @@ Desenvolvido com ❤️ por veterinários, para veterinários
 *© 2024 PetCare AI. Todos os direitos reservados.*
 
 <p><small>© 2025 PetCareAi. Todos os direitos reservados.</small></p>
-
 </div>
