@@ -1,17 +1,20 @@
-## 🐾 Sistema de Administração de Banco de Dados PetCare
-
 <div align="center">
   <img width="1920" height="1080" alt="Cream and Pink Creative Pet Care Center Presentation" src="https://github.com/user-attachments/assets/9f20263b-59f7-44f6-9a81-6133185964e3" />
-  
-  <h3>🐾 Sistema de Administração de Banco de Dados PetCare 🐾</h3>
-  
-  <p><em>Uma solução completa e intuitiva para gerenciamento de dados veterinários</em></p>
-  
-  [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org)
-  [![Streamlit](https://img.shields.io/badge/Streamlit-1.29+-red.svg)](https://streamlit.io)
-  [![Supabase](https://img.shields.io/badge/Supabase-Database-green.svg)](https://supabase.com)
-  [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-  [![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)]()
+    
+  <h2>🐾 Sistema de Administração de Banco de Dados PetCare</h2>
+    
+  <p><strong>Uma solução completa e intuitiva para gerenciamento de dados veterinários</strong></p>
+    
+  [![Python](https://img.shields.io/badge/Python-3.9+-blue?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+  [![Streamlit](https://img.shields.io/badge/Streamlit-1.29+-red?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io)
+  [![Supabase](https://img.shields.io/badge/Supabase-Database-green?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
+  [![License](https://img.shields.io/badge/License-Proprietary-yellow?style=for-the-badge)](#licença)
+  [![Version](https://img.shields.io/badge/Version-1.0.0-blue?style=for-the-badge)](https://github.com)
+    
+  **Sistema moderno de gestão veterinária que torna o cuidado com pets mais eficiente e organizado**
+    
+  [🌟 Demo Online](https://petcareai-crm.vercel.app) • [📚 Documentação](docs/) • [💬 Suporte](https://github.com/petcareai/crm/issues) • [🐛 Report Bug](https://github.com/petcareai/crm/issues/new)
+
 </div>
 
 ### 🎯 Sobre o Projeto
