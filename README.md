@@ -764,4 +764,5 @@ Desenvolvido com ❤️ por veterinários, para veterinários
 *© 2024 PetCare AI. Todos os direitos reservados.*
 
 <p><small>© 2025 PetCareAi. Todos os direitos reservados.</small></p>
+
 </div>
