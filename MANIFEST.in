@@ -1,113 +1,275 @@
-# MANIFEST.in - Especifica quais arquivos incluir na distribuição
-# Usado pelo setuptools para determinar quais arquivos fazer parte do pacote
+# MANIFEST.in - Especifica arquivos incluídos na distribuição do PetCareAi
+# Usado para empacotamento e distribuição do projeto
 
-# Incluir arquivos de documentação
-include README.md
+# =============================================================================
+# ARQUIVOS OBRIGATÓRIOS
+# =============================================================================
+
+# Arquivos de licença e direitos autorais
 include LICENSE
+include NOTICE.md
+include COPYRIGHT
+
+# Documentação principal
+include README.md
 include CHANGELOG.md
 include CONTRIBUTING.md
+include ROADMAP.md
+include SECURITY.md
 
-# Incluir configurações da aplicação
-include app.py
-recursive-include .streamlit *.toml
-recursive-include .streamlit *.yaml
-recursive-include .streamlit *.yml
+# =============================================================================
+# CONFIGURAÇÕES DE PROJETO
+# =============================================================================
 
-# Incluir scripts de banco de dados
-recursive-include database *.sql
-recursive-include database *.py
-recursive-include database README.md
+# Arquivos de configuração do Node.js
+include package.json
+include package-lock.json
+include tsconfig.json
 
-# Incluir notebooks de análise
-recursive-include notebooks *.ipynb
-recursive-include notebooks *.py
-recursive-include notebooks *.md
-recursive-include notebooks *.txt
+# Configurações de desenvolvimento
+include .editorconfig
+include .eslintrc.json
+include .prettierrc.json
+include commitlint.config.js
 
-# Incluir scripts de release
-recursive-include release-scripts *.sh
-recursive-include release-scripts *.py
-recursive-include release-scripts *.md
+# Configurações de build
+include vite.config.ts
+include webpack.config.js
+include babel.config.js
 
-# Incluir hooks do Git
-recursive-include .githooks *
-recursive-include .husky *
+# =============================================================================
+# CÓDIGO FONTE
+# =============================================================================
 
-# Incluir arquivos de configuração
-include requirements.txt
-include requirements-dev.txt
-include Makefile
-include .travis.yml
-include .gitignore
-include CODEOWNERS
+# Incluir todo o diretório src
+recursive-include src *.ts
+recursive-include src *.tsx
+recursive-include src *.js
+recursive-include src *.jsx
+recursive-include src *.css
+recursive-include src *.scss
+recursive-include src *.sass
+recursive-include src *.json
 
-# Incluir assets e recursos estáticos
-recursive-include static *.css
-recursive-include static *.js
-recursive-include static *.png
-recursive-include static *.jpg
-recursive-include static *.svg
-recursive-include static *.ico
+# Incluir arquivos de tipos
+recursive-include src *.d.ts
 
-# Incluir templates
-recursive-include templates *.html
-recursive-include templates *.jinja2
+# =============================================================================
+# ASSETS E RECURSOS
+# =============================================================================
 
-# Incluir arquivos de teste
-recursive-include tests *.py
-recursive-include tests *.json
-recursive-include tests *.yaml
-recursive-include tests *.sql
+# Diretório público
+recursive-include public *
 
-# Incluir dados de exemplo (se houver)
-recursive-include data *.csv
-recursive-include data *.json
-recursive-include data *.sql
+# Assets e mídia
+recursive-include src/assets *.png
+recursive-include src/assets *.jpg
+recursive-include src/assets *.jpeg
+recursive-include src/assets *.gif
+recursive-include src/assets *.svg
+recursive-include src/assets *.ico
+recursive-include src/assets *.webp
 
-# Incluir arquivos de configuração de desenvolvimento
-include setup.py
-include setup.cfg
-include pyproject.toml
-include tox.ini
-include pytest.ini
+# Fontes
+recursive-include src/assets/fonts *.woff
+recursive-include src/assets/fonts *.woff2
+recursive-include src/assets/fonts *.ttf
+recursive-include src/assets/fonts *.otf
+recursive-include src/assets/fonts *.eot
 
-# Incluir scripts utilitários
-recursive-include scripts *.py
-recursive-include scripts *.sh
+# =============================================================================
+# DOCUMENTAÇÃO
+# =============================================================================
 
-# Incluir documentação adicional
+# Documentação técnica
 recursive-include docs *.md
 recursive-include docs *.rst
 recursive-include docs *.txt
-recursive-include docs *.png
-recursive-include docs *.jpg
+recursive-include docs *.html
+recursive-include docs *.pdf
 
-# Excluir arquivos temporários e de cache
+# Guias e tutoriais
+recursive-include guides *.md
+recursive-include tutorials *.md
+
+# Arquivos de configuração da documentação
+include docs/conf.py
+include docs/requirements.txt
+include mkdocs.yml
+
+# =============================================================================
+# TESTES
+# =============================================================================
+
+# Configurações de teste
+include jest.config.js
+include cypress.config.ts
+include setupTests.ts
+
+# Arquivos de teste (opcional para distribuição)
+recursive-include src *.test.ts
+recursive-include src *.test.tsx
+recursive-include src *.spec.ts
+recursive-include src *.spec.tsx
+
+# Mocks e fixtures
+recursive-include src/__mocks__ *
+recursive-include tests/fixtures *
+
+# =============================================================================
+# SCRIPTS E AUTOMAÇÃO
+# =============================================================================
+
+# Scripts de build e deploy
+recursive-include scripts *.sh
+recursive-include scripts *.js
+recursive-include scripts *.py
+
+# Scripts de release
+recursive-include release-scripts *
+
+# =============================================================================
+# NOTEBOOKS E ANÁLISES
+# =============================================================================
+
+# Jupyter notebooks
+recursive-include notebooks *.ipynb
+recursive-include notebooks *.md
+recursive-include notebooks *.py
+
+# Dados de exemplo (se pequenos)
+recursive-include notebooks/data *.json
+recursive-include notebooks/data *.csv
+
+# =============================================================================
+# CONFIGURAÇÕES DE CI/CD
+# =============================================================================
+
+# GitHub Actions
+recursive-include .github/workflows *.yml
+recursive-include .github/workflows *.yaml
+
+# Travis CI
+include .travis.yml
+
+# Configurações de dependabot
+include .github/dependabot.yml
+
+# Pre-commit hooks
+include .pre-commit-config.yaml
+
+# =============================================================================
+# DOCKER E CONTAINERIZAÇÃO
+# =============================================================================
+
+# Dockerfiles
+include Dockerfile
+include Dockerfile.*
+include docker-compose.yml
+include docker-compose.*.yml
+
+# Scripts relacionados ao Docker
+include docker-entrypoint.sh
+recursive-include docker *
+
+# =============================================================================
+# CONFIGURAÇÕES DE AMBIENTE
+# =============================================================================
+
+# Arquivos de exemplo de configuração
+include .env.example
+include .env.template
+include config.example.json
+
+# =============================================================================
+# METADADOS E CONTROLE
+# =============================================================================
+
+# Arquivo de versão
+include .version
+
+# Git attributes
+include .gitattributes
+
+# CODEOWNERS
+include CODEOWNERS
+
+# =============================================================================
+# ARQUIVOS ESPECÍFICOS DO PROJETO
+# =============================================================================
+
+# Base de conhecimento
+recursive-include src/knowledge *.ts
+recursive-include src/knowledge *.json
+recursive-include src/knowledge *.md
+
+# Configurações específicas do PetCare AI
+include petcare-config.json
+include api-config.json
+
+# =============================================================================
+# EXCLUSÕES EXPLÍCITAS
+# =============================================================================
+
+# Excluir arquivos temporários
 global-exclude *.pyc
 global-exclude *.pyo
 global-exclude *.pyd
 global-exclude __pycache__
-global-exclude .DS_Store
 global-exclude *.so
-global-exclude .coverage
-global-exclude .pytest_cache
-global-exclude .tox
-global-exclude .mypy_cache
+global-exclude *.dylib
+global-exclude *.dll
 
-# Excluir arquivos de desenvolvimento local
-global-exclude .env
-global-exclude .env.local
-global-exclude secrets.toml
+# Excluir arquivos de cache
+global-exclude .DS_Store
+global-exclude Thumbs.db
+global-exclude *.tmp
+global-exclude *.temp
+global-exclude *.cache
+
+# Excluir logs
 global-exclude *.log
+global-exclude npm-debug.log*
+global-exclude yarn-debug.log*
+global-exclude yarn-error.log*
 
-# Excluir diretórios de build
-prune build
-prune dist
-prune *.egg-info
+# Excluir builds e dist
+exclude build
+exclude dist
+exclude coverage
+exclude .nyc_output
 
-# Excluir arquivos específicos do editor
+# Excluir node_modules
+exclude node_modules
+
+# Excluir arquivos de IDE
 global-exclude .vscode
 global-exclude .idea
 global-exclude *.swp
 global-exclude *.swo
-global-exclude *~
+
+# =============================================================================
+# INSTRUÇÕES DE EMPACOTAMENTO
+# =============================================================================
+
+# Para criar um pacote de distribuição:
+# 1. npm run build
+# 2. python setup.py sdist (se usando Python para empacotamento)
+# 3. tar -czf petcare-ai-assistant.tar.gz --files-from=MANIFEST.in
+
+# Para verificar o conteúdo do manifest:
+# python setup.py check --restructuredtext --strict
+
+# =============================================================================
+# NOTAS IMPORTANTES
+# =============================================================================
+
+# 1. Este arquivo é usado para distribuição e empacotamento
+# 2. Inclui apenas arquivos necessários para funcionamento
+# 3. Exclui arquivos de desenvolvimento e temporários
+# 4. Mantém estrutura de diretórios essencial
+# 5. Inclui documentação e licenças obrigatórias
+
+# Versão do MANIFEST: 1.0
+# Última atualização: Julho 2025
+# Compatível com: setuptools, wheel, npm pack
