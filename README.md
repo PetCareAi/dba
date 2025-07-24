@@ -1,7 +1,7 @@
 <div align="center">
   <img width="1920" height="1080" alt="Cream and Pink Creative Pet Care Center Presentation" src="https://github.com/user-attachments/assets/9f20263b-59f7-44f6-9a81-6133185964e3" />
     
-  <h2>🐾 Sistema de Administração de Banco de Dados PetCare</h2>
+  <h1>🐾 Sistema de Administração de Banco de Dados PetCare</h1>
     
   <p><strong>Uma solução completa e intuitiva para gerenciamento de dados veterinários</strong></p>
     
