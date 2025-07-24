@@ -1,234 +1,267 @@
-# Security Policy
+# Política de Segurança
 
-## Política de Segurança do PetCare DBA Admin
+## 🛡️ Versões Suportadas
 
-A segurança é uma prioridade fundamental para o PetCare DBA Admin. Este documento descreve nossas políticas de segurança e como relatar vulnerabilidades.
+Atualmente oferecemos suporte de segurança para as seguintes versões do PetCare AI Assistant:
 
-## 🔒 Versões Suportadas
+| Versão | Suporte de Segurança |
+| ------- | ------------------ |
+| 1.0.x   | ✅ Suportada |
+| 0.9.x   | ✅ Suportada |
+| < 0.9   | ❌ Não suportada |
 
-Utilizamos as seguintes versões para atualizações de segurança:
+## 🚨 Reportando Vulnerabilidades
 
-| Versão | Suportada         | Status                |
-| ------ | ----------------- | --------------------- |
-| 2.1.x  | ✅ Sim           | Desenvolvimento ativo |
-| 2.0.x  | ✅ Sim           | Manutenção            |
-| 1.9.x  | ⚠️ Limitado      | Apenas críticas       |
-| < 1.9  | ❌ Não           | Descontinuada         |
+### Processo de Reporte
 
-## 🚨 Relatando Vulnerabilidades
+A segurança dos usuários e seus dados sobre pets é nossa prioridade máxima. Se você descobrir uma vulnerabilidade de segurança, por favor, siga estes passos:
 
-### Processo de Relatório
+#### 1. **NÃO** crie uma issue pública
+- Issues públicas podem expor a vulnerabilidade antes da correção
+- Use sempre os canais privados listados abaixo
 
-Se você descobrir uma vulnerabilidade de segurança, por favor **NÃO** abra uma issue pública. Em vez disso:
+#### 2. **Contato Direto**
+**Email Preferencial**: security@petcareai.com.br  
+**Diretor de TI**: estevam.souza@petcareai.com.br  
+**Assunto**: [SECURITY] Vulnerabilidade no PetCare AI Assistant
 
-1. **Email Seguro**: Envie um email para `security@petcareai.com`
-2. **Criptografia**: Use nossa chave PGP se possível (veja abaixo)
-3. **Detalhes**: Inclua informações detalhadas sobre a vulnerabilidade
+#### 3. **Informações Necessárias**
+Inclua no seu reporte:
+- 📝 Descrição detalhada da vulnerabilidade
+- 🔄 Passos para reproduzir o problema
+- 💻 Versão afetada do software
+- 🌐 Navegadores/sistemas operacionais testados
+- 📊 Impacto potencial da vulnerabilidade
+- 🛠️ Sugestões de correção (se houver)
 
-### Informações Necessárias
-
-Por favor, inclua as seguintes informações em seu relatório:
-
-- **Tipo de Vulnerabilidade**: Descrição da categoria de segurança
-- **Localização**: Arquivo, função, ou componente afetado
-- **Impacto**: Potencial impacto da vulnerabilidade
-- **Reprodução**: Passos para reproduzir o problema
-- **Evidência**: Proof of concept ou screenshots (se aplicável)
-- **Ambiente**: Versão, configuração, e ambiente de teste
-
-### Template de Relatório
-
+#### 4. **Template de Reporte**
 ```
-Assunto: [SEGURANÇA] Vulnerabilidade no PetCare DBA Admin
+VULNERABILIDADE DE SEGURANÇA - PetCare AI Assistant
 
-Resumo:
-[Breve descrição da vulnerabilidade]
+Descrição:
+[Descreva a vulnerabilidade encontrada]
 
-Tipo de Vulnerabilidade:
-[ ] Injeção SQL
-[ ] Cross-Site Scripting (XSS)
-[ ] Autenticação/Autorização
-[ ] Exposição de Dados
-[ ] Configuração Insegura
-[ ] Outro: [especificar]
-
-Severidade Estimada:
-[ ] Crítica
-[ ] Alta
-[ ] Média
-[ ] Baixa
-
-Detalhes:
-[Descrição técnica detalhada]
-
-Passos para Reproduzir:
+Reprodução:
 1. [Passo 1]
 2. [Passo 2]
-3. [Passo 3]
+3. [Resultado]
+
+Ambiente:
+- Versão: [versão do software]
+- Navegador: [nome e versão]
+- SO: [sistema operacional]
 
 Impacto:
 [Descrição do impacto potencial]
 
-Ambiente de Teste:
-- Versão: [ex: v2.0.0]
-- OS: [ex: Ubuntu 20.04]
-- Python: [ex: 3.11]
-- Configuração: [ex: Supabase, modo produção]
-
 Evidências:
-[Screenshots, logs, ou proof of concept]
+[Screenshots, logs, ou outros arquivos - SEM dados sensíveis]
 ```
 
 ## ⏱️ Tempo de Resposta
 
-Nosso compromisso com tempos de resposta:
+Nos comprometemos com os seguintes tempos de resposta:
 
-- **Confirmação**: 24 horas
-- **Avaliação Inicial**: 72 horas
-- **Atualizações Regulares**: A cada 7 dias
-- **Resolução**: 
-  - Crítica: 1-7 dias
-  - Alta: 7-14 dias
-  - Média: 14-30 dias
-  - Baixa: 30-90 dias
+| Severidade | Primeira Resposta | Investigação | Correção |
+|------------|------------------|--------------|----------|
+| 🔴 Crítica | 2 horas | 24 horas | 48 horas |
+| 🟡 Alta | 24 horas | 72 horas | 7 dias |
+| 🟢 Média | 72 horas | 1 semana | 2 semanas |
+| 🔵 Baixa | 1 semana | 2 semanas | 1 mês |
 
-## 🏆 Programa de Reconhecimento
+## 🏷️ Classificação de Severidade
 
-### Hall da Fama de Segurança
+### 🔴 Crítica
+- Execução remota de código
+- Bypass de autenticação
+- Acesso não autorizado a dados de pets
+- Vulnerabilidades que afetam múltiplos usuários
 
-Agradecemos aos seguintes pesquisadores por relatar vulnerabilidades de forma responsável:
+### 🟡 Alta
+- Cross-Site Scripting (XSS) persistente
+- SQL Injection em endpoints sensíveis
+- Escalação de privilégios
+- Exposição de chaves de API
 
-- [Lista será atualizada conforme necessário]
+### 🟢 Média
+- XSS refletido
+- Cross-Site Request Forgery (CSRF)
+- Vazamento de informações menores
+- Bypass de controles de segurança
 
-### Reconhecimento
+### 🔵 Baixa
+- Problemas de configuração
+- Divulgação de informações não sensíveis
+- Problemas de validação de entrada
 
-- **Crédito**: Incluímos seu nome (se desejado) nos changelogs
-- **Comunicação**: Coordenamos a divulgação pública
-- **Agradecimento**: Reconhecimento público em nossos canais
+## 🔒 Medidas de Segurança Implementadas
 
-*Nota: Atualmente não oferecemos recompensas monetárias, mas valorizamos enormemente as contribuições para a segurança.*
+### Frontend Security
+- **Content Security Policy (CSP)**: Headers rigorosos
+- **XSS Protection**: Sanitização de todos os inputs
+- **HTTPS Only**: Comunicação sempre criptografada
+- **Secure Headers**: HSTS, X-Frame-Options, etc.
+- **Input Validation**: Validação client-side rigorosa
 
-## 🔐 Chave PGP
+### API Security
+- **Rate Limiting**: Proteção contra ataques de força bruta
+- **API Key Protection**: Chaves nunca expostas no cliente
+- **Request Validation**: Validação de todos os payloads
+- **Error Handling**: Não exposição de informações sensíveis
+- **CORS Policy**: Política restritiva de CORS
 
-Para comunicações criptografadas, use nossa chave PGP:
+### Privacy & Data Protection
+- **No Data Storage**: Não armazenamos conversas
+- **Local Processing**: Dados processados localmente quando possível
+- **Minimal Data**: Coletamos apenas dados essenciais
+- **LGPD Compliance**: Conformidade com lei brasileira
 
-```
------BEGIN PGP PUBLIC KEY BLOCK-----
-[Chave PGP será disponibilizada em breve]
------END PGP PUBLIC KEY BLOCK-----
-```
+## 🎯 Escopo de Segurança
 
-**Fingerprint**: `[será fornecido]`
+### Incluído no Escopo
+✅ Aplicação React.js principal  
+✅ Integração com API Gemini  
+✅ Funcionalidade de reconhecimento de voz  
+✅ Sistema de download da API  
+✅ Todos os componentes frontend  
 
-## 🛡️ Medidas de Segurança Implementadas
+### Fora do Escopo
+❌ APIs de terceiros (Google Gemini)  
+❌ Infraestrutura de hospedagem  
+❌ Ataques de engenharia social  
+❌ Vulnerabilidades físicas  
+❌ Ataques DDoS  
 
-### Aplicação
+## 🏆 Programa de Bug Bounty
 
-- **Autenticação**: Sistema seguro de login
-- **Autorização**: Controle de acesso baseado em roles
-- **Validação**: Sanitização de entradas SQL
-- **Criptografia**: HTTPS obrigatório em produção
-- **Sessões**: Timeout automático e invalidação
-- **Logs**: Auditoria completa de ações sensíveis
+### Recompensas
+Reconhecemos a importância dos pesquisadores de segurança e oferecemos:
 
-### Banco de Dados
+| Severidade | Recompensa |
+|------------|------------|
+| 🔴 Crítica | R$ 1.000 - R$ 5.000 |
+| 🟡 Alta | R$ 500 - R$ 1.500 |
+| 🟢 Média | R$ 100 - R$ 500 |
+| 🔵 Baixa | Reconhecimento público |
 
-- **RLS**: Row Level Security habilitado
-- **Conexões**: Pool seguro de conexões
-- **Criptografia**: Dados em trânsito e em repouso
-- **Backup**: Backups criptografados
-- **Acesso**: Princípio do menor privilégio
+### Critérios
+- ✅ Primeira descoberta da vulnerabilidade
+- ✅ Reporte seguindo o processo correto
+- ✅ Colaboração durante investigação
+- ✅ Aguardar correção antes de divulgação pública
 
-### Infraestrutura
+### Hall da Fama
+Pesquisadores que contribuem significativamente são reconhecidos em:
+- 🏆 Página de segurança do projeto
+- 📱 Seção especial no README
+- 🎉 Redes sociais da PetCare AI
+- 📧 Newsletter de segurança
 
-- **Supabase**: Infraestrutura de nuvem segura
-- **Updates**: Dependências mantidas atualizadas
-- **Monitoring**: Monitoramento de segurança 24/7
-- **Compliance**: Seguimos melhores práticas de segurança
+## 🛠️ Ferramentas de Segurança
 
-## ⚠️ Vulnerabilidades Conhecidas
+### Análise Estática
+- **ESLint Security Plugin**: Detecção de problemas de segurança
+- **Audit Automatizado**: npm audit em CI/CD
+- **Dependency Check**: Verificação de dependências vulneráveis
+- **Code Scanning**: GitHub Advanced Security
 
-### Limitações Atuais
+### Análise Dinâmica
+- **Penetration Testing**: Testes regulares
+- **Vulnerability Scanning**: Scans automatizados
+- **Security Headers**: Verificação de headers
+- **SSL/TLS Testing**: Análise de configuração
 
-- **Demo Mode**: Modo demonstração pode expor dados de exemplo
-- **Debug Mode**: Informações técnicas expostas quando habilitado
-- **File Upload**: Validação limitada de tipos de arquivo
-
-### Mitigações
-
-- Debug mode desabilitado em produção
-- Modo demo claramente identificado
-- Uploads restritos a administradores
-
-## 📋 Checklist de Segurança para Desenvolvedores
-
-Antes de fazer deploy:
-
-- [ ] Debug mode desabilitado
-- [ ] Credenciais não hardcoded
-- [ ] Dependências atualizadas
-- [ ] HTTPS configurado
-- [ ] RLS verificado
-- [ ] Logs de auditoria ativos
-- [ ] Backup configurado
-- [ ] Timeouts configurados
-- [ ] Validação de entrada implementada
-- [ ] Testes de segurança executados
+### Monitoramento
+- **Error Tracking**: Sentry para monitoramento de erros
+- **Log Analysis**: Análise de logs de segurança
+- **Intrusion Detection**: Detecção de tentativas de intrusão
+- **Performance Monitoring**: Detecção de anomalias
 
 ## 📚 Recursos de Segurança
 
 ### Documentação
+- [Security Best Practices](docs/security-practices.md)
+- [Secure Development Guidelines](docs/secure-development.md)
+- [Incident Response Plan](docs/incident-response.md)
+- [Privacy Policy](https://petcareai.com.br/privacy)
 
-- [Guia de Configuração Segura](docs/secure-setup.md)
-- [Melhores Práticas](docs/best-practices.md)
-- [Troubleshooting de Segurança](docs/security-troubleshooting.md)
+### Treinamento
+- 🎓 Workshops de segurança para desenvolvedores
+- 📖 Documentação de práticas seguras
+- 🔄 Revisões de código focadas em segurança
+- 🎯 Testes de consciência de segurança
 
-### Ferramentas Recomendadas
+## 🚨 Plano de Resposta a Incidentes
 
-- **SAST**: SonarQube, Bandit
-- **DAST**: OWASP ZAP
-- **Dependências**: Safety, Snyk
-- **Secrets**: GitSecrets, TruffleHog
+### Processo de Resposta
+1. **Detecção** (0-2h): Identificação e confirmação
+2. **Contenção** (2-6h): Isolamento e mitigação
+3. **Investigação** (6-24h): Análise forense
+4. **Correção** (24-72h): Implementação da solução
+5. **Comunicação** (Contínua): Atualizações aos usuários
+6. **Aprendizado** (1 semana): Revisão e melhorias
 
-## 🔄 Atualizações de Segurança
+### Comunicação de Incidentes
+- 📧 **Email**: Para usuários diretamente afetados
+- 🌐 **Website**: Status page com atualizações
+- 📱 **Redes Sociais**: Comunicados públicos
+- 📝 **Blog**: Post-mortem detalhado
 
-### Processo de Patch
+## 🔐 Configurações de Segurança
 
-1. **Identificação**: Vulnerabilidade identificada
-2. **Avaliação**: Análise de impacto e prioridade
-3. **Desenvolvimento**: Correção desenvolvida e testada
-4. **Review**: Review de código focado em segurança
-5. **Release**: Liberação coordenada
-6. **Comunicação**: Notificação aos usuários
+### Variáveis de Ambiente
+```bash
+# Configurações de produção recomendadas
+REACT_APP_ENV=production
+REACT_APP_API_URL=https://api.petcareai.com.br
+HTTPS=true
+GENERATE_SOURCEMAP=false
+```
 
-### Notificações
+### Headers de Segurança
+```
+Content-Security-Policy: default-src 'self'
+X-Frame-Options: DENY
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=()
+```
 
-- **Canal Principal**: GitHub Security Advisories
-- **Email**: Lista de segurança (security-announce@petcareai.com)
-- **Website**: Avisos no site oficial
+## 📊 Métricas de Segurança
 
-## 🤝 Parceiros de Segurança
+Monitoramos regularmente:
+- 📈 Tempo médio de detecção de vulnerabilidades
+- ⚡ Tempo médio de correção
+- 🎯 Taxa de falsos positivos
+- 📊 Número de vulnerabilidades por categoria
+- 🔍 Cobertura de testes de segurança
 
-Trabalhamos com:
+## 📞 Contatos de Emergência
 
-- **Supabase**: Para segurança da infraestrutura
-- **GitHub**: Para security advisories
-- **Comunidade**: Pesquisadores de segurança
+### Equipe de Segurança
+**Coordenador de Segurança**: Estevam Souza  
+📧 estevam.souza@petcareai.com.br  
+📱 +55 (48) 9 9999-9999  
 
-## 📞 Contato de Emergência
+**Email Geral**: security@petcareai.com.br  
+🌐 **Website**: https://petcareai.com.br/security  
+💬 **Discord**: #security (convite necessário)  
 
-Para incidentes críticos de segurança:
-
-- **Email**: security@petcareai.com
-- **Urgente**: security-urgent@petcareai.com
-- **Resposta**: 24/7 para questões críticas
-
-## 🔍 Auditoria Externa
-
-- **Última Auditoria**: [A ser agendada]
-- **Próxima Auditoria**: [A ser definida]
-- **Relatórios**: Disponíveis sob solicitação para parceiros
+### Horários de Atendimento
+- 🌅 **Horário Comercial**: Segunda a Sexta, 9h às 18h (BRT)
+- 🚨 **Emergências**: 24/7 para vulnerabilidades críticas
+- 📱 **Resposta**: Máximo 2 horas para questões críticas
 
 ---
 
-**Agradecemos seu compromisso em manter o PetCare DBA Admin seguro para todos os usuários! 🛡️**
+## 📝 Histórico de Atualizações
+
+| Data | Versão | Mudanças |
+|------|--------|----------|
+| 2025-07-01 | 1.0 | Política inicial de segurança |
+
+---
+
+**Última atualização**: 05/08/2025  
+**Próxima revisão**: 01/10/2025  
+**Mantenedor**: Estevam Souza - Diretor de TI PetCare AI
