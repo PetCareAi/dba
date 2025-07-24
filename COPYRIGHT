@@ -1,22 +1,17 @@
-PetCare DBA Admin - Sistema de Gerenciamento de Banco de Dados
-Copyright (c) 2025 PetCare AI Technology Solutions
+Copyright (c) 2025 PetCareAi - Estevam Souza
 
-Este software e documentação associada (o "Software") são protegidos por leis de direitos autorais e tratados internacionais. Todos os direitos são reservados.
+                            PETCAREAI
+                    Assistente de IA Conversacional
 
-===============================================================================
-DECLARAÇÃO DE DIREITOS AUTORAIS
-===============================================================================
+================================================================================
 
-O PetCare DBA Admin é um software proprietário desenvolvido pela PetCare AI Technology Solutions. O código fonte, documentação, designs, interfaces, logotipos, marcas registradas e todos os outros materiais incluídos neste repositório são protegidos por direitos autorais.
+DIREITOS AUTORAIS E PROPRIEDADE INTELECTUAL
 
-Autores e Contribuidores:
-- Estevam Silva <estevam@petcareai.com> - Desenvolvedor Principal
-- Equipe PetCare AI - Desenvolvimento e Design
-- Contribuidores da Comunidade - Melhorias e Correções
+Este software e toda documentação associada (doravante "Software") são
+propriedade de Estevam Souza e estão protegidos pelas leis de direitos autorais
+do Brasil e tratados internacionais de propriedade intelectual.
 
-===============================================================================
-LICENÇA MIT
-===============================================================================
+LICENCIADO SOB MIT LICENSE
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -36,99 +31,142 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-===============================================================================
-COMPONENTES DE TERCEIROS
-===============================================================================
+================================================================================
 
-Este software utiliza as seguintes bibliotecas e ferramentas de terceiros:
+MARCAS REGISTRADAS E PROPRIEDADE COMERCIAL
 
-Streamlit
-- Copyright (c) 2019 Streamlit Inc.
-- License: Apache License 2.0
-- Website: https://streamlit.io
+"PetCareAi", o logotipo PetCare AI, e outras marcas relacionadas são marcas
+registradas ou marcas comerciais de Estevam Souza no Brasil e/ou outros países.
 
-Supabase Python Client
-- Copyright (c) 2021 Supabase
-- License: MIT License
-- Website: https://supabase.com
+O uso das marcas PetCare AI está sujeito às diretrizes de marca disponíveis em:
+https://petcareai.com.br/brand-guidelines
 
-Pandas
-- Copyright (c) 2008-2012, AQR Capital Management, LLC, Lambda Foundry, Inc. and PyData Development Team
-- License: BSD 3-Clause License
-- Website: https://pandas.pydata.org
+================================================================================
 
-Plotly
-- Copyright (c) 2016-2018 Plotly, Inc
-- License: MIT License
-- Website: https://plotly.com
+CONTRIBUIÇÕES E DIREITOS DOS COLABORADORES
 
-PostgreSQL (psycopg2)
-- Copyright (c) 2006-2019, Federico Di Gregorio
-- License: GNU Lesser General Public License
-- Website: https://www.psycopg.org
+Ao contribuir para este projeto, você concorda que:
 
-SQLParse
-- Copyright (c) 2008, Andi Albrecht
-- License: BSD License
-- Website: https://github.com/andialbrecht/sqlparse
+1. Suas contribuições serão licenciadas sob a mesma licença MIT
+2. Você possui os direitos necessários para fazer a contribuição
+3. Suas contribuições não violam direitos de terceiros
+4. Você renuncia a quaisquer direitos morais sobre suas contribuições
 
-Para uma lista completa de dependências e suas licenças, consulte o arquivo requirements.txt e a documentação de cada biblioteca.
+Contribuições significativas são reconhecidas no arquivo CONTRIBUTORS.yml
 
-===============================================================================
-MARCAS REGISTRADAS
-===============================================================================
+================================================================================
 
-PetCare™, PetCare AI™, e o logotipo PetCare são marcas registradas ou marcas comerciais da PetCare AI Technology Solutions.
+INTEGRAÇÃO COM SERVIÇOS DE TERCEIROS
 
-Outras marcas registradas mencionadas neste software são propriedade de seus respectivos proprietários.
+Este software integra com os seguintes serviços de terceiros:
 
-===============================================================================
-DADOS E PRIVACIDADE
-===============================================================================
+Google Gemini API
+- Fornecedor: Google LLC
+- Termos: https://ai.google.dev/terms
+- Política de Privacidade: https://policies.google.com/privacy
 
-O PetCare DBA Admin pode processar dados sensíveis relacionados a:
-- Informações de banco de dados
-- Configurações de sistema
-- Logs de atividade do usuário
-- Métricas de performance
+Web Speech API
+- Fornecedor: Consórcio W3C / Navegadores
+- Especificação: https://w3c.github.io/speech-api/
 
-Os usuários são responsáveis por:
-- Configurar adequadamente as permissões de acesso
-- Implementar medidas de segurança apropriadas
-- Cumprir regulamentações locais de proteção de dados (LGPD, GDPR, etc.)
-- Realizar backups regulares de dados críticos
+O uso destes serviços está sujeito aos termos e condições de seus respectivos
+fornecedores.
 
-===============================================================================
-ISENÇÃO DE RESPONSABILIDADE
-===============================================================================
+================================================================================
 
-Este software é fornecido "como está", sem garantias de qualquer tipo. A PetCare AI Technology Solutions não se responsabiliza por:
+ISENÇÃO DE RESPONSABILIDADE VETERINÁRIA
 
-- Perda de dados ou corrupção de banco de dados
-- Problemas de performance ou indisponibilidade
-- Vulnerabilidades de segurança
-- Incompatibilidades com sistemas específicos
-- Danos diretos ou indiretos resultantes do uso do software
+IMPORTANTE: Este software é uma ferramenta educacional e de suporte. NÃO
+substitui consultas veterinárias profissionais. As informações fornecidas
+pela inteligência artificial são apenas para fins informativos e não devem
+ser consideradas como aconselhamento médico veterinário.
 
-===============================================================================
-INFORMAÇÕES DE CONTATO
-===============================================================================
+Sempre consulte um veterinário licenciado para questões de saúde, diagnóstico
+ou tratamento de animais.
 
-PetCare AI Technology Solutions
-Email: legal@petcareai.com
-Website: https://petcareai.com
+================================================================================
+
+CONFORMIDADE LEGAL
+
+Este software está em conformidade com:
+
+- Lei Geral de Proteção de Dados (LGPD) - Lei 13.709/2018
+- Marco Civil da Internet - Lei 12.965/2014
+- Código de Defesa do Consumidor - Lei 8.078/1990
+- Lei de Software - Lei 9.609/1998
+
+================================================================================
+
+POLÍTICA DE PRIVACIDADE E DADOS
+
+O tratamento de dados pessoais neste software segue os princípios da LGPD:
+
+- Finalidade: Apenas para funcionamento do assistente de IA
+- Adequação: Compatível com a finalidade declarada
+- Necessidade: Limitação ao mínimo necessário
+- Livre acesso: Direitos dos titulares respeitados
+- Qualidade dos dados: Exatidão e atualização
+- Transparência: Informações claras e acessíveis
+- Segurança: Medidas técnicas e administrativas
+- Prevenção: Adoção de medidas preventivas
+- Não discriminação: Vedação de discriminação
+- Responsabilização: Demonstração de conformidade
+
+================================================================================
+
+LIMITAÇÕES E EXCLUSÕES
+
+O software é fornecido "como está" sem garantias de qualquer tipo. Em nenhuma
+circunstância os autores ou detentores de direitos autorais serão responsáveis
+por quaisquer danos diretos, indiretos, incidentais, especiais, exemplares ou
+consequenciais decorrentes do uso do software.
+
+================================================================================
+
+RESOLUÇÃO DE DISPUTAS
+
+Quaisquer disputas relacionadas a direitos autorais ou uso deste software
+serão resolvidas de acordo com as leis brasileiras, com foro na cidade de
+Florianópolis, Santa Catarina, Brasil.
+
+================================================================================
+
+CONTATO PARA QUESTÕES DE DIREITOS AUTORAIS
+
+Para questões relacionadas a direitos autorais, violações ou licenciamento:
+
+Estevam Souza
+Diretor de TI - PetCare AI
+Email: legal@petcareai.com.br
+Website: https://petcareai.com.br
 Endereço: Florianópolis, Santa Catarina, Brasil
 
-Para questões de licenciamento: licensing@petcareai.com
-Para questões de segurança: security@petcareai.com
-Para questões técnicas: support@petcareai.com
+Para relatórios de violação de direitos autorais (DMCA):
+Email: contato@petcareai.com.br
 
-===============================================================================
-ÚLTIMA ATUALIZAÇÃO
-===============================================================================
+================================================================================
 
-Esta declaração de direitos autorais foi atualizada em: 29 de junho de 2025
-Versão do documento: 1.0
-Aplica-se às versões: 2.0.0 e superiores do PetCare DBA Admin
+ATUALIZAÇÕES E MODIFICAÇÕES
 
-===============================================================================
+Esta declaração de direitos autorais pode ser atualizada periodicamente.
+A versão mais atual estará sempre disponível no repositório oficial do projeto.
+
+Última atualização: 05 de Agosto de 2025
+Versão: 1.0.0
+
+================================================================================
+
+RECONHECIMENTOS ESPECIAIS
+
+Agradecimentos especiais às comunidades de código aberto que tornaram este
+projeto possível, aos beta testers, e à comunidade de tutores de pets que
+inspiraram o desenvolvimento desta solução.
+
+Dedicado a todos os animais de estimação e seus tutores dedicados.
+
+================================================================================
+
+                    Copyright (c) 2025 PetCare AI - Estevam Souza
+                              Todos os direitos reservados.
+
+                             🐾 Feito com amor para pets 🐾
