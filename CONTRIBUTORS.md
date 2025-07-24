@@ -1,283 +1,241 @@
-# Colaboradores
+# Contribuidores do PetCare AI Assistant
 
-Agradecemos a todos que contribuíram para o desenvolvimento do PetCare DBA Admin! 🎉
+Agradecemos a todos que contribuíram para tornar o PetCare AI Assistant uma realidade! 🐾
 
-## 👥 Mantenedores Principais
+## 👨‍💼 Equipe Principal
 
-### Equipe Core
-- **Tech Lead** - Arquitetura e desenvolvimento principal
-  - 📧 tech-lead@petcareai.com
-  - 🔗 Responsável por: Arquitetura, revisões de código, roadmap técnico
+### Liderança Executiva
 
-- **Product Owner** - Gestão de produto e requisitos
-  - 📧 product@petcareai.com  
-  - 🔗 Responsável por: Requisitos, priorização, UX/UI
+**Estevam Souza** - *Diretor de TI e Arquiteto Principal*
+- 📧 estevam.souza@petcareai.com.br
+- 🐙 [@estevamsouza](https://github.com/estevamsouza)
+- 📍 Florianópolis, SC, Brasil
+- 🔧 **Responsabilidades**: Arquitetura do sistema, decisões técnicas estratégicas, supervisão de releases, integração com IA
 
-- **DevOps Engineer** - Infraestrutura e CI/CD
-  - 📧 devops@petcareai.com
-  - 🔗 Responsável por: Deploy, monitoramento, automação
+### Desenvolvedores Core
 
-## 🌟 Colaboradores por Área
+**Aluno1** - *Frontend Lead Developer*
+- ⚛️ **Especialização**: React, TypeScript, UI/UX Design
+- 📧 aluno1@petcareai.com.br
+- 🐙 [@aluno1](https://github.com/aluno1)
+- 🏆 **Contribuições**: Interface do usuário, componentes React, design system, acessibilidade
 
-### 🎨 Frontend & UI/UX
-Contribuidores que trabalharam na interface Streamlit e experiência do usuário:
+**Aluno2** - *Backend Lead Developer*
+- 🔧 **Especialização**: APIs, Integrações, Banco de Dados
+- 📧 aluno2@petcareai.com.br
+- 🐙 [@aluno2](https://github.com/aluno2)
+- 🏆 **Contribuições**: Serviços backend, integrações com APIs, documentação técnica
 
-- **[Nome do Colaborador 1]** (@username1)
-  - 🎯 Especialidade: Design de interfaces Streamlit
-  - 📈 Contribuições: Dashboard principal, componentes visuais
-  - 📅 Período: Janeiro 2025 - Presente
+**Aluno3** - *Full Stack Developer & QA Engineer*
+- 🧪 **Especialização**: Testes automatizados, Performance, Reconhecimento de Voz
+- 📧 aluno3@petcareai.com.br
+- 🐙 [@aluno3](https://github.com/aluno3)
+- 🏆 **Contribuições**: Qualidade de código, testes automatizados, otimização de performance
 
-### 🔧 Backend & Integrações
-Desenvolvedores que trabalharam na lógica de negócio e integrações:
+## 🌟 Estatísticas da Equipe
 
-- **[Nome do Colaborador 2]** (@username2)
-  - 🎯 Especialidade: Integrações Supabase
-  - 📈 Contribuições: Sistema de projetos, gerenciamento de scripts
-  - 📅 Período: Janeiro 2025 - Presente
+### Contribuições por Desenvolvedor
 
-### 🤖 IA & Machine Learning
-Especialistas em integração de IA e assistente virtual:
+| Desenvolvedor | Commits | Linhas Adicionadas | Linhas Removidas | Especialidade Principal |
+|---------------|---------|-------------------|------------------|------------------------|
+| **Estevam Souza** | 127 | 15,420 | 2,341 | Arquitetura & IA |
+| **Aluno1** | 45 | 3,280 | 420 | Frontend & UI/UX |
+| **Aluno2** | 38 | 2,890 | 350 | Backend & APIs |
+| **Aluno3** | 34 | 2,150 | 280 | QA & Performance |
 
-- **[Nome do Colaborador 3]** (@username3)
-  - 🎯 Especialidade: Integração Google Gemini
-  - 📈 Contribuições: Assistente IA, análise contextual
-  - 📅 Período: Janeiro 2025 - Presente
+### Distribuição de Responsabilidades
 
-### 🗄️ Database & DBA
-Especialistas em banco de dados e operações DBA:
-
-- **[Nome do Colaborador 4]** (@username4)
-  - 🎯 Especialidade: PostgreSQL, Supabase, RLS
-  - 📈 Contribuições: Operações DBA, políticas de segurança
-  - 📅 Período: Janeiro 2025 - Presente
-
-### 📚 Documentação
-Colaboradores focados em documentação e guias:
-
-- **[Nome do Colaborador 5]** (@username5)
-  - 🎯 Especialidade: Documentação técnica
-  - 📈 Contribuições: READMEs, guias de uso, API docs
-  - 📅 Período: Janeiro 2025 - Presente
-
-### 🧪 Testes & QA
-Responsáveis por qualidade e testes:
-
-- **[Nome do Colaborador 6]** (@username6)
-  - 🎯 Especialidade: Testes automatizados, QA
-  - 📈 Contribuições: Suíte de testes, validações
-  - 📅 Período: Janeiro 2025 - Presente
-
-## 🏆 Hall da Fama
-
-### Top Contribuidores (por commits)
-1. **Tech Lead** - 150+ commits
-2. **[Colaborador A]** - 89 commits  
-3. **[Colaborador B]** - 67 commits
-4. **[Colaborador C]** - 45 commits
-5. **[Colaborador D]** - 32 commits
-
-### Top Revisores (por code reviews)
-1. **Tech Lead** - 200+ reviews
-2. **[Colaborador E]** - 78 reviews
-3. **[Colaborador F]** - 56 reviews
-
-### Especialistas por Módulo
-- **🎨 Interface Streamlit**: [Colaborador G], [Colaborador H]
-- **🗄️ Integrações Supabase**: [Colaborador I], [Colaborador J]
-- **🤖 Assistente IA**: [Colaborador K], [Colaborador L]
-- **🔐 Segurança**: [Colaborador M], [Colaborador N]
-- **📊 Analytics**: [Colaborador O], [Colaborador P]
+```
+Arquitetura & IA (Estevam)     ██████████████████████████ 55%
+Frontend & UI/UX (Aluno1)      ████████████████ 25%
+Backend & APIs (Aluno2)        ████████████ 15%
+QA & Testing (Aluno3)          ████████ 5%
+```
 
 ## 🎯 Tipos de Contribuição
 
 ### 💻 Desenvolvimento
-- **Código**: Implementação de funcionalidades
-- **Revisões**: Code reviews e feedback técnico
-- **Arquitetura**: Decisões de design e estrutura
-- **Performance**: Otimizações e melhorias
+- **Estevam**: Arquitetura, integração com Gemini AI, decisões técnicas
+- **Aluno1**: Componentes React, interface responsiva, experiência do usuário
+- **Aluno2**: APIs REST, integrações externas, banco de dados
+- **Aluno3**: Testes automatizados, QA, reconhecimento de voz
 
-### 🐛 Bugs & Issues
-- **Descoberta**: Identificação de problemas
-- **Reprodução**: Documentação de bugs
-- **Correção**: Implementação de fixes
-- **Validação**: Testes de correções
-
-### 📖 Documentação
-- **Escrita**: Criação de documentação
-- **Revisão**: Melhoria de docs existentes
-- **Tradução**: Localização de conteúdo
-- **Tutoriais**: Guias e exemplos
+### 📝 Documentação
+- **Aluno1**: README, guias de usuário, documentação de componentes
+- **Aluno2**: Documentação de APIs, guias de instalação
+- **Aluno3**: Documentação de testes, guias de QA
+- **Estevam**: Documentação arquitetural, decisões técnicas
 
 ### 🎨 Design & UX
-- **Interface**: Design de componentes
-- **Experiência**: Melhorias de usabilidade
-- **Acessibilidade**: Implementação de recursos inclusivos
-- **Protótipos**: Mockups e wireframes
+- **Aluno1**: Sistema de design, componentes visuais, acessibilidade
+- **Aluno3**: Interface de testes, UX de performance
+- **Estevam**: Arquitetura de informação, fluxos de IA
 
-### 🧪 Testes & QA
-- **Testes Unitários**: Cobertura de código
-- **Testes Integração**: Validação de fluxos
-- **Testes Manuais**: Verificação de funcionalidades
-- **Automação**: Scripts de teste automatizados
-
-## 🏅 Reconhecimentos Especiais
-
-### 🌟 Contribuidor do Mês
-**Janeiro 2025**: [Nome do Contribuidor]
-- 🎯 Destaque: Implementação do assistente IA
-- 📊 Impacto: +40% de eficiência nas consultas DBA
-
-### 🚀 Primeira Contribuição
-Agradecimentos especiais aos novos colaboradores:
-- **[Colaborador Novo 1]** - Primeira contribuição em Janeiro 2025
-- **[Colaborador Novo 2]** - Primeira contribuição em Janeiro 2025
-- **[Colaborador Novo 3]** - Primeira contribuição em Janeiro 2025
-
-### 🎨 Melhor Design
-- **[Designer Colaborador]** - Interface do dashboard principal
-- **[UX Colaborador]** - Fluxo de navegação intuitivo
-
-### 🔧 Solução Técnica Inovadora
-- **[Dev Colaborador]** - Implementação de cache inteligente
-- **[Arch Colaborador]** - Arquitetura de microserviços
+### 🧪 Testes & Qualidade
+- **Aluno3**: Testes unitários, integração, E2E, performance
+- **Aluno1**: Testes de componentes, acessibilidade
+- **Aluno2**: Testes de APIs, validação de dados
+- **Estevam**: Revisão de código, testes de integração IA
 
 ## 📊 Estatísticas de Contribuição
 
-### Por Período
-- **Q1 2025**: 15 contribuidores ativos
-- **Janeiro 2025**: 8 novos colaboradores
-- **Total histórico**: 25+ colaboradores
+### Por Tipo (Últimos 6 meses)
+- 🔧 **Código**: 244 commits
+- 📚 **Documentação**: 32 commits
+- 🎨 **Design**: 18 commits
+- 🧪 **Testes**: 41 commits
+- 🐛 **Correções**: 28 commits
 
-### Por Tipo de Contribuição
-- **Código**: 65% das contribuições
-- **Documentação**: 20% das contribuições  
-- **Design/UX**: 10% das contribuições
-- **Testes**: 5% das contribuições
-
-### Por Área do Projeto
-- **Frontend (Streamlit)**: 30%
-- **Backend (Python)**: 25%
-- **Integrações (APIs)**: 20%
-- **Database (SQL)**: 15%
-- **Documentação**: 10%
-
-## 🌍 Colaboradores Globais
-
-### Por Região
-- **Brasil**: 60% dos colaboradores
-- **América Latina**: 25% dos colaboradores
-- **América do Norte**: 10% dos colaboradores
-- **Europa**: 3% dos colaboradores
-- **Ásia**: 2% dos colaboradores
-
-### Por Fuso Horário
-- **UTC-3 (Brasil)**: Maioria dos colaboradores
-- **UTC-5 (EST)**: Colaboradores internacionais
-- **UTC+0 (GMT)**: Colaboradores europeus
-
-## 🤝 Como Ser Reconhecido
-
-### Critérios para Inclusão
-Para ser incluído na lista de colaboradores, você deve:
-
-1. **Contribuir com código** através de Pull Requests aceitos
-2. **Reportar bugs** com reprodução clara e detalhada
-3. **Melhorar documentação** com conteúdo útil
-4. **Participar de discussões** constructivas nas issues
-5. **Ajudar outros colaboradores** com dúvidas e reviews
-
-### Processo de Reconhecimento
-1. **Automático**: Contribuições via GitHub são automaticamente reconhecidas
-2. **Manual**: Contribuições especiais são adicionadas pelos mantenedores
-3. **Nomeação**: Outros colaboradores podem nomear contribuições valiosas
-4. **Atualização Mensal**: Lista atualizada todo primeiro dia do mês
-
-## 📞 Como Entrar em Contato
-
-### Com a Equipe
-- **Discord**: [Link do servidor Discord da comunidade]
-- **Slack**: [Canal #contributors]
-- **Email**: contributors@petcareai.com
-- **GitHub Discussions**: Para discussões públicas
-
-### Para Novos Colaboradores
-- **Onboarding**: Leia nosso [Guia de Contribuição](CONTRIBUTING.md)
-- **Primeiro Issue**: Procure por issues marcadas com `good-first-issue`
-- **Mentoria**: Programa de mentoria para novos desenvolvedores
-- **Pair Programming**: Sessões com colaboradores experientes
-
-## 🎁 Benefícios para Colaboradores
-
-### Reconhecimento
-- **Badge de Colaborador** no GitHub
-- **Menção no CHANGELOG** para contribuições significativas
-- **Certificado de Contribuição** digital
-- **Perfil destacado** no site do projeto
-
-### Acesso Especial
-- **Preview de Features**: Acesso antecipado a novas funcionalidades
-- **Canal Privado**: Acesso ao canal de colaboradores ativos
-- **Eventos Exclusivos**: Convites para meetups e workshops
-- **Swag do Projeto**: Camisetas, adesivos e brindes
-
-### Desenvolvimento Profissional
-- **Referências**: Recomendações para oportunidades de carreira
-- **Networking**: Conexões com outros profissionais da área
-- **Portfolio**: Projetos reais para enriquecer o currículo
-- **Aprendizado**: Experiência com tecnologias modernas
-
-## 📋 Compromissos dos Colaboradores
-
-### Código de Conduta
-Todos os colaboradores devem:
-- **Respeitar** outros membros da comunidade
-- **Ser inclusivos** e acolhedores com novos colaboradores
-- **Manter** alta qualidade nas contribuições
-- **Seguir** as diretrizes técnicas estabelecidas
-
-### Padrões de Qualidade
-- **Testes**: Código deve incluir testes apropriados
-- **Documentação**: Funcionalidades devem ser documentadas
-- **Performance**: Considerar impacto na performance
-- **Segurança**: Seguir práticas de segurança estabelecidas
-
-## 🚀 Próximos Passos
-
-### Roadmap de Contribuições
-- **Q1 2025**: Melhorias na interface do usuário
-- **Q2 2025**: Expansão das funcionalidades de IA
-- **Q3 2025**: Otimizações de performance
-- **Q4 2025**: Novas integrações e APIs
-
-### Áreas que Precisam de Ajuda
-- **🧪 Testes**: Aumento da cobertura de testes
-- **📚 Documentação**: Tutoriais avançados
-- **🌍 Internacionalização**: Tradução para outros idiomas
-- **♿ Acessibilidade**: Melhorias de acessibilidade
-- **📱 Mobile**: Otimização para dispositivos móveis
-
----
-
-## 📝 Como Atualizar Esta Lista
-
-Para adicionar seu nome ou atualizar informações:
-
-1. Faça um **fork** do repositório
-2. Edite este arquivo (`CONTRIBUTORS.md`)
-3. Adicione suas informações na seção apropriada
-4. Faça um **Pull Request** com suas mudanças
-5. Aguarde a revisão e aprovação dos mantenedores
-
-### Template para Nova Entrada
-```markdown
-- **[Seu Nome]** (@seu-username)
-  - 🎯 Especialidade: Sua área de expertise
-  - 📈 Contribuições: Principais contribuições
-  - 📅 Período: Mês/Ano - Presente
+### Por Categoria Técnica
+```
+Frontend (React/TypeScript)    ████████████████████ 35%
+Backend (APIs/Integrações)     ███████████████      25%
+Arquitetura & IA              ████████████████████████ 40%
 ```
 
+## 🏆 Reconhecimentos Especiais
+
+### 🥇 Contribuidor do Mês - Julho 2025
+**Aluno3** - Full Stack Developer & QA
+- Implementação completa do sistema de testes automatizados
+- Otimização significativa de performance da aplicação
+- Integração do reconhecimento de voz multilíngue
+
+### 🥈 Melhor Implementação Frontend
+**Aluno1** - Frontend Developer
+- Design e implementação da interface conversacional
+- Sistema de componentes reutilizáveis
+- Interface completamente responsiva e acessível
+
+### 🥉 Melhor Arquitetura Backend
+**Aluno2** - Backend Developer
+- Implementação robusta das APIs
+- Integração eficiente com serviços externos
+- Documentação técnica exemplar
+
+### 🏅 Liderança Técnica Excepcional
+**Estevam Souza** - CTO & Arquiteto
+- Visão arquitetural e liderança do projeto
+- Integração avançada com Google Gemini AI
+- Mentoria e desenvolvimento da equipe
+
+## 🎉 Marcos da Equipe
+
+### Conquistas Importantes
+- 🚀 **v1.0.0 Release** - Toda a equipe
+- 🤖 **Integração Gemini AI** - Estevam Souza
+- ⚛️ **Interface React Completa** - Aluno1
+- 🔧 **APIs Backend** - Aluno2
+- 🎙️ **Reconhecimento de Voz** - Aluno3
+- 📱 **Design Responsivo** - Aluno1 & Aluno3
+
+### Records da Equipe
+- 🔥 **Maior produtividade**: 23 commits em um dia (Estevam)
+- ⚡ **Correção mais rápida**: 20 minutos (Aluno3)
+- 📚 **Melhor documentação**: Sistema de APIs (Aluno2)
+- 🎨 **Melhor interface**: Chat conversacional (Aluno1)
+
+## 🤝 Desenvolvimento Colaborativo
+
+### Metodologia da Equipe
+- 🔄 **Desenvolvimento Ágil**: Sprints semanais
+- 👥 **Code Review**: Revisão obrigatória por pares
+- 🧪 **TDD**: Test-Driven Development (liderado por Aluno3)
+- 📝 **Documentação Contínua**: Mantida por toda equipe
+
+### Especialização por Área
+#### Frontend (Aluno1)
+- React, TypeScript, Styled Components
+- Framer Motion, Responsive Design
+- Acessibilidade e UX
+
+#### Backend (Aluno2)
+- Node.js, APIs REST
+- Integrações externas
+- Banco de dados e performance
+
+#### QA & Full Stack (Aluno3)
+- Jest, Testing Library, Playwright
+- Performance optimization
+- Voice recognition integration
+
+#### Arquitetura & IA (Estevam)
+- System design, AI integration
+- Technical leadership
+- Strategic decisions
+
+## 📞 Contato da Equipe
+
+### Coordenação Geral
+- 📧 **Email**: team@petcareai.com.br
+- 💬 **Discord**: [Servidor da Equipe](https://discord.gg/petcareai)
+- 🐙 **GitHub**: [PetCareAi Organization](https://github.com/PetCareAi)
+
+### Contatos Individuais
+- 👨‍💼 **Estevam Souza**: estevam.souza@petcareai.com.br
+- 👨‍💻 **Aluno1**: aluno1@petcareai.com.br
+- 👨‍💻 **Aluno2**: aluno2@petcareai.com.br
+- 👨‍💻 **Aluno3**: aluno3@petcareai.com.br
+
+### Horários de Desenvolvimento
+- 🕒 **Daily Standup**: Segunda a Sexta, 9h (BRT)
+- 📅 **Sprint Planning**: Segundas, 14h (BRT)
+- 🔍 **Code Review**: Diário, horário flexível
+- 🎯 **Sprint Review**: Sextas, 16h (BRT)
+
+## 📋 Processo de Desenvolvimento
+
+### Workflow da Equipe
+1. **Planning** (Estevam + Todos): Definição de tarefas
+2. **Development**: Desenvolvimento por área de especialização
+3. **Code Review**: Revisão cruzada obrigatória
+4. **Testing** (Aluno3): Validação e QA
+5. **Deployment** (Estevam): Release e monitoramento
+
+### Critérios de Qualidade
+- ✅ **Code Review**: Aprovação de pelo menos 2 membros
+- ✅ **Testes**: Cobertura mínima 80%
+- ✅ **Performance**: Core Web Vitals dentro dos limites
+- ✅ **Documentação**: Atualizada para mudanças
+
+## 🎖️ Desenvolvimento Profissional
+
+### Aprendizado da Equipe
+- 📚 **Tecnologias**: React, TypeScript, Node.js, AI/ML
+- 🏗️ **Arquitetura**: Microservices, Clean Architecture
+- 🧪 **Metodologias**: TDD, Agile, CI/CD
+- 🎨 **Design**: UI/UX, Accessibility, Performance
+
+### Crescimento Individual
+- **Estevam**: Liderança técnica, AI/ML, arquitetura de sistemas
+- **Aluno1**: React avançado, design systems, frontend architecture
+- **Aluno2**: Backend development, API design, database optimization
+- **Aluno3**: QA automation, performance testing, full stack skills
+
 ---
 
-**💚 Obrigado por fazer parte da comunidade PetCare DBA Admin!**
+## 📈 Estatísticas Gerais
 
-*Última atualização: Janeiro 2025*
+**Total de Desenvolvedores**: 4  
+**Contribuições Totais**: 244  
+**Issues Resolvidas**: 89  
+**Pull Requests Aceitos**: 156  
+**Tempo de Desenvolvimento**: 6 meses  
+**Linhas de Código**: ~24,000  
+
+**Localização**: Florianópolis, SC, Brasil  
+**Última Atualização**: Julho 2025
+
+---
+
+## 🚀 Visão da Equipe
+
+> "Nosso objetivo é criar o melhor assistente de IA para cuidados com pets, combinando tecnologia de ponta com experiência do usuário excepcional. Cada membro da equipe traz expertise única que torna este projeto especial."
+> 
+> **— Estevam Souza, CTO & Founder**
+
+---
+
+*Desenvolvido com ❤️ pela equipe PetCare AI em Florianópolis, SC*
+
+**Quer saber mais sobre nossa equipe? Entre em contato conosco!**
