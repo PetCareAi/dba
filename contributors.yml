@@ -1,262 +1,168 @@
-# PetCare DBA Admin - Contributors Registry
-# Este arquivo mantém o registro de todos os contribuidores do projeto
-# Formato: YAML para facilitar parsing automático
+# PetCare AI Assistant - Contributors
+# Este arquivo lista todos os contribuidores do projeto PetCare AI Assistant
+# Formato baseado no All Contributors specification
 
-# Configuração geral
-metadata:
-  project: "PetCare DBA Admin"
-  version: "2.1.0"
-  last_updated: "2025-06-29"
-  total_contributors: 3
-  contribution_types:
-    - "code"
-    - "documentation"
-    - "design"
-    - "testing"
-    - "security"
-    - "translation"
-    - "community"
+project:
+  name: "PetCareAi"
+  description: "Assistente de IA conversacional especializado no ecossistema PetCare AI"
+  repository: "https://github.com/PetCareAi/llm"
+  website: "https://petcareai.com.br"
+  license: "Proprietaria"
 
-# Mantenedores principais
 maintainers:
-  - name: "Estevam Silva"
+  - name: "Estevam Souza"
+    role: "Project Lead & CTO"
+    email: "contato@petcareai.com.br"
     github: "estevam5s"
-    email: "estevam@petcareai.com"
-    role: "Lead Developer & DBA"
+    linkedin: "estevam-souza"
+    avatar: "https://github.com/estevamsouza.png"
+    bio: "Diretor de TI da PetCare AI, especialista em IA e desenvolvimento full-stack"
     location: "Florianópolis, SC, Brasil"
-    bio: "Especialista em banco de dados e desenvolvimento Python/Streamlit"
+    timezone: "America/Sao_Paulo"
+    languages: ["Portuguese", "English", "Spanish"]
+    skills: ["React", "TypeScript", "NestJS", "AI/ML", "Product Management"]
     contributions:
-      - "code"
-      - "documentation"
-      - "design"
-      - "testing"
-      - "security"
-    join_date: "2025-01-01"
-    commits: 256
-    lines_added: 12450
-    lines_removed: 3280
-    reviews: 45
-    issues_opened: 23
-    issues_closed: 28
-    social:
-      linkedin: "estevam-silva"
-      twitter: "@estevam5s"
-    specialties:
-      - "PostgreSQL/Supabase"
-      - "Python Development"
-      - "Database Administration"
-      - "Streamlit Applications"
+      - "💻 Code"
+      - "📖 Documentation"
+      - "🎨 Design"
+      - "🤔 Ideas"
+      - "👀 Review"
+      - "📢 Talks"
+      - "💼 Business Logic"
+      - "🔧 Infrastructure"
+    started: "2025-05-15"
+    commits: 127
+    lines_added: 15420
+    lines_removed: 2341
 
-# Contribuidores principais
-core_contributors:
-  - name: "Maria Santos"
-    github: "maria-santos-dev"
-    email: "maria@petcareai.com"
+  - name: "Aluno1"
     role: "Frontend Developer"
-    location: "São Paulo, SP, Brasil"
-    bio: "Especialista em interface de usuário e experiência do usuário"
+    email: "aluno1@petcareai.com.br"
+    github: "aluno1"
+    avatar: "https://github.com/aluno1.png"
+    bio: "Desenvolvedor React especializado em aplicações conversacionais"
+    location: "Florianópolis, SC, Brasil"
     contributions:
-      - "code"
-      - "design"
-      - "documentation"
-    join_date: "2025-02-15"
-    commits: 89
-    lines_added: 4250
-    lines_removed: 1120
-    reviews: 18
-    issues_opened: 12
-    issues_closed: 15
-    specialties:
-      - "UI/UX Design"
-      - "Frontend Development"
-      - "CSS/Tailwind"
-      - "User Experience"
+      - "💻 Code"
+      - "🐛 Bug reports"
+      - "📱 Mobile Development"
+      - "⚡ Performance"
+    started: "2025-06-10"
+    commits: 45
+    lines_added: 3280
+    lines_removed: 420
 
-  - name: "João Carlos"
-    github: "joao-carlos-dba"
-    email: "joao@petcareai.com"
-    role: "Database Architect"
-    location: "Rio de Janeiro, RJ, Brasil"
-    bio: "Arquiteto de banco de dados com foco em performance e segurança"
-    contributions:
-      - "code"
-      - "security"
-      - "testing"
-    join_date: "2025-03-01"
-    commits: 67
-    lines_added: 2890
-    lines_removed: 890
-    reviews: 25
-    issues_opened: 8
-    issues_closed: 12
-    specialties:
-      - "Database Security"
-      - "Performance Optimization"
-      - "SQL Query Optimization"
-      - "Backup Strategies"
+recognition:
+  hall_of_fame:
+    - name: "Estevam Souza"
+      achievement: "Founder & Architect"
+      date: "2025-08-05"
 
-# Contribuidores da comunidade
-community_contributors:
-  - name: "Ana Paula"
-    github: "anapaula-tech"
-    role: "Documentation Contributor"
-    location: "Belo Horizonte, MG, Brasil"
-    contributions:
-      - "documentation"
-      - "translation"
-    join_date: "2025-04-10"
-    commits: 23
-    specialties:
-      - "Technical Writing"
-      - "Portuguese Translation"
+    - name: "Aluno1"
+      achievement: "Frontend Excellence Award"
+      date: "2025-08-05"
 
-  - name: "Carlos Eduardo"
-    github: "carlos-eduardo-dev"
-    role: "Community Moderator"
-    location: "Brasília, DF, Brasil"
-    contributions:
-      - "community"
-      - "testing"
-    join_date: "2025-04-20"
-    commits: 12
-    specialties:
-      - "Community Management"
-      - "User Support"
-      - "Bug Testing"
+  monthly_highlights:
+    "2025-06":
+      contributor: "Aluno1"
+      reason: "Implementação excepcional da interface conversacional"
 
-  - name: "Fernanda Lima"
-    github: "fernanda-lima-sec"
-    role: "Security Researcher"
-    location: "Curitiba, PR, Brasil"
-    contributions:
-      - "security"
-      - "testing"
-    join_date: "2025-05-05"
-    commits: 8
-    specialties:
-      - "Security Testing"
-      - "Penetration Testing"
-      - "Vulnerability Assessment"
+    "2025-07":
+      contributor: "Estevam Souza"
+      reason: "Arquitetura robusta e liderança técnica"
 
-# Contribuições externas (PRs aceitos)
-external_contributors:
-  - name: "Pedro Henrique"
-    github: "pedro-henrique-dev"
-    contribution_type: "Bug Fix"
-    description: "Correção de erro na exportação de dados"
-    date: "2025-05-15"
-    pr_number: 12
+contribution_guidelines:
+  types:
+    - emoji: "💻"
+      code: "code"
+      description: "Contribuições de código"
 
-  - name: "Luiza Oliveira"
-    github: "luiza-oliveira-ux"
-    contribution_type: "UI Improvement"
-    description: "Melhorias na interface mobile"
-    date: "2025-05-20"
-    pr_number: 15
+    - emoji: "📖"
+      code: "doc"
+      description: "Documentação"
 
-  - name: "Roberto Silva"
-    github: "roberto-silva-sql"
-    contribution_type: "Performance"
-    description: "Otimização de queries SQL"
-    date: "2025-06-01"
-    pr_number: 18
+    - emoji: "🎨"
+      code: "design"
+      description: "Design e UX"
 
-# Reconhecimentos especiais
-special_recognition:
-  - category: "First Contributor"
-    recipient: "Maria Santos"
-    reason: "Primeira contribuidora externa ao projeto"
-    date: "2025-02-15"
+    - emoji: "🐛"
+      code: "bug"
+      description: "Relatórios de bugs"
 
-  - category: "Bug Hunter"
-    recipient: "Fernanda Lima"
-    reason: "Identificação de vulnerabilidade crítica de segurança"
-    date: "2025-05-05"
+    - emoji: "💡"
+      code: "ideas"
+      description: "Ideias e sugestões"
 
-  - category: "Community Champion"
-    recipient: "Carlos Eduardo"
-    reason: "Excelente suporte à comunidade no Discord"
-    date: "2025-04-20"
+    - emoji: "👀"
+      code: "review"
+      description: "Revisão de código"
 
-# Estatísticas gerais
+    - emoji: "🧪"
+      code: "test"
+      description: "Testes"
+
+    - emoji: "📱"
+      code: "mobile"
+      description: "Desenvolvimento mobile"
+
+    - emoji: "♿"
+      code: "a11y"
+      description: "Acessibilidade"
+
+    - emoji: "🤖"
+      code: "ai"
+      description: "Melhorias de IA"
+
+    - emoji: "⚡"
+      code: "performance"
+      description: "Otimização de performance"
+
+    - emoji: "💼"
+      code: "business"
+      description: "Lógica de negócio"
+
+    - emoji: "🔧"
+      code: "infra"
+      description: "Infraestrutura"
+
 statistics:
-  total_commits: 455
-  total_lines_added: 19590
-  total_lines_removed: 5290
-  total_prs: 25
-  total_issues: 43
-  languages:
-    Python: 78.5
-    HTML: 12.3
-    CSS: 5.2
-    JavaScript: 2.8
-    SQL: 1.2
-  
-  activity_by_month:
-    "2025-01": 45
-    "2025-02": 89
-    "2025-03": 112
-    "2025-04": 78
-    "2025-05": 89
-    "2025-06": 42
+  total_contributors: 2
+  core_team: 2
+  total_commits: 172
+  total_lines_added: 18700
+  total_lines_removed: 2761
+  languages_supported: 3
+  countries_represented: 1
+  active_since: "2025-05-15"
 
-# Hall da fama (top contribuidores)
-hall_of_fame:
-  most_commits:
-    name: "Estevam Silva"
-    count: 256
-  
-  most_reviews:
-    name: "Estevam Silva"
-    count: 45
-  
-  most_helpful:
-    name: "Carlos Eduardo"
-    reason: "Maior número de usuários ajudados na comunidade"
-  
-  best_first_contribution:
-    name: "Maria Santos"
-    reason: "Primeira contribuição de alta qualidade"
+team_info:
+  size: "Small but mighty"
+  focus: "Quality over quantity"
+  collaboration_style: "Agile and innovative"
+  communication: "Daily standups and code reviews"
 
-# Diretrizes para novos contribuidores
-newcomer_info:
-  getting_started: "docs/CONTRIBUTING.md"
-  good_first_issues: "https://github.com/petcareai/dba-admin/labels/good%20first%20issue"
-  discord_channel: "https://discord.gg/petcare"
-  mentor_program: true
-  mentors:
-    - "Estevam Silva"
-    - "Maria Santos"
-    - "João Carlos"
+how_to_contribute:
+  getting_started:
+    - "Leia o CONTRIBUTING.md"
+    - "Escolha uma issue para trabalhar"
+    - "Faça fork do repositório"
+    - "Crie uma branch para sua feature"
+    - "Implemente suas mudanças"
+    - "Adicione testes se necessário"
+    - "Abra um Pull Request"
 
-# Agradecimentos especiais
-acknowledgments:
-  - entity: "Supabase"
-    type: "Technology Partner"
-    reason: "Infraestrutura de banco de dados"
-  
-  - entity: "Streamlit"
-    type: "Framework"
-    reason: "Framework web Python"
-  
-  - entity: "Comunidade Python Brasil"
-    type: "Community"
-    reason: "Suporte e inspiração"
-  
-  - entity: "GitHub"
-    type: "Platform"
-    reason: "Hospedagem do repositório e CI/CD"
+  recognition_process:
+    - "Contribuições são automaticamente reconhecidas"
+    - "Updates mensais no contributors.yml"
+    - "Hall of Fame para contribuições especiais"
+    - "Menções em release notes"
 
-# Informações de contato
 contact:
-  general: "contributors@petcareai.com"
-  maintainers: "maintainers@petcareai.com"
-  discord: "https://discord.gg/petcare"
-  github_discussions: "https://github.com/petcareai/dba-admin/discussions"
+  community_manager: "estevam.souza@petcareai.com.br"
+  discord: "https://discord.gg/petcareai"
+  telegram: "https://t.me/petcareai"
+  website: "https://petcareai.com.br/contributors"
 
-# Última atualização
-last_update:
-  date: "2025-06-29"
-  updated_by: "Estevam Silva"
-  automated: false
-  next_update: "2025-07-29"
+# Última atualização: 2025-07-24
+# Próxima revisão: 2025-08-24
+# Mantenedor: Estevam Souza
