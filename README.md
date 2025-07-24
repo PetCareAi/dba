@@ -731,30 +731,6 @@ Gostou da extensão? Considere apoiar o desenvolvimento:
 
 ---
 
-## ❓ FAQ - Perguntas Frequentes
-
-### ❓ Como posso contribuir com o projeto?
-
-Veja nossa seção [🤝 Contribuindo](#-contribuindo) para detalhes completos sobre como participar do desenvolvimento.
-
-### ❓ O projeto é open source?
-
-Sim! O PetCare AI Docs é 100% open source sob licença MIT. Você pode usar, modificar e distribuir livremente.
-
-### ❓ Posso usar este projeto como base para minha documentação?
-
-Absolutamente! Este projeto foi criado para ser reutilizável. Fork, customize e adapte às suas necessidades.
-
-### ❓ Como reportar bugs ou sugerir features?
-
-Use nosso sistema de [Issues no GitHub](https://github.com/petcare-ai/petcare-docs/issues) com os templates apropriados.
-
-### ❓ Há suporte comercial disponível?
-
-Para suporte empresarial, entre em contato: **business@petcareai.com.br**
-
----
-
 ## ⚠️ **Disclaimer Importante**
 
 > **AVISO MÉDICO**: O PetCare AI é uma ferramenta de **triagem e educação** que utiliza inteligência artificial para análise preliminar. 
