@@ -1,71 +1,289 @@
-# CODEOWNERS - Definição de responsáveis por partes do código
-# Este arquivo define quem deve revisar mudanças em diferentes partes do repositório
+# Arquivo CODEOWNERS para definir revisores automáticos de código
+# Para mais informações: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
-# Administradores globais do projeto
-* @admin-petcare @lead-dev-petcare
+# =============================================================================
+# REGRAS GLOBAIS
+# =============================================================================
 
-# Aplicação principal
-app.py @admin-petcare @senior-dev-petcare @dba-lead
+# Regra padrão: Estevam Souza como owner geral do projeto
+* @estevamsouza
 
-# Configurações críticas do sistema
-.streamlit/ @admin-petcare @devops-petcare
-*.toml @admin-petcare @config-manager
-*.env @admin-petcare @security-lead
+# Arquivos críticos sempre precisam de aprovação do owner principal
+package.json @estevamsouza
+package-lock.json @estevamsouza
+tsconfig.json @estevamsouza
 
-# Scripts de banco de dados
-database/ @dba-lead @senior-dev-petcare @admin-petcare
-*.sql @dba-lead @database-admin
+# =============================================================================
+# CONFIGURAÇÕES E INFRAESTRUTURA
+# =============================================================================
 
-# Documentação
-*.md @tech-writer @admin-petcare
-docs/ @tech-writer @admin-petcare
+# Arquivos de configuração de CI/CD
+/.github/ @estevamsouza
+/.travis.yml @estevamsouza
+/.pre-commit-config.yaml @estevamsouza
+/commitlint.config.js @estevamsouza
 
-# Configurações de CI/CD
-.travis.yml @devops-petcare @admin-petcare
-.github/ @devops-petcare @admin-petcare
-release-scripts/ @devops-petcare @release-manager
+# Configurações de desenvolvimento
+/.editorconfig @estevamsouza
+/.gitignore @estevamsouza
+/.gitattributes @estevamsouza
+/.eslintrc* @estevamsouza
+/.prettierrc* @estevamsouza
 
-# Hooks de Git
-.githooks/ @devops-petcare @senior-dev-petcare
-.husky/ @devops-petcare @frontend-lead
+# Docker e deploy
+/Dockerfile* @estevamsouza
+/docker-compose* @estevamsouza
+/deployment/ @estevamsouza
 
-# Notebooks e análises
-notebooks/ @data-analyst @senior-dev-petcare
+# Scripts de build e automação
+/scripts/ @estevamsouza
+/build/ @estevamsouza
+/release-scripts/ @estevamsouza
 
-# Configurações de build e packaging
-Makefile @devops-petcare @build-engineer
-MANIFEST.in @devops-petcare @packaging-lead
-requirements.txt @senior-dev-petcare @admin-petcare
+# =============================================================================
+# DOCUMENTAÇÃO
+# =============================================================================
 
-# Testes
-tests/ @qa-lead @senior-dev-petcare
+# Documentação principal
+/README.md @estevamsouza @aluno1
+/CONTRIBUTING.md @estevamsouza @aluno1
+/CHANGELOG.md @estevamsouza
+/LICENSE @estevamsouza
+/NOTICE.md @estevamsouza
 
-# Configurações específicas por funcionalidade
-# Módulo de autenticação
-*auth* @security-lead @senior-dev-petcare
+# Documentação técnica
+/docs/ @estevamsouza @aluno1 @aluno3
+/architecture.md @estevamsouza @aluno3
+/ROADMAP.md @estevamsouza @aluno1
 
-# Módulo de banco de dados
-*database* @dba-lead @senior-dev-petcare
+# Guias e tutoriais
+/guides/ @aluno1 @aluno2
+/tutorials/ @aluno1 @aluno2
 
-# Módulo de relatórios
-*relatorio* @data-analyst @senior-dev-petcare
+# =============================================================================
+# CÓDIGO FRONTEND
+# =============================================================================
 
-# Módulo de IA
-*ai* @ai-engineer @senior-dev-petcare
+# Estrutura principal do React
+/src/ @aluno1 @estevamsouza
 
-# Arquivos de configuração sensíveis
-secrets.toml @admin-petcare @security-lead
-*.key @security-lead @admin-petcare
-*.pem @security-lead @admin-petcare
+# Componentes principais
+/src/components/ @aluno1 @aluno3
+/src/pages/ @aluno1 @aluno3
 
-# Scripts de deployment
-deploy* @devops-petcare @admin-petcare
-*deploy* @devops-petcare @admin-petcare
+# Context e estado global
+/src/context/ @aluno1 @estevamsouza
+/src/hooks/ @aluno1
 
-# Configurações de monitoramento
-*monitoring* @sre-engineer @devops-petcare
-*metric* @sre-engineer @data-analyst
+# Serviços e integrações
+/src/services/ @estevamsouza @aluno2
+/src/services/geminiApi.ts @estevamsouza
+/src/services/supabaseService.ts @estevamsouza @aluno2
 
-# Logs e debugging
-*log* @sre-engineer @senior-dev-petcare
-*debug* @senior-dev-petcare @admin-petcare
+# Estilos e temas
+/src/styles/ @aluno1 @aluno3
+/src/components/**/styled.ts @aluno1
+
+# Tipos TypeScript
+/src/types/ @aluno1 @estevamsouza
+
+# Base de conhecimento
+/src/knowledge/ @estevamsouza @aluno2
+
+# =============================================================================
+# TESTES
+# =============================================================================
+
+# Configuração de testes
+/jest.config.js @aluno3 @aluno1
+/setupTests.ts @aluno3 @aluno1
+
+# Testes unitários
+/src/**/*.test.ts @aluno3 @aluno1
+/src/**/*.test.tsx @aluno3 @aluno1
+/src/**/*.spec.ts @aluno3 @aluno1
+/src/**/*.spec.tsx @aluno3 @aluno1
+
+# Testes de integração
+/tests/ @aluno3 @aluno1
+/e2e/ @aluno3
+
+# Mocks e fixtures
+/src/__mocks__/ @aluno3
+/src/**/__fixtures__/ @aluno3
+
+# Coverage e relatórios
+/coverage/ @aluno3
+
+# =============================================================================
+# FUNCIONALIDADES ESPECÍFICAS
+# =============================================================================
+
+# Reconhecimento de voz
+/src/hooks/useSpeechRecognition.ts @aluno3 @aluno1
+/src/components/ChatInput.tsx @aluno3 @aluno1
+
+# Integração com IA
+/src/services/geminiApi.ts @estevamsouza
+/src/knowledge/ @estevamsouza @aluno2
+
+# Interface de chat
+/src/components/ChatMessage.tsx @aluno1 @aluno3
+/src/components/ChatInput.tsx @aluno1 @aluno3
+/src/pages/ChatPage.tsx @aluno1 @aluno3
+
+# Componentes visuais avançados
+/src/components/APIDownloadModal.tsx @aluno1 @aluno3
+/src/components/ToolsPanel.tsx @aluno1 @aluno3
+/src/components/KnowledgeDisplay.tsx @aluno1 @aluno2
+
+# =============================================================================
+# BACKEND E APIS
+# =============================================================================
+
+# Serviços backend
+/api/ @aluno2 @estevamsouza
+/server/ @aluno2 @estevamsouza
+
+# Configurações de banco de dados
+/database/ @aluno2 @estevamsouza
+/migrations/ @aluno2 @estevamsouza
+
+# Integrações externas
+/src/services/external/ @aluno2 @estevamsouza
+
+# =============================================================================
+# ASSETS E RECURSOS
+# =============================================================================
+
+# Imagens e ícones
+/public/ @aluno1
+/src/assets/ @aluno1
+/public/logo* @aluno1
+
+# Manifesto PWA
+/public/manifest.json @aluno1 @aluno3
+
+# =============================================================================
+# SEGURANÇA E COMPLIANCE
+# =============================================================================
+
+# Arquivos de segurança
+/SECURITY.md @estevamsouza
+/.github/SECURITY.md @estevamsouza
+
+# Configurações de dependências e auditoria
+/npm-audit.json @estevamsouza
+/.dependabot/ @estevamsouza
+/.github/dependabot.yml @estevamsouza
+
+# =============================================================================
+# NOTEBOOKS E PESQUISA
+# =============================================================================
+
+# Jupyter notebooks e análises
+/notebooks/ @estevamsouza @aluno3
+*.ipynb @estevamsouza @aluno3
+
+# Scripts de análise de dados
+/analytics/ @aluno3 @estevamsouza
+
+# =============================================================================
+# RELEASES E VERSIONAMENTO
+# =============================================================================
+
+# Scripts de release
+/release-scripts/ @estevamsouza
+/.version @estevamsouza
+/CHANGELOG.md @estevamsouza
+
+# Tags e releases
+# (Aplicável apenas a branches e tags específicas via GitHub UI)
+
+# =============================================================================
+# GITHOOKS E AUTOMAÇÃO
+# =============================================================================
+
+# Git hooks locais
+/.githooks/ @estevamsouza
+/.husky/ @estevamsouza
+
+# Scripts de automação
+/scripts/deploy.sh @estevamsouza
+/scripts/setup.sh @estevamsouza
+
+# =============================================================================
+# EQUIPES E GRUPOS
+# =============================================================================
+
+# Para definir equipes, use a sintaxe @org/team-name
+# Exemplo: /frontend/ @PetCareAi/frontend-team
+
+# Equipe de desenvolvimento principal
+/src/ @PetCareAi/dev-team
+
+# Equipe de QA
+/tests/ @PetCareAi/qa-team
+
+# Equipe de design
+/src/styles/ @PetCareAi/design-team
+/src/components/**/styled.ts @PetCareAi/design-team
+
+# =============================================================================
+# CONFIGURAÇÕES ESPECIAIS
+# =============================================================================
+
+# Arquivos que requerem revisão de múltiplas pessoas
+/src/services/supabaseService.ts @estevamsouza @aluno2 @aluno3
+/src/context/ChatContext.tsx @estevamsouza @aluno1 @aluno3
+
+# Arquivos críticos que precisam de aprovação unânime
+/package.json @estevamsouza @aluno1 @aluno3
+/.github/workflows/ @estevamsouza @aluno3
+
+# =============================================================================
+# RESPONSABILIDADES POR ESPECIALIDADE
+# =============================================================================
+
+# Frontend (React, UI/UX)
+/src/components/ @aluno1 @aluno3
+/src/styles/ @aluno1
+/src/hooks/ @aluno1
+
+# Backend (APIs, Services, Database)
+/src/services/ @aluno2 @estevamsouza
+/api/ @aluno2
+/database/ @aluno2
+
+# Full Stack & QA (Testing, Voice, Performance)
+/tests/ @aluno3
+/src/hooks/useSpeechRecognition.ts @aluno3
+/e2e/ @aluno3
+
+# =============================================================================
+# NOTAS IMPORTANTES
+# =============================================================================
+
+# 1. A ordem das regras importa - regras mais específicas devem vir depois
+# 2. Pelo menos um CODEOWNER deve aprovar mudanças nos arquivos correspondentes
+# 3. Se um arquivo não está coberto por nenhuma regra, qualquer um pode aprovar
+# 4. Membros da equipe podem ser removidos se não estiverem mais ativos
+# 5. Para emergências, owners podem forçar merge (não recomendado)
+
+# =============================================================================
+# CONTATOS DA EQUIPE
+# =============================================================================
+
+# @estevamsouza - Diretor de TI / Arquiteto Principal & CTO
+# @aluno1 - Frontend Developer (React, UI/UX, Documentação)
+# @aluno2 - Backend Developer (APIs, Database, Integração)
+# @aluno3 - Full Stack Developer (Testing, Voice Recognition, Performance)
+
+# =============================================================================
+# DISTRIBUIÇÃO DE RESPONSABILIDADES
+# =============================================================================
+
+# Estevam Souza: Arquitetura, IA, Infraestrutura, Liderança técnica
+# Aluno1: Frontend, React Components, Estilos, Documentação
+# Aluno2: Backend, APIs, Base de conhecimento, Integrações
+# Aluno3: Full Stack, Testes, Reconhecimento de voz, QA
