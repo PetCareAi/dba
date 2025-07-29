@@ -196,31 +196,58 @@ ORDER BY c.data_consulta DESC;
 ### 📁 Estrutura do Projeto
 
 ```
-petcare-dba-admin/
-├── 📄 app.py                 # Aplicação principal Streamlit
-├── 📄 start.py              # Script de inicialização
-├── 📄 requirements.txt      # Dependências Python
-├── 📄 .env.example         # Exemplo de variáveis de ambiente
-├── 📄 README.md            # Documentação do projeto
-├── 📄 LICENSE              # Licença MIT
-├── 📁 public/              # Arquivos públicos
-│   ├── 🖼️ logo.png          # Logo da empresa
-│   ├── 🖼️ favicon.ico       # Ícone do site
-│   └── 🎨 styles.css        # Estilos customizados
-├── 📁 docs/                # Documentação adicional
-│   ├── 📄 INSTALL.md       # Guia de instalação
-│   ├── 📄 API.md           # Documentação da API
-│   └── 📄 CHANGELOG.md     # Histórico de versões
-├── 📁 scripts/             # Scripts utilitários
-│   ├── 🐍 backup.py         # Script de backup
-│   ├── 🐍 migrate.py        # Scripts de migração
-│   └── 🐍 setup.py          # Setup inicial
-├── 📁 tests/               # Testes automatizados
-│   ├── 🧪 test_database.py  # Testes de banco
-│   ├── 🧪 test_ui.py        # Testes de interface
-│   └── 🧪 test_utils.py     # Testes utilitários
-└── 📁 venv/                # Ambiente virtual (criado após instalação)
-    └── ...
+📁 dba/
+├── 🪝 .githooks/                          # Scripts de automação Git customizados
+│   ├── 🪝 commit-msg                          # Hook para validação de mensagens de commit
+│   ├── 🪝 pre-commit                          # Hook executado antes de cada commit
+│   └── 🪝 pre-push                            # Hook executado antes de cada push
+├── 📁 .streamlit/
+│   └── ⚙️ config.toml                         # Configuração TOML
+├── 🗄️ database/                           # Configuração e scripts de banco
+│   ├── 📄 supabase-conversas-ia.sql           # Script SQL de banco de dados
+│   └── 📄 supabase-projects-table.sql         # Script SQL de banco de dados
+├── 📜 CHANGELOG.md                        # Histórico detalhado de mudanças e versões
+├── 📜 LICENSE                             # Licença de uso e distribuição do software
+├── 📖 README.md                           # Documentação principal e guia de introdução
+├── 📝 .editorconfig                       # Configuração de formatação entre editores
+├── 🔐 .env.example                        # Exemplo de variáveis de ambiente
+├── ⚙️ .gitattributes                      # Atributos específicos de arquivos no Git
+├── 🚫 .gitignore                          # Arquivos e pastas ignorados pelo Git
+├── ⚙️ .markdownlint.yml                   # Configuração YAML
+├── 🪝 .pre-commit-config.yaml             # Configuração de hooks pre-commit
+├── 🔧 .travis.yml                         # Configuração do Travis CI
+├── 🏷️ .version                            # Número da versão atual do projeto
+├── 🐍 app.py                              # Script Python
+├── 📝 ARCHITECTURE.md                     # Documentação em Markdown
+├── 🏗️ BUILDING.md                         # Instruções detalhadas para build do projeto
+├── 📚 citation.cff                        # Formato de citação para trabalhos acadêmicos
+├── 📜 CODE_OF_CONDUCT.md                  # Código de conduta da comunidade
+├── 👥 CODEOWNERS                          # Definição de responsáveis por áreas do código
+├── 📝 commitlint.config.js                # Regras para validação de commits
+├── ⚙️ configure.sh                        # Script de configuração do ambiente
+├── 🤝 CONTRIBUTING.md                     # Guia para contribuidores do projeto
+├── 👥 CONTRIBUTORS.md                     # Lista de pessoas que contribuíram
+├── 👥 contributors.yml                    # Dados estruturados dos contribuidores
+├── ©️ COPYRIGHT                           # Informações de direitos autorais
+├── 📄 credenciais.txt                     # Arquivo de texto simples
+├── 🤖 dependabot.yml                      # Configuração do Dependabot para atualizações
+├── 📝 git-build-commit.md                 # Documentação em Markdown
+├── 💾 install.sh                          # Script de instalação automática
+├── 🛠️ MAINTAINING.md                      # Guia para mantenedores do projeto
+├── 🔨 Makefile                            # Automação de build e tarefas do projeto
+├── 📋 MANIFEST.in                         # Especificação de arquivos para distribuição
+├── 🪝 pre-push                            # Hook executado antes de cada push
+├── 🚀 release.md                          # Notas e planejamento de releases
+├── 📝 REQUIREMENTS.md                     # Documentação em Markdown
+├── 📦 requirements.txt                    # Dependências do Python
+├── 📋 requisitos-funcionais.md            # Especificação dos requisitos funcionais
+├── 🗺️ Roadmap.md                          # Planejamento e cronograma de funcionalidades
+├── 🚀 run.sh                              # Script para execução da aplicação
+├── 🛡️ SECURITY.md                         # Política de segurança e vulnerabilidades
+├── 🚀 start.sh                            # Script de inicialização do serviço
+├── ⚡ struct.js                           # Script JavaScript
+├── 📝 todo.md                             # Lista de tarefas pendentes e melhorias
+└── 🔧 TROUBLESHOOTING.md                  # Guia de resolução de problemas comuns
 ```
 
 ### ⚙️ Configuração
