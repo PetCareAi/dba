@@ -241,6 +241,7 @@ ORDER BY c.data_consulta DESC;
 ├── 📝 REQUIREMENTS.md                     # Documentação em Markdown
 ├── 📦 requirements.txt                    # Dependências do Python
 ├── 📋 requisitos-funcionais.md            # Especificação dos requisitos funcionais
+├── 📋 requisitos.md                       # Documentação de requisitos do sistema
 ├── 🗺️ Roadmap.md                          # Planejamento e cronograma de funcionalidades
 ├── 🚀 run.sh                              # Script para execução da aplicação
 ├── 🛡️ SECURITY.md                         # Política de segurança e vulnerabilidades
