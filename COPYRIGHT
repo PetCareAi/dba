@@ -1,0 +1,172 @@
+Copyright (c) 2025 PetCareAi - Estevam Souza
+
+                            PETCAREAI
+                    Assistente de IA Conversacional
+
+================================================================================
+
+DIREITOS AUTORAIS E PROPRIEDADE INTELECTUAL
+
+Este software e toda documentação associada (doravante "Software") são
+propriedade de Estevam Souza e estão protegidos pelas leis de direitos autorais
+do Brasil e tratados internacionais de propriedade intelectual.
+
+LICENCIADO SOB MIT LICENSE
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+================================================================================
+
+MARCAS REGISTRADAS E PROPRIEDADE COMERCIAL
+
+"PetCareAi", o logotipo PetCare AI, e outras marcas relacionadas são marcas
+registradas ou marcas comerciais de Estevam Souza no Brasil e/ou outros países.
+
+O uso das marcas PetCare AI está sujeito às diretrizes de marca disponíveis em:
+https://petcareai.com.br/brand-guidelines
+
+================================================================================
+
+CONTRIBUIÇÕES E DIREITOS DOS COLABORADORES
+
+Ao contribuir para este projeto, você concorda que:
+
+1. Suas contribuições serão licenciadas sob a mesma licença MIT
+2. Você possui os direitos necessários para fazer a contribuição
+3. Suas contribuições não violam direitos de terceiros
+4. Você renuncia a quaisquer direitos morais sobre suas contribuições
+
+Contribuições significativas são reconhecidas no arquivo CONTRIBUTORS.yml
+
+================================================================================
+
+INTEGRAÇÃO COM SERVIÇOS DE TERCEIROS
+
+Este software integra com os seguintes serviços de terceiros:
+
+Google Gemini API
+- Fornecedor: Google LLC
+- Termos: https://ai.google.dev/terms
+- Política de Privacidade: https://policies.google.com/privacy
+
+Web Speech API
+- Fornecedor: Consórcio W3C / Navegadores
+- Especificação: https://w3c.github.io/speech-api/
+
+O uso destes serviços está sujeito aos termos e condições de seus respectivos
+fornecedores.
+
+================================================================================
+
+ISENÇÃO DE RESPONSABILIDADE VETERINÁRIA
+
+IMPORTANTE: Este software é uma ferramenta educacional e de suporte. NÃO
+substitui consultas veterinárias profissionais. As informações fornecidas
+pela inteligência artificial são apenas para fins informativos e não devem
+ser consideradas como aconselhamento médico veterinário.
+
+Sempre consulte um veterinário licenciado para questões de saúde, diagnóstico
+ou tratamento de animais.
+
+================================================================================
+
+CONFORMIDADE LEGAL
+
+Este software está em conformidade com:
+
+- Lei Geral de Proteção de Dados (LGPD) - Lei 13.709/2018
+- Marco Civil da Internet - Lei 12.965/2014
+- Código de Defesa do Consumidor - Lei 8.078/1990
+- Lei de Software - Lei 9.609/1998
+
+================================================================================
+
+POLÍTICA DE PRIVACIDADE E DADOS
+
+O tratamento de dados pessoais neste software segue os princípios da LGPD:
+
+- Finalidade: Apenas para funcionamento do assistente de IA
+- Adequação: Compatível com a finalidade declarada
+- Necessidade: Limitação ao mínimo necessário
+- Livre acesso: Direitos dos titulares respeitados
+- Qualidade dos dados: Exatidão e atualização
+- Transparência: Informações claras e acessíveis
+- Segurança: Medidas técnicas e administrativas
+- Prevenção: Adoção de medidas preventivas
+- Não discriminação: Vedação de discriminação
+- Responsabilização: Demonstração de conformidade
+
+================================================================================
+
+LIMITAÇÕES E EXCLUSÕES
+
+O software é fornecido "como está" sem garantias de qualquer tipo. Em nenhuma
+circunstância os autores ou detentores de direitos autorais serão responsáveis
+por quaisquer danos diretos, indiretos, incidentais, especiais, exemplares ou
+consequenciais decorrentes do uso do software.
+
+================================================================================
+
+RESOLUÇÃO DE DISPUTAS
+
+Quaisquer disputas relacionadas a direitos autorais ou uso deste software
+serão resolvidas de acordo com as leis brasileiras, com foro na cidade de
+Florianópolis, Santa Catarina, Brasil.
+
+================================================================================
+
+CONTATO PARA QUESTÕES DE DIREITOS AUTORAIS
+
+Para questões relacionadas a direitos autorais, violações ou licenciamento:
+
+Estevam Souza
+Diretor de TI - PetCare AI
+Email: legal@petcareai.com.br
+Website: https://petcareai.com.br
+Endereço: Florianópolis, Santa Catarina, Brasil
+
+Para relatórios de violação de direitos autorais (DMCA):
+Email: contato@petcareai.com.br
+
+================================================================================
+
+ATUALIZAÇÕES E MODIFICAÇÕES
+
+Esta declaração de direitos autorais pode ser atualizada periodicamente.
+A versão mais atual estará sempre disponível no repositório oficial do projeto.
+
+Última atualização: 05 de Agosto de 2025
+Versão: 1.0.0
+
+================================================================================
+
+RECONHECIMENTOS ESPECIAIS
+
+Agradecimentos especiais às comunidades de código aberto que tornaram este
+projeto possível, aos beta testers, e à comunidade de tutores de pets que
+inspiraram o desenvolvimento desta solução.
+
+Dedicado a todos os animais de estimação e seus tutores dedicados.
+
+================================================================================
+
+                    Copyright (c) 2025 PetCare AI - Estevam Souza
+                              Todos os direitos reservados.
+
+                             🐾 Feito com amor para pets 🐾
