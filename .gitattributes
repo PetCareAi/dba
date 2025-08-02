@@ -1,0 +1,185 @@
+# Configuração de atributos do Git para o projeto PetCare DBA Admin
+
+# Configurações globais
+* text=auto eol=lf
+
+# Arquivos de código Python
+*.py text diff=python
+*.pyx text diff=python
+*.pyi text diff=python
+
+# Arquivos de configuração
+*.toml text
+*.yaml text
+*.yml text
+*.json text
+*.cfg text
+*.conf text
+*.ini text
+
+# Arquivos de documentação
+*.md text diff=markdown
+*.txt text
+*.rst text
+
+# Arquivos SQL
+*.sql text
+
+# Scripts shell
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Arquivos web (se houver)
+*.html text diff=html
+*.css text diff=css
+*.js text
+*.jsx text
+*.ts text
+*.tsx text
+
+# Arquivos de template
+*.j2 text
+*.jinja text
+*.template text
+
+# Arquivos de dados estruturados
+*.csv text
+*.tsv text
+*.xml text
+
+# Jupyter Notebooks
+*.ipynb text
+
+# Arquivos de lock/dependências
+requirements*.txt text
+poetry.lock text -diff
+Pipfile text
+Pipfile.lock text -diff
+package-lock.json text -diff
+yarn.lock text -diff
+
+# Arquivos Docker
+Dockerfile text
+*.dockerignore text
+docker-compose*.yml text
+
+# Arquivos CI/CD
+.github/**/*.yml text
+.github/**/*.yaml text
+.travis.yml text
+.gitlab-ci.yml text
+appveyor.yml text
+
+# Arquivos de configuração de desenvolvimento
+.editorconfig text
+.gitignore text
+.gitattributes text
+.pre-commit-config.yaml text
+
+# Arquivos binários explícitos
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.bmp binary
+*.ico binary
+*.svg binary
+*.webp binary
+
+# Arquivos de áudio/vídeo
+*.mp3 binary
+*.mp4 binary
+*.avi binary
+*.mov binary
+*.wav binary
+
+# Arquivos de fonte
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+
+# Arquivos comprimidos
+*.zip binary
+*.tar binary
+*.tgz binary
+*.gz binary
+*.7z binary
+*.rar binary
+
+# Arquivos executáveis
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+
+# Arquivos de banco de dados
+*.db binary
+*.sqlite binary
+*.sqlite3 binary
+
+# Arquivos de backup
+*.backup binary
+*.bak binary
+
+# Arquivos específicos do Python
+*.pyc binary
+*.pyo binary
+*.pyd binary
+*.egg binary
+*.whl binary
+
+# Arquivos de cache
+.DS_Store binary
+Thumbs.db binary
+
+# Configurações de linguagem específicas
+*.py linguist-language=Python
+*.sql linguist-language=SQL
+*.md linguist-documentation=true
+*.txt linguist-documentation=true
+
+# Arquivos a serem ignorados nas estatísticas do GitHub
+.streamlit/config.toml linguist-generated=true
+*.lock linguist-generated=true
+*_pb2.py linguist-generated=true
+
+# Configurações de diff personalizadas
+*.json diff=json
+*.toml diff=toml
+
+# Configurações de merge
+*.md merge=union
+CHANGELOG.md merge=union
+CONTRIBUTORS.md merge=union
+
+# Arquivos que devem manter quebras de linha originais
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Arquivos de secrets (não devem ser commitados mesmo se adicionados)
+*.env filter=git-crypt diff=git-crypt
+secrets.toml filter=git-crypt diff=git-crypt
+.streamlit/secrets.toml filter=git-crypt diff=git-crypt
+
+# Configurações para arquivos grandes (Git LFS se configurado)
+# *.csv filter=lfs diff=lfs merge=lfs -text
+# *.zip filter=lfs diff=lfs merge=lfs -text
+# *.tar.gz filter=lfs diff=lfs merge=lfs -text
+
+# Arquivos que devem ser tratados como binários mesmo tendo extensão de texto
+*.min.js binary
+*.min.css binary
+
+# Configurações específicas do projeto
+user_settings*.json text
+*_backup_*.json text
+export_*.json text
+relatorio_*.json text
+
+# Logs devem ser tratados como texto
+*.log text
+
+# Arquivos de configuração específicos do Streamlit
+.streamlit/*.toml text
