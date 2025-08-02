@@ -1,0 +1,359 @@
+# EditorConfig is awesome: https://EditorConfig.org
+# DocSystem Pro - PetCareAI
+# Configuração completa para consistência de código em diferentes editores
+
+# Top-most EditorConfig file
+root = true
+
+# ==============================================================================
+# CONFIGURAÇÕES GLOBAIS PADRÃO
+# ==============================================================================
+
+# Aplica para todos os arquivos
+[*]
+# Estilo de indentação: espaços (mais consistente entre diferentes sistemas)
+indent_style = space
+# Tamanho da indentação: 2 espaços (padrão Vue.js/JavaScript)
+indent_size = 2
+# Tipo de quebra de linha: LF (Unix-style, compatível com Git)
+end_of_line = lf
+# Codificação de caracteres: UTF-8 (suporte completo a caracteres especiais)
+charset = utf-8
+# Remove espaços em branco no final das linhas (limpa o código)
+trim_trailing_whitespace = true
+# Insere nova linha no final do arquivo (boa prática Unix)
+insert_final_newline = true
+# Limita o comprimento das linhas para melhor legibilidade
+max_line_length = 100
+
+# ==============================================================================
+# ARQUIVOS DE CÓDIGO FRONTEND
+# ==============================================================================
+
+# Arquivos JavaScript e TypeScript
+[*.{js,jsx,ts,tsx}]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+max_line_length = 100
+# Configurações específicas para JS/TS
+quote_type = single
+curly_bracket_next_line = false
+spaces_around_operators = true
+spaces_around_brackets = false
+
+# Arquivos Vue.js (Single File Components)
+[*.vue]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+max_line_length = 120
+# Vue permite linhas um pouco maiores devido à estrutura do template
+
+# Arquivos CSS, SCSS e Sass
+[*.{css,scss,sass,less,styl}]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+max_line_length = 120
+
+# Arquivos HTML
+[*.{html,htm}]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+max_line_length = 120
+
+# ==============================================================================
+# ARQUIVOS DE CONFIGURAÇÃO
+# ==============================================================================
+
+# Arquivos JSON (package.json, tsconfig.json, etc.)
+[*.json]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+max_line_length = 120
+
+# Arquivos JSON com comentários (jsoncに)
+[*.jsonc]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+max_line_length = 120
+
+# Arquivos YAML (configurações, CI/CD)
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+max_line_length = 80
+
+# Arquivos TOML
+[*.toml]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Arquivos XML
+[*.{xml,svg}]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+max_line_length = 120
+
+# ==============================================================================
+# ARQUIVOS DE DOCUMENTAÇÃO
+# ==============================================================================
+
+# Arquivos Markdown
+[*.{md,mdx}]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+# NÃO remove espaços trailing no Markdown (podem ser significativos)
+trim_trailing_whitespace = false
+insert_final_newline = true
+max_line_length = 80
+
+# Arquivos de texto simples
+[*.txt]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# ==============================================================================
+# ARQUIVOS DE BANCO DE DADOS
+# ==============================================================================
+
+# Arquivos SQL
+[*.sql]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+max_line_length = 120
+
+# ==============================================================================
+# ARQUIVOS DE BUILD E FERRAMENTAS
+# ==============================================================================
+
+# Dockerfile
+[Dockerfile*]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Docker Compose
+[docker-compose*.{yml,yaml}]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Arquivos de configuração do Vite
+[vite.config.{js,ts}]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Arquivos de configuração do Tailwind
+[tailwind.config.{js,ts}]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Arquivos de configuração do PostCSS
+[postcss.config.{js,ts}]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# ==============================================================================
+# ARQUIVOS DE AMBIENTE E CONFIGURAÇÃO
+# ==============================================================================
+
+# Arquivos de ambiente
+[.env*]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Gitignore e arquivos git
+[.git*]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# ESLint config
+[.eslintrc*]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Prettier config
+[.prettierrc*]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# ==============================================================================
+# ARQUIVOS ESPECIAIS
+# ==============================================================================
+
+# Makefile (usa tabs obrigatoriamente)
+[{Makefile,makefile,*.mk}]
+indent_style = tab
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Arquivos Python (para scripts auxiliares)
+[*.py]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+max_line_length = 88
+
+# Arquivos Shell script
+[*.{sh,bash,zsh}]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Arquivos batch do Windows
+[*.{bat,cmd}]
+indent_style = space
+indent_size = 2
+end_of_line = crlf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# ==============================================================================
+# ARQUIVOS DE LICENÇA E LEGAIS
+# ==============================================================================
+
+# Arquivos de licença
+[{LICENSE,LICENCE,COPYRIGHT,NOTICE}*]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# ==============================================================================
+# ARQUIVOS TEMPORÁRIOS E LOGS
+# ==============================================================================
+
+# Arquivos de log (geralmente não editados, mas por consistência)
+[*.{log,logs}]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = false
+insert_final_newline = true
+
+# ==============================================================================
+# CONFIGURAÇÕES ESPECÍFICAS DO PROJETO
+# ==============================================================================
+
+# Arquivos específicos do DocSystem Pro
+[src/services/supabase.ts]
+indent_style = space
+indent_size = 2
+max_line_length = 120
+
+# Arquivos de configuração do banco
+[database/*.sql]
+indent_style = space
+indent_size = 2
+max_line_length = 120
+
+# Arquivos de documentação do projeto
+[{CHANGELOG,CONTRIBUTING,README,SECURITY,BUILDING,TROUBLESHOOTING}*.md]
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = false
+max_line_length = 80
+
+# ==============================================================================
+# NOTAS IMPORTANTES
+# ==============================================================================
+
+# 1. Este arquivo garante consistência entre diferentes editores e IDEs
+# 2. Funciona com VS Code, IntelliJ, Vim, Emacs, Sublime Text, etc.
+# 3. As configurações são aplicadas automaticamente ao abrir arquivos
+# 4. Prioridade: configurações específicas > configurações gerais
+# 5. Para mais informações: https://editorconfig.org/
+# 6. Compatível com as convenções do Vue.js, TypeScript e Tailwind CSS
+# 7. Segue as melhores práticas da indústria para projetos frontend
