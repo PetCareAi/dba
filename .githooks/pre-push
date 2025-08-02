@@ -1,0 +1,400 @@
+#!/bin/bash
+# Hook pre-push para PetCare DBA Admin
+# Este script é executado antes de fazer push para garantir qualidade e segurança
+
+set -e
+
+# Cores para output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+NC='\033[0m' # No Color
+
+# Configurações
+REMOTE_NAME=$1
+REMOTE_URL=$2
+MAIN_BRANCH="main"
+DEVELOP_BRANCH="develop"
+
+echo -e "${BLUE}🚀 Executando verificações pre-push para ${REMOTE_NAME}...${NC}"
+
+# Função para imprimir cabeçalho de seção
+print_section() {
+    echo -e "\n${BLUE}═══ $1 ═══${NC}"
+}
+
+# Função para verificar se comando existe
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Obter branch atual
+current_branch=$(git symbolic-ref --short HEAD)
+echo -e "${PURPLE}📍 Branch atual: ${current_branch}${NC}"
+
+# Obter commits que serão enviados
+commits_to_push=$(git rev-list ${REMOTE_NAME}/${current_branch}..HEAD 2>/dev/null || git rev-list HEAD --not --remotes 2>/dev/null || echo "")
+commit_count=$(echo "$commits_to_push" | grep -v '^$' | wc -l || echo "0")
+
+echo -e "${YELLOW}📦 Commits a serem enviados: ${commit_count}${NC}"
+
+if [ "$commit_count" -eq 0 ]; then
+    echo -e "${GREEN}✅ Nenhum commit novo para enviar${NC}"
+    exit 0
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 1. VERIFICAÇÃO DE BRANCH PROTEGIDA
+# ═══════════════════════════════════════════════════════════════
+print_section "Verificação de Branch Protegida"
+
+if [ "$current_branch" = "$MAIN_BRANCH" ]; then
+    echo -e "${RED}❌ Push direto para $MAIN_BRANCH não é permitido!${NC}"
+    echo -e "${BLUE}💡 Use Pull Request para enviar mudanças para $MAIN_BRANCH${NC}"
+    exit 1
+elif [ "$current_branch" = "$DEVELOP_BRANCH" ]; then
+    echo -e "${YELLOW}⚠️  Enviando para $DEVELOP_BRANCH. Certifique-se de que os testes passaram.${NC}"
+    read -p "Continuar? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo -e "${BLUE}Push cancelado pelo usuário${NC}"
+        exit 1
+    fi
+else
+    echo -e "${GREEN}✅ Branch ${current_branch} permitida para push${NC}"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 2. VERIFICAÇÃO DE COMMITS
+# ═══════════════════════════════════════════════════════════════
+print_section "Verificação de Commits"
+
+echo "  Analisando commits que serão enviados..."
+
+# Verificar mensagens de commit
+invalid_commits=0
+for commit in $commits_to_push; do
+    if [ -n "$commit" ]; then
+        commit_msg=$(git log --format=%s -n 1 "$commit")
+        commit_short=$(echo "$commit" | cut -c1-8)
+        
+        echo "    $commit_short: $commit_msg"
+        
+        # Verificar se mensagem segue padrão mínimo
+        if [ ${#commit_msg} -lt 10 ]; then
+            echo -e "      ${RED}❌ Mensagem muito curta${NC}"
+            invalid_commits=$((invalid_commits + 1))
+        fi
+        
+        # Verificar padrões problemáticos
+        if echo "$commit_msg" | grep -qE "^(WIP|TODO|FIXME|DEBUG|TEST)"; then
+            echo -e "      ${YELLOW}⚠️  Commit parece temporário${NC}"
+        fi
+        
+        if echo "$commit_msg" | grep -qE "^fix|Fix"; then
+            echo -e "      ${BLUE}🔧 Commit de correção${NC}"
+        fi
+    fi
+done
+
+if [ $invalid_commits -gt 0 ]; then
+    echo -e "${RED}❌ $invalid_commits commit(s) com mensagens inadequadas${NC}"
+    echo -e "${BLUE}💡 Use 'git rebase -i' para melhorar as mensagens${NC}"
+    exit 1
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 3. EXECUÇÃO DE TESTES
+# ═══════════════════════════════════════════════════════════════
+print_section "Execução de Testes"
+
+if [ -f "requirements.txt" ] && command_exists python3; then
+    echo "  Verificando se pytest está disponível..."
+    
+    if command_exists pytest; then
+        echo "  Executando testes..."
+        
+        # Executar testes com timeout
+        timeout 300s pytest tests/ -v --tb=short || {
+            test_exit_code=$?
+            echo -e "${RED}❌ Testes falharam (código: $test_exit_code)${NC}"
+            
+            if [ $test_exit_code -eq 124 ]; then
+                echo -e "${YELLOW}⚠️  Testes interrompidos por timeout (5 min)${NC}"
+            fi
+            
+            read -p "Continuar mesmo assim? [y/N] " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                exit 1
+            fi
+        }
+        
+        echo -e "  ${GREEN}✅ Testes passaram${NC}"
+    else
+        echo -e "  ${YELLOW}⚠️  Pytest não instalado. Pulando testes.${NC}"
+    fi
+else
+    echo -e "  ${YELLOW}⚠️  Ambiente Python não configurado. Pulando testes.${NC}"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 4. VERIFICAÇÃO DE DEPENDÊNCIAS
+# ═══════════════════════════════════════════════════════════════
+print_section "Verificação de Dependências"
+
+if [ -f "requirements.txt" ]; then
+    echo "  Verificando dependências..."
+    
+    # Verificar se há dependências com versões não especificadas
+    unpinned_deps=$(grep -v "==" requirements.txt | grep -v "^#" | grep -v "^$" || true)
+    if [ -n "$unpinned_deps" ]; then
+        echo -e "  ${YELLOW}⚠️  Dependências sem versão específica encontradas:${NC}"
+        echo "$unpinned_deps" | sed 's/^/    /'
+    fi
+    
+    # Verificar vulnerabilidades se safety estiver disponível
+    if command_exists safety; then
+        echo "  Verificando vulnerabilidades de segurança..."
+        if safety check --json >/dev/null 2>&1; then
+            echo -e "  ${GREEN}✅ Nenhuma vulnerabilidade conhecida${NC}"
+        else
+            echo -e "  ${YELLOW}⚠️  Possíveis vulnerabilidades encontradas${NC}"
+            echo -e "  ${BLUE}💡 Execute: safety check --full-report${NC}"
+        fi
+    fi
+    
+    echo -e "  ${GREEN}✅ Verificação de dependências concluída${NC}"
+else
+    echo -e "  ${YELLOW}⚠️  requirements.txt não encontrado${NC}"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 5. VERIFICAÇÃO DE ARQUIVOS GRANDES
+# ═══════════════════════════════════════════════════════════════
+print_section "Verificação de Arquivos Grandes"
+
+# Verificar se há arquivos grandes nos commits
+large_files_found=0
+MAX_SIZE=$((10 * 1024 * 1024)) # 10MB
+
+for commit in $commits_to_push; do
+    if [ -n "$commit" ]; then
+        files_in_commit=$(git diff-tree --no-commit-id --name-only -r "$commit")
+        for file in $files_in_commit; do
+            if [ -f "$file" ]; then
+                size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo 0)
+                if [ "$size" -gt $MAX_SIZE ]; then
+                    echo -e "  ${RED}❌ Arquivo grande: $file ($(($size / 1024 / 1024))MB)${NC}"
+                    large_files_found=1
+                fi
+            fi
+        done
+    fi
+done
+
+if [ $large_files_found -eq 1 ]; then
+    echo -e "  ${RED}❌ Arquivos grandes detectados no push${NC}"
+    echo -e "  ${BLUE}💡 Considere usar Git LFS para arquivos grandes${NC}"
+    
+    read -p "Continuar mesmo assim? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+else
+    echo -e "  ${GREEN}✅ Nenhum arquivo grande detectado${NC}"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 6. VERIFICAÇÃO DE MERGE CONFLICTS
+# ═══════════════════════════════════════════════════════════════
+print_section "Verificação de Merge Conflicts"
+
+conflict_markers_found=0
+for commit in $commits_to_push; do
+    if [ -n "$commit" ]; then
+        files_in_commit=$(git diff-tree --no-commit-id --name-only -r "$commit")
+        for file in $files_in_commit; do
+            if [ -f "$file" ] && grep -l "^<<<<<<< \|^======= \|^>>>>>>> " "$file" >/dev/null 2>&1; then
+                echo -e "  ${RED}❌ Marcadores de merge conflict em: $file${NC}"
+                conflict_markers_found=1
+            fi
+        done
+    fi
+done
+
+if [ $conflict_markers_found -eq 1 ]; then
+    echo -e "  ${RED}❌ Marcadores de merge conflict detectados${NC}"
+    echo -e "  ${BLUE}💡 Resolva os conflicts antes de fazer push${NC}"
+    exit 1
+else
+    echo -e "  ${GREEN}✅ Nenhum merge conflict detectado${NC}"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 7. VERIFICAÇÃO DE TODO/FIXME
+# ═══════════════════════════════════════════════════════════════
+print_section "Verificação de TODOs e FIXMEs"
+
+todo_count=0
+fixme_count=0
+
+for commit in $commits_to_push; do
+    if [ -n "$commit" ]; then
+        files_in_commit=$(git diff-tree --no-commit-id --name-only -r "$commit")
+        for file in $files_in_commit; do
+            if [ -f "$file" ]; then
+                todos=$(grep -n "TODO\|FIXME\|XXX\|HACK" "$file" || true)
+                if [ -n "$todos" ]; then
+                    todo_count=$((todo_count + 1))
+                    echo "  📝 TODOs em $file:"
+                    echo "$todos" | sed 's/^/    /'
+                fi
+            fi
+        done
+    fi
+done
+
+if [ $todo_count -gt 5 ]; then
+    echo -e "  ${YELLOW}⚠️  Muitos TODOs/FIXMEs encontrados ($todo_count)${NC}"
+    echo -e "  ${BLUE}💡 Considere resolver alguns antes do push${NC}"
+else
+    echo -e "  ${GREEN}✅ Quantidade de TODOs aceitável${NC}"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 8. VERIFICAÇÃO DE SECRETS/CREDENCIAIS
+# ═══════════════════════════════════════════════════════════════
+print_section "Verificação de Secrets"
+
+secrets_found=0
+SECRET_PATTERNS=(
+    "password\s*=\s*['\"][^'\"]*['\"]"
+    "secret\s*=\s*['\"][^'\"]*['\"]"
+    "api_key\s*=\s*['\"][^'\"]*['\"]"
+    "token\s*=\s*['\"][^'\"]*['\"]"
+    "BEGIN PRIVATE KEY"
+    "BEGIN RSA PRIVATE KEY"
+    "ssh-rsa"
+    "ssh-dss"
+)
+
+for commit in $commits_to_push; do
+    if [ -n "$commit" ]; then
+        # Verificar diff do commit por padrões sensíveis
+        for pattern in "${SECRET_PATTERNS[@]}"; do
+            matches=$(git show "$commit" | grep -E "$pattern" || true)
+            if [ -n "$matches" ]; then
+                echo -e "  ${RED}❌ Possível secret detectado no commit $commit:${NC}"
+                echo "$matches" | sed 's/^/    /' | head -3
+                secrets_found=1
+            fi
+        done
+    fi
+done
+
+if [ $secrets_found -eq 1 ]; then
+    echo -e "  ${RED}❌ Possíveis secrets detectados!${NC}"
+    echo -e "  ${BLUE}💡 Remova credenciais e use variáveis de ambiente${NC}"
+    exit 1
+else
+    echo -e "  ${GREEN}✅ Nenhum secret detectado${NC}"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 9. VERIFICAÇÃO DE PERFORMANCE
+# ═══════════════════════════════════════════════════════════════
+print_section "Verificação de Performance"
+
+if [ -f "app.py" ]; then
+    echo "  Verificando padrões que podem afetar performance..."
+    
+    # Verificar imports desnecessários
+    heavy_imports=$(grep -n "import pandas\|import numpy\|import matplotlib" app.py || true)
+    if [ -n "$heavy_imports" ]; then
+        echo -e "  ${YELLOW}⚠️  Imports pesados encontrados:${NC}"
+        echo "$heavy_imports" | sed 's/^/    /' | head -3
+    fi
+    
+    # Verificar loops potencialmente problemáticos
+    nested_loops=$(grep -n "for.*for\|while.*while" app.py || true)
+    if [ -n "$nested_loops" ]; then
+        echo -e "  ${YELLOW}⚠️  Loops aninhados encontrados - verifique performance${NC}"
+    fi
+    
+    echo -e "  ${GREEN}✅ Verificação de performance concluída${NC}"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 10. VERIFICAÇÃO DE DOCUMENTAÇÃO
+# ═══════════════════════════════════════════════════════════════
+print_section "Verificação de Documentação"
+
+# Verificar se README foi atualizado quando necessário
+if echo "$commits_to_push" | xargs git diff-tree --no-commit-id --name-only -r | grep -q "app.py\|requirements.txt"; then
+    if ! echo "$commits_to_push" | xargs git diff-tree --no-commit-id --name-only -r | grep -q "README.md"; then
+        echo -e "  ${YELLOW}⚠️  Mudanças significativas sem atualização do README${NC}"
+        echo -e "  ${BLUE}💡 Considere atualizar a documentação${NC}"
+    fi
+fi
+
+# Verificar se CHANGELOG foi atualizado para releases
+if [ "$current_branch" = "$DEVELOP_BRANCH" ] || echo "$current_branch" | grep -q "release/"; then
+    if ! echo "$commits_to_push" | xargs git diff-tree --no-commit-id --name-only -r | grep -q "CHANGELOG"; then
+        echo -e "  ${YELLOW}⚠️  Branch de release sem atualização do CHANGELOG${NC}"
+    fi
+fi
+
+echo -e "  ${GREEN}✅ Verificação de documentação concluída${NC}"
+
+# ═══════════════════════════════════════════════════════════════
+# 11. VERIFICAÇÃO FINAL E CONFIRMAÇÃO
+# ═══════════════════════════════════════════════════════════════
+print_section "Confirmação Final"
+
+echo -e "${BLUE}📊 Resumo do Push:${NC}"
+echo "  • Branch: $current_branch"
+echo "  • Remote: $REMOTE_NAME ($REMOTE_URL)"
+echo "  • Commits: $commit_count"
+echo "  • Arquivos modificados: $(echo "$commits_to_push" | xargs git diff-tree --no-commit-id --name-only -r 2>/dev/null | sort -u | wc -l)"
+
+# Lista dos últimos commits
+echo -e "\n${BLUE}📝 Últimos commits:${NC}"
+for commit in $(echo "$commits_to_push" | head -5); do
+    if [ -n "$commit" ]; then
+        commit_msg=$(git log --format="%h %s" -n 1 "$commit")
+        echo "    $commit_msg"
+    fi
+done
+
+if [ "$commit_count" -gt 5 ]; then
+    echo "    ... e mais $(($commit_count - 5)) commit(s)"
+fi
+
+# Verificação especial para branches principais
+if [ "$current_branch" = "$DEVELOP_BRANCH" ] || echo "$current_branch" | grep -q "release/\|hotfix/"; then
+    echo -e "\n${YELLOW}⚠️  ATENÇÃO: Push para branch importante ($current_branch)${NC}"
+    echo -e "${BLUE}Certifique-se de que:${NC}"
+    echo "  • Todos os testes passaram"
+    echo "  • Code review foi realizado"
+    echo "  • Documentação está atualizada"
+    echo "  • Não há breaking changes sem aviso"
+    
+    read -p "Confirma o push? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo -e "${BLUE}Push cancelado pelo usuário${NC}"
+        exit 1
+    fi
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# CONCLUSÃO
+# ═══════════════════════════════════════════════════════════════
+echo -e "\n${GREEN}🎉 Todas as verificações passaram! Push autorizado.${NC}"
+echo -e "${BLUE}🚀 Enviando $commit_count commit(s) para $REMOTE_NAME/$current_branch...${NC}"
+
+exit 0

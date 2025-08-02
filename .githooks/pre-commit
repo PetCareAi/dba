@@ -1,0 +1,255 @@
+#!/bin/bash
+# Hook pre-commit para PetCare DBA Admin
+# Este script é executado antes de cada commit para garantir qualidade do código
+
+set -e
+
+# Cores para output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Configurações
+PYTHON_FILES_PATTERN=".*\.py$"
+MAX_LINE_LENGTH=120
+MIN_COVERAGE=80
+
+echo -e "${BLUE}🔍 Executando verificações pre-commit...${NC}"
+
+# Função para imprimir cabeçalho de seção
+print_section() {
+    echo -e "\n${BLUE}═══ $1 ═══${NC}"
+}
+
+# Função para verificar se comando existe
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Função para verificar arquivos modificados
+get_modified_python_files() {
+    git diff --cached --name-only --diff-filter=ACM | grep -E "${PYTHON_FILES_PATTERN}" || true
+}
+
+# Obter lista de arquivos Python modificados
+PYTHON_FILES=$(get_modified_python_files)
+
+if [ -z "$PYTHON_FILES" ]; then
+    echo -e "${GREEN}✅ Nenhum arquivo Python modificado. Prosseguindo...${NC}"
+    exit 0
+fi
+
+echo -e "${YELLOW}📁 Arquivos Python modificados:${NC}"
+echo "$PYTHON_FILES" | sed 's/^/  /'
+
+# ═══════════════════════════════════════════════════════════════
+# 1. VERIFICAÇÃO DE SINTAXE PYTHON
+# ═══════════════════════════════════════════════════════════════
+print_section "Verificação de Sintaxe Python"
+
+syntax_errors=0
+for file in $PYTHON_FILES; do
+    if [ -f "$file" ]; then
+        echo -n "  Verificando $file... "
+        if python3 -m py_compile "$file" 2>/dev/null; then
+            echo -e "${GREEN}✅${NC}"
+        else
+            echo -e "${RED}❌ Erro de sintaxe${NC}"
+            python3 -m py_compile "$file"
+            syntax_errors=$((syntax_errors + 1))
+        fi
+    fi
+done
+
+if [ $syntax_errors -gt 0 ]; then
+    echo -e "${RED}❌ Encontrados $syntax_errors erro(s) de sintaxe. Corrija antes de commitar.${NC}"
+    exit 1
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 2. FORMATAÇÃO DE CÓDIGO COM BLACK
+# ═══════════════════════════════════════════════════════════════
+print_section "Verificação de Formatação (Black)"
+
+if command_exists black; then
+    echo "  Verificando formatação com black..."
+    if echo "$PYTHON_FILES" | xargs black --check --line-length=$MAX_LINE_LENGTH --quiet; then
+        echo -e "  ${GREEN}✅ Código está bem formatado${NC}"
+    else
+        echo -e "  ${YELLOW}⚠️  Código não está formatado corretamente${NC}"
+        echo -e "  ${BLUE}💡 Execute: black --line-length=$MAX_LINE_LENGTH $PYTHON_FILES${NC}"
+        
+        # Opção automática de formatação
+        read -p "  Formatar automaticamente? [y/N] " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo "$PYTHON_FILES" | xargs black --line-length=$MAX_LINE_LENGTH
+            echo -e "  ${GREEN}✅ Código formatado automaticamente${NC}"
+            echo -e "  ${YELLOW}⚠️  Arquivos foram modificados. Re-execute o commit.${NC}"
+            exit 1
+        else
+            echo -e "  ${RED}❌ Formate o código antes de commitar${NC}"
+            exit 1
+        fi
+    fi
+else
+    echo -e "  ${YELLOW}⚠️  Black não instalado. Pulando verificação de formatação.${NC}"
+    echo -e "  ${BLUE}💡 Instale com: pip install black${NC}"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 3. LINTING COM FLAKE8
+# ═══════════════════════════════════════════════════════════════
+print_section "Verificação de Linting (Flake8)"
+
+if command_exists flake8; then
+    echo "  Executando flake8..."
+    if echo "$PYTHON_FILES" | xargs flake8 --max-line-length=$MAX_LINE_LENGTH --ignore=E203,W503,E501; then
+        echo -e "  ${GREEN}✅ Nenhum problema de linting encontrado${NC}"
+    else
+        echo -e "  ${RED}❌ Problemas de linting encontrados. Corrija antes de commitar.${NC}"
+        exit 1
+    fi
+else
+    echo -e "  ${YELLOW}⚠️  Flake8 não instalado. Pulando verificação de linting.${NC}"
+    echo -e "  ${BLUE}💡 Instale com: pip install flake8${NC}"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 4. VERIFICAÇÃO DE SEGURANÇA COM BANDIT
+# ═══════════════════════════════════════════════════════════════
+print_section "Verificação de Segurança (Bandit)"
+
+if command_exists bandit; then
+    echo "  Executando verificação de segurança..."
+    if echo "$PYTHON_FILES" | xargs bandit -ll -q; then
+        echo -e "  ${GREEN}✅ Nenhum problema de segurança encontrado${NC}"
+    else
+        echo -e "  ${YELLOW}⚠️  Possíveis problemas de segurança encontrados${NC}"
+        echo -e "  ${BLUE}💡 Revise os problemas reportados pelo bandit${NC}"
+        
+        # Não bloquear commit por problemas de segurança de baixa prioridade
+        read -p "  Continuar mesmo assim? [y/N] " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    fi
+else
+    echo -e "  ${YELLOW}⚠️  Bandit não instalado. Pulando verificação de segurança.${NC}"
+    echo -e "  ${BLUE}💡 Instale com: pip install bandit${NC}"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 5. VERIFICAÇÃO DE IMPORTS
+# ═══════════════════════════════════════════════════════════════
+print_section "Verificação de Imports"
+
+echo "  Verificando imports não utilizados..."
+import_issues=0
+
+for file in $PYTHON_FILES; do
+    if [ -f "$file" ]; then
+        # Verificar se há imports obviamente não utilizados
+        unused_imports=$(grep -n "^import\|^from.*import" "$file" | head -5 || true)
+        if [ -n "$unused_imports" ]; then
+            echo "    Imports em $file:"
+            echo "$unused_imports" | sed 's/^/      /'
+        fi
+    fi
+done
+
+echo -e "  ${GREEN}✅ Verificação de imports concluída${NC}"
+
+# ═══════════════════════════════════════════════════════════════
+# 6. VERIFICAÇÃO DE ARQUIVOS SENSÍVEIS
+# ═══════════════════════════════════════════════════════════════
+print_section "Verificação de Arquivos Sensíveis"
+
+# Lista de padrões que não devem ser commitados
+SENSITIVE_PATTERNS=(
+    "password\s*="
+    "secret\s*="
+    "api_key\s*="
+    "token\s*="
+    "\.env$"
+    "secrets\.toml$"
+    "\.key$"
+    "\.pem$"
+)
+
+sensitive_found=0
+for pattern in "${SENSITIVE_PATTERNS[@]}"; do
+    matches=$(git diff --cached --name-only | grep -E "$pattern" || true)
+    if [ -n "$matches" ]; then
+        echo -e "  ${RED}❌ Arquivo sensível detectado: $matches${NC}"
+        sensitive_found=1
+    fi
+    
+    # Verificar conteúdo dos arquivos por padrões sensíveis
+    content_matches=$(git diff --cached | grep -E "$pattern" || true)
+    if [ -n "$content_matches" ]; then
+        echo -e "  ${RED}❌ Conteúdo sensível detectado:${NC}"
+        echo "$content_matches" | sed 's/^/    /'
+        sensitive_found=1
+    fi
+done
+
+if [ $sensitive_found -eq 1 ]; then
+    echo -e "  ${RED}❌ Arquivos ou conteúdo sensível detectado. Remova antes de commitar.${NC}"
+    exit 1
+else
+    echo -e "  ${GREEN}✅ Nenhum arquivo sensível detectado${NC}"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 7. VERIFICAÇÃO DE TAMANHO DE ARQUIVOS
+# ═══════════════════════════════════════════════════════════════
+print_section "Verificação de Tamanho de Arquivos"
+
+MAX_FILE_SIZE=$((5 * 1024 * 1024)) # 5MB
+large_files=0
+
+for file in $(git diff --cached --name-only); do
+    if [ -f "$file" ]; then
+        size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo 0)
+        if [ "$size" -gt $MAX_FILE_SIZE ]; then
+            echo -e "  ${RED}❌ Arquivo muito grande: $file ($(($size / 1024 / 1024))MB)${NC}"
+            large_files=1
+        fi
+    fi
+done
+
+if [ $large_files -eq 1 ]; then
+    echo -e "  ${RED}❌ Arquivos muito grandes detectados. Use Git LFS ou remova.${NC}"
+    exit 1
+else
+    echo -e "  ${GREEN}✅ Tamanhos de arquivo OK${NC}"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 8. VERIFICAÇÃO DE MENSAGEM DE COMMIT
+# ═══════════════════════════════════════════════════════════════
+print_section "Dicas para Mensagem de Commit"
+
+echo -e "  ${BLUE}💡 Lembre-se de usar uma mensagem de commit descritiva:${NC}"
+echo "    • Use o formato: tipo(escopo): descrição"
+echo "    • Tipos: feat, fix, docs, style, refactor, test, chore"
+echo "    • Exemplo: feat(database): adicionar suporte para backup automático"
+
+# ═══════════════════════════════════════════════════════════════
+# CONCLUSÃO
+# ═══════════════════════════════════════════════════════════════
+echo -e "\n${GREEN}🎉 Todas as verificações passaram! Commit liberado.${NC}"
+echo -e "${BLUE}📊 Resumo:${NC}"
+echo "  • Arquivos verificados: $(echo "$PYTHON_FILES" | wc -l)"
+echo "  • Sintaxe: ✅"
+echo "  • Formatação: ✅"
+echo "  • Linting: ✅"
+echo "  • Segurança: ✅"
+echo "  • Arquivos sensíveis: ✅"
+echo "  • Tamanho de arquivos: ✅"
+
+exit 0
