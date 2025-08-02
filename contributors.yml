@@ -1,0 +1,168 @@
+# PetCare AI Assistant - Contributors
+# Este arquivo lista todos os contribuidores do projeto PetCare AI Assistant
+# Formato baseado no All Contributors specification
+
+project:
+  name: "PetCareAi"
+  description: "Assistente de IA conversacional especializado no ecossistema PetCare AI"
+  repository: "https://github.com/PetCareAi/llm"
+  website: "https://petcareai.com.br"
+  license: "Proprietaria"
+
+maintainers:
+  - name: "Estevam Souza"
+    role: "Project Lead & CTO"
+    email: "contato@petcareai.com.br"
+    github: "estevam5s"
+    linkedin: "estevam-souza"
+    avatar: "https://github.com/estevamsouza.png"
+    bio: "Diretor de TI da PetCare AI, especialista em IA e desenvolvimento full-stack"
+    location: "Florianópolis, SC, Brasil"
+    timezone: "America/Sao_Paulo"
+    languages: ["Portuguese", "English", "Spanish"]
+    skills: ["React", "TypeScript", "NestJS", "AI/ML", "Product Management"]
+    contributions:
+      - "💻 Code"
+      - "📖 Documentation"
+      - "🎨 Design"
+      - "🤔 Ideas"
+      - "👀 Review"
+      - "📢 Talks"
+      - "💼 Business Logic"
+      - "🔧 Infrastructure"
+    started: "2025-05-15"
+    commits: 127
+    lines_added: 15420
+    lines_removed: 2341
+
+  - name: "Aluno1"
+    role: "Frontend Developer"
+    email: "aluno1@petcareai.com.br"
+    github: "aluno1"
+    avatar: "https://github.com/aluno1.png"
+    bio: "Desenvolvedor React especializado em aplicações conversacionais"
+    location: "Florianópolis, SC, Brasil"
+    contributions:
+      - "💻 Code"
+      - "🐛 Bug reports"
+      - "📱 Mobile Development"
+      - "⚡ Performance"
+    started: "2025-06-10"
+    commits: 45
+    lines_added: 3280
+    lines_removed: 420
+
+recognition:
+  hall_of_fame:
+    - name: "Estevam Souza"
+      achievement: "Founder & Architect"
+      date: "2025-08-05"
+
+    - name: "Aluno1"
+      achievement: "Frontend Excellence Award"
+      date: "2025-08-05"
+
+  monthly_highlights:
+    "2025-06":
+      contributor: "Aluno1"
+      reason: "Implementação excepcional da interface conversacional"
+
+    "2025-07":
+      contributor: "Estevam Souza"
+      reason: "Arquitetura robusta e liderança técnica"
+
+contribution_guidelines:
+  types:
+    - emoji: "💻"
+      code: "code"
+      description: "Contribuições de código"
+
+    - emoji: "📖"
+      code: "doc"
+      description: "Documentação"
+
+    - emoji: "🎨"
+      code: "design"
+      description: "Design e UX"
+
+    - emoji: "🐛"
+      code: "bug"
+      description: "Relatórios de bugs"
+
+    - emoji: "💡"
+      code: "ideas"
+      description: "Ideias e sugestões"
+
+    - emoji: "👀"
+      code: "review"
+      description: "Revisão de código"
+
+    - emoji: "🧪"
+      code: "test"
+      description: "Testes"
+
+    - emoji: "📱"
+      code: "mobile"
+      description: "Desenvolvimento mobile"
+
+    - emoji: "♿"
+      code: "a11y"
+      description: "Acessibilidade"
+
+    - emoji: "🤖"
+      code: "ai"
+      description: "Melhorias de IA"
+
+    - emoji: "⚡"
+      code: "performance"
+      description: "Otimização de performance"
+
+    - emoji: "💼"
+      code: "business"
+      description: "Lógica de negócio"
+
+    - emoji: "🔧"
+      code: "infra"
+      description: "Infraestrutura"
+
+statistics:
+  total_contributors: 2
+  core_team: 2
+  total_commits: 172
+  total_lines_added: 18700
+  total_lines_removed: 2761
+  languages_supported: 3
+  countries_represented: 1
+  active_since: "2025-05-15"
+
+team_info:
+  size: "Small but mighty"
+  focus: "Quality over quantity"
+  collaboration_style: "Agile and innovative"
+  communication: "Daily standups and code reviews"
+
+how_to_contribute:
+  getting_started:
+    - "Leia o CONTRIBUTING.md"
+    - "Escolha uma issue para trabalhar"
+    - "Faça fork do repositório"
+    - "Crie uma branch para sua feature"
+    - "Implemente suas mudanças"
+    - "Adicione testes se necessário"
+    - "Abra um Pull Request"
+
+  recognition_process:
+    - "Contribuições são automaticamente reconhecidas"
+    - "Updates mensais no contributors.yml"
+    - "Hall of Fame para contribuições especiais"
+    - "Menções em release notes"
+
+contact:
+  community_manager: "estevam.souza@petcareai.com.br"
+  discord: "https://discord.gg/petcareai"
+  telegram: "https://t.me/petcareai"
+  website: "https://petcareai.com.br/contributors"
+
+# Última atualização: 2025-07-24
+# Próxima revisão: 2025-08-24
+# Mantenedor: Estevam Souza
