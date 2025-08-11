@@ -2,6 +2,7 @@
 
 Este documento apresenta o roadmap estratégico do PetCare DBA Admin, detalhando as funcionalidades planejadas, melhorias e a visão de longo prazo do projeto.
 
+
 ## 📅 Versão Atual: 2.0.5
 **Status**: ✅ Estável  
 **Data de Lançamento**: Janeiro 2025  
